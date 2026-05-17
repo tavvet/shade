@@ -149,6 +149,9 @@ defaults write dev.shade.Shade backgroundOpacity 0.85          # 0.3 – 1.0
 # Animation
 defaults write dev.shade.Shade animationDuration 0.12          # 0.0 – 0.5 seconds
 
+# Link highlight color (Cmd-hover underline + cell tint). 6-char hex, no '#'.
+defaults write dev.shade.Shade linkHighlightHex "00CCFF"       # default: FFCC00
+
 # Inspect / reset
 defaults read dev.shade.Shade
 defaults delete dev.shade.Shade
