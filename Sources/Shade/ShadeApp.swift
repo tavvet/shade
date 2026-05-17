@@ -5,6 +5,11 @@ import SwiftUI
 @main
 enum ShadeApp {
     static func main() {
+        // GUI apps launched via LaunchServices start with cwd = "/", which then
+        // becomes the starting directory for every spawned shell. Push us to $HOME
+        // so new tabs open there by default.
+        FileManager.default.changeCurrentDirectoryPath(NSHomeDirectory())
+
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
@@ -98,18 +103,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate: PanelKeyHandler {
-    /// Tab shortcuts use ⌃⌥ + key to avoid clashing with system / browser shortcuts.
+    /// Tab shortcuts follow the macOS convention used by iTerm2/Terminal/Safari/Chrome.
+    /// ⌘-keys are safe — shell uses ⌃-combinations.
     func panelHandleKey(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let ctrlOpt: NSEvent.ModifierFlags = [.control, .option]
-        let ctrl: NSEvent.ModifierFlags    = [.control]
+        let cmd: NSEvent.ModifierFlags = [.command]
+        let ctrl: NSEvent.ModifierFlags = [.control]
         let ctrlShift: NSEvent.ModifierFlags = [.control, .shift]
         let chars = event.charactersIgnoringModifiers ?? ""
 
-        // Tab key has its own keyCode (48) and `chars` may be `\t`.
+        // Tab key has its own keyCode (48) and `chars` is `\t`.
         let isTab = event.keyCode == 48
 
-        if flags == ctrlOpt {
+        if flags == cmd {
             switch chars.lowercased() {
             case "t":
                 terminals.newSession()

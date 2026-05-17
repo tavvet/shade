@@ -72,7 +72,7 @@ struct TabBarView: View {
                     .padding(.vertical, 3)
             }
             .buttonStyle(.plain)
-            .help("New tab (⌃⌥T)")
+            .help("New tab (⌘T)")
             Spacer()
         }
         .padding(.horizontal, 8)
