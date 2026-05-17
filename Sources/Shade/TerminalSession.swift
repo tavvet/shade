@@ -43,6 +43,12 @@ final class TerminalSession: NSObject {
         view.layer?.isOpaque = false
         view.layer?.backgroundColor = NSColor.clear.cgColor
     }
+
+    func terminate() {
+        if view.process.running {
+            kill(view.process.shellPid, SIGTERM)
+        }
+    }
 }
 
 extension TerminalSession: LocalProcessTerminalViewDelegate {

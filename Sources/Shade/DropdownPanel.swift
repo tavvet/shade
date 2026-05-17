@@ -1,14 +1,24 @@
 import AppKit
 
-/// Borderless, non-activating panel that slides down from the top of the screen.
+@MainActor
+protocol PanelKeyHandler: AnyObject {
+    /// Return true if the event was handled and should not propagate.
+    func panelHandleKey(_ event: NSEvent) -> Bool
+}
+
+/// Borderless panel that slides down from the top of the screen.
+/// Becomes the key window when shown so keyboard shortcuts route to us.
 @MainActor
 final class DropdownPanel: NSPanel {
     private var slideDuration: TimeInterval = Preferences.defaults.animationDuration
 
+    /// Set by AppDelegate to receive tab keyboard shortcuts.
+    weak var keyHandler: PanelKeyHandler?
+
     init() {
         super.init(
             contentRect: .zero,
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
@@ -16,9 +26,7 @@ final class DropdownPanel: NSPanel {
         hasShadow = true
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        isFloatingPanel = true
         hidesOnDeactivate = false
-        becomesKeyOnlyIfNeeded = false
         animationBehavior = .none
         apply(Preferences.load())
     }
@@ -28,6 +36,13 @@ final class DropdownPanel: NSPanel {
 
     override func cancelOperation(_ sender: Any?) {
         hide()
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if keyHandler?.panelHandleKey(event) == true {
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
     }
 
     override func animationResizeTime(_ newWindow: NSRect) -> TimeInterval {

@@ -15,15 +15,19 @@ enum ShadeApp {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
-    private lazy var panel = DropdownPanel()
-    private let terminal = TerminalSession()
+    private lazy var panel: DropdownPanel = {
+        let p = DropdownPanel()
+        p.keyHandler = self
+        return p
+    }()
+    private let terminals = TerminalsController()
     private lazy var settings = SettingsWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installStatusItem()
-        installTerminal()
-        primePanelFrame()    // give the terminal its real rows count before starting the shell
-        terminal.start()
+        installTerminals()
+        primePanelFrame()
+        terminals.ensureAtLeastOneSession()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(applyPreferences),
@@ -35,7 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Lay out the panel off-screen so the terminal view computes its rows/cols.
+    /// Lay out the panel off-screen so each new terminal view computes its rows/cols.
     /// Without this the shell starts in a default 24-row buffer and the prompt
     /// ends up far from the actual bottom of the panel.
     private func primePanelFrame() {
@@ -47,27 +51,61 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func applyPreferences() {
         let prefs = Preferences.load()
-        terminal.apply(prefs)
+        terminals.applyToAll(prefs)
         panel.apply(prefs)
     }
 
-    private func installTerminal() {
-        let container = NSView()
-        container.addSubview(terminal.view)
-        NSLayoutConstraint.activate([
-            terminal.view.topAnchor.constraint(equalTo: container.topAnchor),
-            terminal.view.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            terminal.view.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            terminal.view.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-        ])
-        panel.contentView = container
+    private func installTerminals() {
+        panel.contentView = terminals.containerView
     }
 
     private func toggle() {
         panel.toggle()
-        if panel.isVisible {
-            panel.makeFirstResponder(terminal.view)
+        if panel.isVisible, let view = terminals.activeSession?.view {
+            panel.makeFirstResponder(view)
         }
+    }
+
+}
+
+extension AppDelegate: PanelKeyHandler {
+    /// Tab shortcuts use ⌃⌥ + key to avoid clashing with system / browser shortcuts.
+    func panelHandleKey(_ event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let ctrlOpt: NSEvent.ModifierFlags = [.control, .option]
+        let ctrl: NSEvent.ModifierFlags    = [.control]
+        let ctrlShift: NSEvent.ModifierFlags = [.control, .shift]
+        let chars = event.charactersIgnoringModifiers ?? ""
+
+        // Tab key has its own keyCode (48) and `chars` may be `\t`.
+        let isTab = event.keyCode == 48
+
+        if flags == ctrlOpt {
+            switch chars.lowercased() {
+            case "t":
+                terminals.newSession()
+                return true
+            case "w":
+                terminals.closeActive()
+                return true
+            default:
+                if let digit = Int(chars), (1...9).contains(digit) {
+                    terminals.select(at: digit - 1)
+                    return true
+                }
+            }
+        }
+
+        if isTab && flags == ctrl {
+            terminals.selectNext()
+            return true
+        }
+        if isTab && flags == ctrlShift {
+            terminals.selectPrev()
+            return true
+        }
+
+        return false
     }
 
     private func installStatusItem() {
