@@ -183,7 +183,7 @@ struct SettingsView: View {
             .init(action: "Next tab",           keys: "⌃Tab"),
             .init(action: "Previous tab",       keys: "⌃⇧Tab"),
             .init(action: "Copy / Paste",       keys: "⌘C / ⌘V"),
-            .init(action: "Cut (= Copy)",       keys: "⌘X — buffer is read-only"),
+            .init(action: "Cut from input",     keys: "⌘X (best-effort, see README)"),
             .init(action: "Select all",         keys: "⌘A"),
             .init(action: "Clear (prompt → bottom)", keys: "⌘K"),
             .init(action: "Delete word back",   keys: "⌥⌫"),

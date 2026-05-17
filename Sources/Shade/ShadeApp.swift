@@ -216,14 +216,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         about.present()
     }
 
-    /// Wired to Edit → Cut. Terminal buffers are read-only, so the closest
-    /// useful behavior is "copy if there's a selection, otherwise no-op."
+    /// Wired to Edit → Cut.
+    ///
+    /// The terminal buffer itself is read-only — Shade can't surgically
+    /// remove a range of cells. What it *can* do is poke backspaces into
+    /// the shell's PTY: readline removes chars to the left of its cursor.
+    /// So ⌘X copies the selected text and then sends N DEL bytes, which
+    /// behaves the same as `clear-line` for the common case (selection
+    /// runs from cursor backward via ⇧← / ⌥⇧←). For mid-line or
+    /// multi-line selections it'll still delete N chars *from the
+    /// cursor*, not from the highlighted region — there's no way to
+    /// reposition readline from the outside reliably.
     @objc private func shadeCut() {
         guard let view = terminals.activeSession?.view,
               let text = view.shadeSelectedText() else { return }
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
+        let backspaces = [UInt8](repeating: 0x7F, count: text.count)
+        view.send(backspaces)
+        view.clearKeyboardSelection()
     }
 }
 

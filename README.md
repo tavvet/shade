@@ -128,7 +128,7 @@ live shell.
 | Toggle panel         | `F12`       |
 | Hide panel           | `Esc`       |
 | Copy / Paste         | `⌘C` / `⌘V` |
-| Cut                  | `⌘X` (terminal buffers are read-only — behaves like `⌘C`; use `⌃W` / `⌃U` / `⌃K` to edit the input line) |
+| Cut                  | `⌘X` — copies the selection and sends N backspaces into the shell. Works cleanly when the selection runs from the cursor backward (e.g. `⌥⇧←` + `⌘X` cuts the last word); mid-line or multi-line selections delete N chars from the cursor instead of from the highlighted region — readline can't be repositioned from outside. Use `⌃W` / `⌃U` / `⌃K` for precise input editing. |
 | Select all           | `⌘A`        |
 | Clear screen         | `⌘K` (Guake-style — prompt lands at the bottom, unlike the builtin `clear` which leaves it at the top) |
 | Delete word back     | `⌥⌫` (readline `backward-kill-word`) |

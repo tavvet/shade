@@ -57,6 +57,12 @@ First public release.
   Terminal.app and readline's `backward-kill-word`). Other Option+key
   combinations are left alone so SwiftTerm can still produce `´` / `©`
   / etc.
+- `⌘X` best-effort cut: copies the selection to the pasteboard and
+  sends N backspace bytes (`0x7F`) into the PTY so readline removes
+  the same number of characters. Clean for `⇧←` / `⌥⇧←` style
+  selections that end at the cursor; mid-line / multi-line cuts will
+  delete from the cursor instead of from the highlighted region —
+  there's no way to reposition readline from outside the shell.
 - Keyboard selection in the visible buffer: `⇧←/→/↑/↓` (char-by-char),
   `⌥⇧←/→` (word-by-word), `⌘⇧←/→` (to line edges). Anchors at the
   cursor, extends from there, and SwiftTerm's normal "any keyDown
