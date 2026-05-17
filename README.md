@@ -31,7 +31,9 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Git badge** — floating pill in the top-right of the terminal shows the
   current branch plus `±N` files, `+X` insertions, `-Y` deletions when the
   working tree is dirty. Hidden outside git repos. Updates on `cd` and
-  `git checkout` within ~1 second.
+  `git checkout` within ~1 second. Automatically hidden while you're inside
+  an `ssh` / `mosh` session (the local heuristics no longer describe what
+  you're seeing); the tab title becomes `[ssh]` until you `exit`.
 - **Clickable links** — `⌘`-hover highlights URLs in the buffer, `⌘`-click
   opens them. URLs go through `NSWorkspace.shared.open`; absolute or
   relative file paths are revealed in Finder instead of being launched in

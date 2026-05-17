@@ -38,8 +38,16 @@ final class TabsObservable: ObservableObject {
             TabInfo(id: idx, label: Self.formatLabel(index: idx, title: session.displayTitle))
         }
         activeIndex = controller.activeIndex
-        activeBranch = controller.activeSession?.branch ?? ""
-        activeStatus = controller.activeSession?.gitStatus
+        let active = controller.activeSession
+        // Hide branch / status when we're inside an ssh / mosh session — the local
+        // values describe the wrong machine.
+        if active?.remoteIndicator != nil {
+            activeBranch = ""
+            activeStatus = nil
+        } else {
+            activeBranch = active?.branch ?? ""
+            activeStatus = active?.gitStatus
+        }
     }
 
     static func formatLabel(index: Int, title: String) -> String {

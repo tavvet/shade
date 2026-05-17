@@ -64,6 +64,12 @@ First public release.
   (so a plain arrow returns control to shell navigation). `⌘C` copies
   whatever is selected. Required adding a public `extendKeyboardSelection`
   / `clearKeyboardSelection` API on the vendored SwiftTerm fork.
+- Detect `ssh` / `mosh` / `tmate` in the shell's descendant pid tree
+  (via `proc_listallpids` + `PROC_PIDTBSDINFO`). While a remote session
+  is active, hide the git badge and replace the tab title with `[ssh]`
+  — the local cwd polling and `git status` calls would otherwise show
+  state from the local machine, which has nothing to do with what the
+  user is looking at in the terminal.
 - Shells start in `$HOME` instead of `/`.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.

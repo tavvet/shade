@@ -84,11 +84,24 @@ final class TerminalSession: NSObject {
         }
     }
 
+    /// Non-nil when the shell has launched ssh/mosh/etc — the local cwd/git
+    /// heuristics no longer reflect what the user sees, so callers should mask
+    /// branch/status and the displayTitle switches to "[name]" (e.g. "[ssh]").
+    private(set) var remoteIndicator: String? = nil {
+        didSet {
+            guard oldValue != remoteIndicator else { return }
+            notifyTitleChanged()
+        }
+    }
+
     let shellName: String
 
     /// What the tab bar shows: shell-provided title or abbreviated CWD or shell name.
     /// The git branch is rendered separately as a floating badge over the terminal.
+    /// When we're inside an ssh/mosh session, local cwd/branch info is meaningless,
+    /// so we surface a "[ssh]"-style indicator instead.
     var displayTitle: String {
+        if let remote = remoteIndicator { return "[\(remote)]" }
         if !title.isEmpty { return title }
         if !cwd.isEmpty   { return abbreviateHome(cwd) }
         return shellName
@@ -166,7 +179,24 @@ final class TerminalSession: NSObject {
     /// become active (via `select`).
     func refreshContext(includeGitStatus: Bool) {
         guard view.process.running else { return }
-        if let path = ProcessCwd.read(pid: view.process.shellPid), path != cwd {
+        let shellPid = view.process.shellPid
+
+        // Remote detection comes first — if we're in ssh/mosh the local cwd / git
+        // numbers don't describe the user's session and we should skip them.
+        let newRemote = ProcessTree.remoteIndicator(forShell: shellPid)
+        if newRemote != remoteIndicator {
+            remoteIndicator = newRemote
+        }
+
+        if newRemote != nil {
+            // Mask any stale local info so the UI doesn't lie.
+            if !cwd.isEmpty { cwd = "" }
+            if !branch.isEmpty { branch = "" }
+            if gitStatus != nil { gitStatus = nil }
+            return
+        }
+
+        if let path = ProcessCwd.read(pid: shellPid), path != cwd {
             cwd = path
         }
         let newBranch = cwd.isEmpty ? "" : (GitInfo.branch(forCwd: cwd) ?? "")
