@@ -1,5 +1,6 @@
 import AppKit
 import KeyboardShortcuts
+import ServiceManagement
 import SwiftUI
 
 @MainActor
@@ -12,6 +13,14 @@ final class SettingsModel: ObservableObject {
     @Published var fontName: String               { didSet { save() } }
     @Published var backgroundOpacity: Double      { didSet { save() } }
     @Published var animationDuration: Double      { didSet { save() } }
+    @Published var openAtLogin: Bool {
+        didSet {
+            guard oldValue != openAtLogin, !suppressOpenAtLoginWrite else { return }
+            applyOpenAtLogin()
+        }
+    }
+
+    private var suppressOpenAtLoginWrite = false
 
     init() {
         let prefs = Preferences.load()
@@ -23,6 +32,23 @@ final class SettingsModel: ObservableObject {
         fontName = prefs.fontName
         backgroundOpacity = prefs.backgroundOpacity
         animationDuration = prefs.animationDuration
+        openAtLogin = SMAppService.mainApp.status == .enabled
+    }
+
+    private func applyOpenAtLogin() {
+        do {
+            if openAtLogin {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            NSLog("Shade: open-at-login change failed: %@", String(describing: error))
+            // Revert the toggle without re-firing didSet.
+            suppressOpenAtLoginWrite = true
+            openAtLogin = SMAppService.mainApp.status == .enabled
+            suppressOpenAtLoginWrite = false
+        }
     }
 
     private func save() {
@@ -102,6 +128,10 @@ struct SettingsView: View {
                         .frame(width: 44, alignment: .trailing)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Section("Startup") {
+                Toggle("Open at Login", isOn: $model.openAtLogin)
             }
 
             Section("Animation") {
