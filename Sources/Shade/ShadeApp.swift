@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hotkey = HotkeyManager()
     private lazy var panel = DropdownPanel()
     private let terminal = TerminalSession()
+    private lazy var settings = SettingsWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installStatusItem()
@@ -55,6 +56,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+        menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+            .target = self
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Shade", action: #selector(quit), keyEquivalent: "q")
             .target = self
         item.menu = menu
@@ -64,5 +68,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func quit() {
         NSApp.terminate(nil)
+    }
+
+    @objc private func showSettings() {
+        settings.present()
     }
 }
