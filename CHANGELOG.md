@@ -33,6 +33,11 @@ First public release.
 - Live-apply for font, opacity, and animation prefs (no toggle needed).
 - About window with version, repository / license / acknowledgement links.
 - Open at Login via `SMAppService`.
+- Clickable links: `⌘`-hover highlights, `⌘`-click opens. URLs open via
+  `NSWorkspace.shared.open`; file paths (absolute, `~`-prefixed, or relative
+  to the shell's CWD) are revealed in Finder instead of launched in the
+  default app, sidestepping the `paramErr (-50)` you get from
+  `NSWorkspace.shared.open` on a bare file path.
 - Shells start in `$HOME` instead of `/`.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.

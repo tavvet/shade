@@ -1,12 +1,65 @@
 import AppKit
 import SwiftTerm
 
+/// Sits between `LocalProcessTerminalView` and SwiftTerm so we can intercept
+/// `requestOpenLink`. SwiftTerm dispatches link activations through its
+/// `terminalDelegate`; `LocalProcessTerminalView` installs itself there and
+/// relies on the protocol-extension default that just does
+/// `NSWorkspace.shared.open(URL(string:link))` — which paramErr's (-50) on
+/// bare file paths. Subclassing didn't work (Swift's witness-table dispatch
+/// picks the default extension over a subclass method that doesn't carry
+/// `override`), so we install this proxy and forward every other method
+/// untouched to the original delegate.
+final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
+    weak var forward: TerminalViewDelegate?
+    var onOpenLink: ((String) -> Void)?
+
+    init(forward: TerminalViewDelegate?) {
+        self.forward = forward
+    }
+
+    func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
+        onOpenLink?(link)
+    }
+
+    // MARK: - Pure forwarding for everything else.
+
+    func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
+        forward?.sizeChanged(source: source, newCols: newCols, newRows: newRows)
+    }
+    func setTerminalTitle(source: TerminalView, title: String) {
+        forward?.setTerminalTitle(source: source, title: title)
+    }
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
+        forward?.hostCurrentDirectoryUpdate(source: source, directory: directory)
+    }
+    func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        forward?.send(source: source, data: data)
+    }
+    func scrolled(source: TerminalView, position: Double) {
+        forward?.scrolled(source: source, position: position)
+    }
+    func bell(source: TerminalView) {
+        forward?.bell(source: source)
+    }
+    func clipboardCopy(source: TerminalView, content: Data) {
+        forward?.clipboardCopy(source: source, content: content)
+    }
+    func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {
+        forward?.iTermContent(source: source, content: content)
+    }
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {
+        forward?.rangeChanged(source: source, startY: startY, endY: endY)
+    }
+}
+
 /// Thin wrapper around SwiftTerm's LocalProcessTerminalView that owns one shell session.
 @MainActor
 final class TerminalSession: NSObject {
     static let titleDidChange = Notification.Name("ShadeTerminalSessionTitleDidChange")
 
     let view: LocalProcessTerminalView
+    private let delegateProxy: TerminalDelegateProxy
 
     private(set) var title: String = "" {
         didSet { notifyTitleChanged() }
@@ -56,8 +109,15 @@ final class TerminalSession: NSObject {
         let shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         shellName = (shellPath as NSString).lastPathComponent
         view = LocalProcessTerminalView(frame: .zero)
+        // Capture the delegate LocalProcessTerminalView installed in its init,
+        // then slot our proxy in front of it.
+        delegateProxy = TerminalDelegateProxy(forward: view.terminalDelegate)
         super.init()
         view.processDelegate = self
+        view.terminalDelegate = delegateProxy
+        delegateProxy.onOpenLink = { [weak self] link in
+            MainActor.assumeIsolated { self?.openLink(link) }
+        }
         view.translatesAutoresizingMaskIntoConstraints = false
         view.nativeForegroundColor = NSColor(white: 0.92, alpha: 1.0)
         apply(Preferences.load())
@@ -141,6 +201,37 @@ extension TerminalSession: LocalProcessTerminalViewDelegate {
             MainActor.assumeIsolated {
                 self?.cwd = path
             }
+        }
+    }
+
+    private func openLink(_ rawLink: String) {
+        let link = rawLink.trimmingCharacters(in: .whitespaces)
+        // 1. Explicit file:// URL — reveal in Finder rather than launching the default app.
+        if let url = URL(string: link), url.isFileURL {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+            return
+        }
+        // 2. Absolute or ~-relative file path — reveal in Finder if it exists.
+        if link.hasPrefix("/") || link.hasPrefix("~") {
+            let expanded = (link as NSString).expandingTildeInPath
+            if FileManager.default.fileExists(atPath: expanded) {
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: expanded)])
+                return
+            }
+        }
+        // 3. Relative path against the shell's current working directory.
+        if !link.isEmpty, !cwd.isEmpty,
+           !link.contains("://"),
+           !link.hasPrefix("/") {
+            let candidate = (cwd as NSString).appendingPathComponent(link)
+            if FileManager.default.fileExists(atPath: candidate) {
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: candidate)])
+                return
+            }
+        }
+        // 4. Anything else: treat as a URL and let the OS pick the handler.
+        if let url = URL(string: link) {
+            NSWorkspace.shared.open(url)
         }
     }
 

@@ -32,6 +32,10 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   current branch plus `±N` files, `+X` insertions, `-Y` deletions when the
   working tree is dirty. Hidden outside git repos. Updates on `cd` and
   `git checkout` within ~1 second.
+- **Clickable links** — `⌘`-hover highlights URLs in the buffer, `⌘`-click
+  opens them. URLs go through `NSWorkspace.shared.open`; absolute or
+  relative file paths are revealed in Finder instead of being launched in
+  the default app.
 - **Open at Login** toggle.
 
 ---
