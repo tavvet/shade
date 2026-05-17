@@ -189,10 +189,14 @@ final class TerminalSession: NSObject {
         }
 
         if newRemote != nil {
-            // Mask any stale local info so the UI doesn't lie.
+            // Mask local info so the UI doesn't lie about what the user is seeing.
+            // Also clear `title` — the remote shell typically pushes its own OSC 0
+            // (e.g. "root@localhost"), and after `exit` the local shell won't reset
+            // it, so without this you'd see a stale remote title on the tab.
             if !cwd.isEmpty { cwd = "" }
             if !branch.isEmpty { branch = "" }
             if gitStatus != nil { gitStatus = nil }
+            if !title.isEmpty { title = "" }
             return
         }
 
