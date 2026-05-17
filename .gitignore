@@ -1,0 +1,10 @@
+.DS_Store
+.claude/
+.build/
+.swiftpm/
+Package.resolved
+*.xcodeproj/
+*.xcworkspace/
+build/
+DerivedData/
+Shade.app/
