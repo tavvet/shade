@@ -127,7 +127,8 @@ live shell.
 |----------------------|-------------|
 | Toggle panel         | `F12`       |
 | Hide panel           | `Esc`       |
-| Copy / Paste / Cut   | `⌘C` / `⌘V` / `⌘X` |
+| Copy / Paste         | `⌘C` / `⌘V` |
+| Cut                  | `⌘X` (terminal buffers are read-only — behaves like `⌘C`; use `⌃W` / `⌃U` / `⌃K` to edit the input line) |
 | Select all           | `⌘A`        |
 | Clear screen         | `⌘K` (Guake-style — prompt lands at the bottom, unlike the builtin `clear` which leaves it at the top) |
 | Delete word back     | `⌥⌫` (readline `backward-kill-word`) |

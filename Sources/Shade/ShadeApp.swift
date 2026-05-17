@@ -82,11 +82,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         main.addItem(appItem)
 
         // Edit menu — needed so ⌘C/V/X/A reach the responder chain.
+        // Cut is targeted at AppDelegate directly: SwiftTerm's cut(_:) is an
+        // empty stub (the buffer is read-only), and routing ⌘X through it
+        // would consume the key equivalent before our keyHandler could
+        // promote it to "copy if there's a selection."
         let editItem = NSMenuItem()
         let editMenu = NSMenu(title: "Edit")
-        editMenu.addItem(withTitle: "Cut",
-                         action: #selector(NSText.cut(_:)),
-                         keyEquivalent: "x")
+        let cutItem = editMenu.addItem(withTitle: "Cut",
+                                       action: #selector(shadeCut),
+                                       keyEquivalent: "x")
+        cutItem.target = self
         editMenu.addItem(withTitle: "Copy",
                          action: #selector(NSText.copy(_:)),
                          keyEquivalent: "c")
@@ -210,6 +215,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showAbout() {
         about.present()
     }
+
+    /// Wired to Edit → Cut. Terminal buffers are read-only, so the closest
+    /// useful behavior is "copy if there's a selection, otherwise no-op."
+    @objc private func shadeCut() {
+        guard let view = terminals.activeSession?.view,
+              let text = view.shadeSelectedText() else { return }
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+    }
 }
 
 extension AppDelegate: PanelKeyHandler {
@@ -240,6 +255,9 @@ extension AppDelegate: PanelKeyHandler {
                 // the top, which feels wrong in a drop-down).
                 clearVisibleScreen()
                 return true
+            // ⌘X is routed via the Edit menu's shadeCut item (see installMainMenu);
+            // we don't intercept it here because the main-menu dispatch wins
+            // before performKeyEquivalent is consulted on the window.
             default:
                 if let digit = Int(chars), (1...9).contains(digit) {
                     // Only consume the event when the index actually exists, otherwise
