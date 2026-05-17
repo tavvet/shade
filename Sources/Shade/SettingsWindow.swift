@@ -1,4 +1,5 @@
 import AppKit
+import KeyboardShortcuts
 import SwiftUI
 
 @MainActor
@@ -51,6 +52,10 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Hotkey") {
+                KeyboardShortcuts.Recorder("Toggle Shade", name: .toggleShade)
+            }
+
             Section("Size") {
                 fractionRow(title: "Width", value: $model.widthFraction)
                 fractionRow(title: "Height", value: $model.heightFraction)
@@ -112,7 +117,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 380, minHeight: 460)
+        .frame(minWidth: 380, minHeight: 540)
     }
 
     @ViewBuilder
@@ -135,12 +140,12 @@ final class SettingsWindowController: NSWindowController {
 
     init() {
         let hosting = NSHostingController(rootView: SettingsView(model: model))
-        hosting.preferredContentSize = NSSize(width: 420, height: 500)
+        hosting.preferredContentSize = NSSize(width: 420, height: 580)
         let window = NSWindow(contentViewController: hosting)
         window.styleMask = [.titled, .closable]
         window.title = "Shade Settings"
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 420, height: 500))
+        window.setContentSize(NSSize(width: 420, height: 580))
         super.init(window: window)
     }
 

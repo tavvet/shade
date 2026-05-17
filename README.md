@@ -13,7 +13,7 @@ Early development. MVP phase 1: single tab, F12 toggle, slide-from-top animation
 ./Scripts/run.sh     # build, then open the app
 ```
 
-Press `F12` to toggle the terminal. Press `Esc` to hide.
+Press `F12` to toggle the terminal (rebind in Settings…). Press `Esc` to hide.
 
 ## Settings
 
@@ -56,4 +56,4 @@ Changes made via the GUI (Settings… in the menu bar) apply instantly. Changes 
 - Swift 6 + SwiftUI/AppKit
 - SwiftPM for sources; custom bash script bundles the executable into `.app`
 - [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) for VT100/xterm emulation
-- Carbon `RegisterEventHotKey` for the global hotkey
+- [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) for the global hotkey + recorder UI

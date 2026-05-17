@@ -1,4 +1,5 @@
 import AppKit
+import KeyboardShortcuts
 
 @main
 enum ShadeApp {
@@ -14,7 +15,6 @@ enum ShadeApp {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
-    private let hotkey = HotkeyManager()
     private lazy var panel = DropdownPanel()
     private let terminal = TerminalSession()
     private lazy var settings = SettingsWindowController()
@@ -29,9 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: .shadePreferencesChanged,
             object: nil
         )
-        let ok = hotkey.register { [weak self] in self?.toggle() }
-        if !ok {
-            NSLog("Shade: failed to register F12 hotkey")
+        KeyboardShortcuts.onKeyDown(for: .toggleShade) { [weak self] in
+            self?.toggle()
         }
     }
 
