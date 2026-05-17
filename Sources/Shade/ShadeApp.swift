@@ -119,7 +119,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
-            button.title = "▾"
+            if let url = Bundle.main.url(forResource: "MenubarIcon", withExtension: "png"),
+               let image = NSImage(contentsOf: url) {
+                image.size = NSSize(width: 18, height: 18)
+                image.isTemplate = false   // icon is intentionally colored
+                button.image = image
+            } else {
+                button.title = "▾"
+            }
             button.toolTip = "Shade"
         }
 
