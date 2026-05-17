@@ -35,13 +35,20 @@ final class TerminalsController {
     }
 
     func closeActive() {
-        guard sessions.indices.contains(activeIndex) else { return }
-        let closing = sessions.remove(at: activeIndex)
+        close(at: activeIndex)
+    }
+
+    func close(at index: Int) {
+        guard sessions.indices.contains(index) else { return }
+        let closing = sessions.remove(at: index)
         closing.terminate()
         if sessions.isEmpty {
+            activeIndex = -1
             newSession()       // always keep at least one
         } else {
-            select(at: min(activeIndex, sessions.count - 1))
+            let newActive = min(activeIndex >= index ? activeIndex - 1 : activeIndex, sessions.count - 1)
+            activeIndex = max(0, newActive)
+            select(at: activeIndex)
         }
     }
 
@@ -57,6 +64,10 @@ final class TerminalsController {
             v.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
             v.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
         ])
+        // Resolve constraints now so SwiftTerm knows its rows before we start the shell
+        // (otherwise the first prompt lands at the top because the terminal still has its
+        // default 24-row buffer).
+        containerView.layoutSubtreeIfNeeded()
         activeIndex = index
         session.start()
         containerView.window?.makeFirstResponder(v)

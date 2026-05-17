@@ -1,5 +1,6 @@
 import AppKit
 import KeyboardShortcuts
+import SwiftUI
 
 @main
 enum ShadeApp {
@@ -21,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return p
     }()
     private let terminals = TerminalsController()
+    private lazy var tabsObservable = TabsObservable(controller: terminals)
     private lazy var settings = SettingsWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -56,7 +58,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func installTerminals() {
-        panel.contentView = terminals.containerView
+        let tabBar = TabBarView(
+            tabs: tabsObservable,
+            onSelect: { [weak self] in self?.terminals.select(at: $0) },
+            onClose: { [weak self] in self?.terminals.close(at: $0) },
+            onNew: { [weak self] in self?.terminals.newSession() }
+        )
+        let tabBarHost = NSHostingView(rootView: tabBar)
+        tabBarHost.translatesAutoresizingMaskIntoConstraints = false
+
+        let stack = NSStackView()
+        stack.orientation = .vertical
+        stack.spacing = 0
+        stack.distribution = .fill
+        stack.alignment = .leading
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.addArrangedSubview(tabBarHost)
+        stack.addArrangedSubview(terminals.containerView)
+
+        // Tab bar fixed height, terminal fills the rest, both span the full width.
+        NSLayoutConstraint.activate([
+            tabBarHost.heightAnchor.constraint(equalToConstant: 28),
+            tabBarHost.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
+            tabBarHost.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
+            terminals.containerView.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
+            terminals.containerView.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
+        ])
+
+        panel.contentView = stack
     }
 
     private func toggle() {
