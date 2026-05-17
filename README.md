@@ -132,6 +132,7 @@ live shell.
 | Select all           | `⌘A`        |
 | Clear screen         | `⌘K` (Guake-style — prompt lands at the bottom, unlike the builtin `clear` which leaves it at the top) |
 | Delete word back     | `⌥⌫` (readline `backward-kill-word`) |
+| Beginning / end of line | `Home` / `End` (translated to `⌃A` / `⌃E` so they work regardless of shell config) |
 | Extend selection (char) | `⇧←` / `⇧→` / `⇧↑` / `⇧↓` |
 | Extend selection (word) | `⌥⇧←` / `⌥⇧→` |
 | Extend selection (line edge) | `⌘⇧←` / `⌘⇧→` |

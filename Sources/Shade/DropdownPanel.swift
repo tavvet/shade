@@ -78,6 +78,10 @@ final class DropdownPanel: NSPanel {
                 handler.panelSendToActiveTerminal(bytes)
                 return
             }
+            if let bytes = homeEndBytes(for: event) {
+                handler.panelSendToActiveTerminal(bytes)
+                return
+            }
             if let (direction, byWord) = keyboardSelectionAction(for: event) {
                 handler.panelExtendKeyboardSelection(direction: direction, byWord: byWord)
                 return
@@ -102,6 +106,21 @@ final class DropdownPanel: NSPanel {
         // 51 = kVK_Delete (Backspace on Mac keyboards).
         guard event.keyCode == 51 else { return nil }
         return [0x1B, 0x7F]
+    }
+
+    /// Home / End → readline ⌃A / ⌃E. Stock SwiftTerm would send the function-key
+    /// escape (\e[H, \e[F, or \e[1~/4~ depending on mode), which only works if
+    /// the user's shell happens to bind that sequence to beginning-of-line. The
+    /// raw control byte works everywhere readline (and zle, fish, etc) is alive.
+    private func homeEndBytes(for event: NSEvent) -> [UInt8]? {
+        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        let flags = event.modifierFlags.intersection(userKeys)
+        guard flags.isEmpty else { return nil }    // shift+Home/End → selection (TODO)
+        switch event.keyCode {
+        case 115: return [0x01]   // Home → ⌃A
+        case 119: return [0x05]   // End  → ⌃E
+        default:  return nil
+        }
     }
 
     /// Shift+arrow (and ⌥⇧+arrow for word jumps) drive in-buffer keyboard selection.

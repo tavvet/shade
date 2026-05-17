@@ -187,6 +187,7 @@ struct SettingsView: View {
             .init(action: "Select all",         keys: "⌘A"),
             .init(action: "Clear (prompt → bottom)", keys: "⌘K"),
             .init(action: "Delete word back",   keys: "⌥⌫"),
+            .init(action: "Beginning / end of line", keys: "Home / End"),
             .init(action: "Extend selection",   keys: "⇧← ⇧→ ⇧↑ ⇧↓"),
             .init(action: "  by word",          keys: "⌥⇧← / ⌥⇧→"),
             .init(action: "  to line edges",    keys: "⌘⇧← / ⌘⇧→"),
