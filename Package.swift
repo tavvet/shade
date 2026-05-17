@@ -5,7 +5,8 @@ let package = Package(
     name: "Shade",
     platforms: [.macOS(.v13)],
     dependencies: [
-        .package(url: "https://github.com/migueldeicaza/SwiftTerm", from: "1.13.0"),
+        // Local fork — see Vendor/SwiftTerm. Pinned so we can expose linkHoverColor.
+        .package(path: "Vendor/SwiftTerm"),
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.4.0"),
     ],
     targets: [

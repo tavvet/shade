@@ -146,6 +146,7 @@ final class TerminalSession: NSObject {
     func apply(_ prefs: Preferences) {
         view.font = prefs.terminalFont()
         view.nativeBackgroundColor = NSColor(white: 0.08, alpha: prefs.backgroundOpacity)
+        view.linkHoverColor = NSColor.systemYellow
         view.wantsLayer = true
         view.layer?.isOpaque = false
         view.layer?.backgroundColor = NSColor.clear.cgColor

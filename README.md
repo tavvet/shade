@@ -266,7 +266,11 @@ Key design choices:
 ## Dependencies
 
 - [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) — VT100 / xterm
-  terminal emulator + local PTY shell hosting.
+  terminal emulator + local PTY shell hosting. **Vendored** under
+  `Vendor/SwiftTerm/` so we can expose `linkHoverColor` (upstream hardcodes
+  the link underline to the cell's foreground color, which is unreadable
+  on a translucent background). All other behavior is unchanged from
+  upstream.
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
   global hotkey registration with a SwiftUI recorder UI.
 

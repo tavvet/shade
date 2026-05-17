@@ -38,6 +38,10 @@ First public release.
   to the shell's CWD) are revealed in Finder instead of launched in the
   default app, sidestepping the `paramErr (-50)` you get from
   `NSWorkspace.shared.open` on a bare file path.
+- Link underline rendered in `systemYellow` instead of the cell's foreground
+  color, so it stays readable when the terminal background is translucent.
+  Required vendoring SwiftTerm to add a public `linkHoverColor` property —
+  see `Vendor/SwiftTerm/` and `THIRDPARTY.md`.
 - Shells start in `$HOME` instead of `/`.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.

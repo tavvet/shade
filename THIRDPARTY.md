@@ -9,6 +9,11 @@ permission notice.
 ## SwiftTerm
 
 - **Repository:** https://github.com/migueldeicaza/SwiftTerm
+- **Vendored:** `Vendor/SwiftTerm/` (slimmed-down: macOS sources only; tests,
+  benchmarks, fuzzer, sample app removed)
+- **Modifications:** added a public `linkHoverColor: NSColor?` on
+  `TerminalView` and used it in `Apple/AppleTerminalView.swift` to color
+  the link underline when set. Falls back to upstream behavior when nil.
 - **License:** MIT
 - **Used for:** VT100 / xterm terminal emulation and local PTY shell hosting.
 
