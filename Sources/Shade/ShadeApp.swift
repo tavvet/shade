@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let terminals = TerminalsController()
     private lazy var tabsObservable = TabsObservable(controller: terminals)
     private lazy var settings = SettingsWindowController()
+    private lazy var about = AboutWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installStatusItem()
@@ -131,6 +132,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+        menu.addItem(withTitle: "About Shade", action: #selector(showAbout), keyEquivalent: "")
+            .target = self
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
             .target = self
         menu.addItem(.separator())
@@ -147,6 +151,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettings() {
         settings.present()
+    }
+
+    @objc private func showAbout() {
+        about.present()
     }
 }
 
