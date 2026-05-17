@@ -42,6 +42,7 @@ struct BranchBadgeView: View {
                     .fill(Color.black.opacity(0.55))
                     .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
             )
+            .frame(maxWidth: 320, alignment: .trailing)
             .help("Current git branch and uncommitted changes")
             .allowsHitTesting(false)
             .padding(.top, 6)

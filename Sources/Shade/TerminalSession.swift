@@ -9,26 +9,25 @@ final class TerminalSession: NSObject {
     let view: LocalProcessTerminalView
 
     private(set) var title: String = "" {
-        didSet { notifyTitle(from: oldValue) }
+        didSet { notifyTitleChanged() }
     }
 
     private var cwd: String = "" {
         didSet {
             // CWD changes also affect displayTitle when no explicit title was set.
             guard title.isEmpty else { return }
-            notifyTitle(from: oldValue)
+            notifyTitleChanged()
         }
     }
 
     private(set) var branch: String = "" {
-        didSet { notifyTitle(from: oldValue) }
+        didSet { notifyTitleChanged() }
     }
 
     private(set) var gitStatus: GitStatus? = nil {
         didSet {
-            if oldValue != gitStatus {
-                NotificationCenter.default.post(name: Self.titleDidChange, object: self)
-            }
+            guard oldValue != gitStatus else { return }
+            notifyTitleChanged()
         }
     }
 
@@ -42,7 +41,7 @@ final class TerminalSession: NSObject {
         return shellName
     }
 
-    private func notifyTitle(from oldDisplay: String) {
+    private func notifyTitleChanged() {
         NotificationCenter.default.post(name: Self.titleDidChange, object: self)
     }
 
@@ -68,7 +67,6 @@ final class TerminalSession: NSObject {
         guard !view.process.running else { return }
         padCursorToBottom()
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-        let shellName = (shell as NSString).lastPathComponent
         view.startProcess(
             executable: shell,
             args: ["-l"],
@@ -100,8 +98,12 @@ final class TerminalSession: NSObject {
     }
 
     /// Re-read the shell's working directory and current git branch.
-    /// Called by the controller's 1 Hz polling timer.
-    func refreshContext() {
+    /// Called by the controller's polling timer. `includeGitStatus` is true only for the
+    /// active session — `git status` / `git diff` are subprocesses, and running them every
+    /// tick for every tab would be heavy in large repos. Non-active tabs' working directory
+    /// can't change without user input anyway, so their status is only refreshed when they
+    /// become active (via `select`).
+    func refreshContext(includeGitStatus: Bool) {
         guard view.process.running else { return }
         if let path = ProcessCwd.read(pid: view.process.shellPid), path != cwd {
             cwd = path
@@ -111,7 +113,7 @@ final class TerminalSession: NSObject {
             branch = newBranch
         }
 
-        // Git status is potentially slow; run it off the main thread.
+        guard includeGitStatus else { return }
         let pathSnapshot = cwd
         let inRepo = !branch.isEmpty
         Task.detached(priority: .utility) { [weak self] in

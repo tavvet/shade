@@ -9,8 +9,10 @@ struct GitStatus: Equatable {
     var isClean: Bool { filesChanged == 0 && insertions == 0 && deletions == 0 }
 }
 
-/// Best-effort git branch lookup for a given working directory.
-/// Branch is read directly from `.git/HEAD` (no subprocess); diff stats use `git`.
+/// Git introspection helpers for a working directory.
+/// Branch is read directly from `.git/HEAD` (no subprocess, fast). Working-tree status
+/// uses the real `git` binary because reproducing porcelain output ourselves would mean
+/// re-implementing index/diff logic.
 enum GitInfo {
     /// Returns the branch name, or a 7-char SHA prefix for detached HEAD, or nil if the
     /// directory is not inside a git repository.
@@ -105,8 +107,3 @@ enum GitInfo {
     }
 }
 
-private extension Character {
-    var isHexDigit: Bool {
-        ("0"..."9").contains(self) || ("a"..."f").contains(self) || ("A"..."F").contains(self)
-    }
-}

@@ -82,6 +82,10 @@ struct SettingsView: View {
                 KeyboardShortcuts.Recorder("Toggle Shade", name: .toggleShade)
             }
 
+            Section("Keyboard Shortcuts") {
+                ShortcutsList()
+            }
+
             Section("Size") {
                 fractionRow(title: "Width", value: $model.widthFraction)
                 fractionRow(title: "Height", value: $model.heightFraction)
@@ -148,6 +152,40 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(minWidth: 540, minHeight: 540)
+    }
+
+    private struct ShortcutsList: View {
+        private struct Row: Identifiable {
+            let id = UUID()
+            let action: String
+            let keys: String
+        }
+
+        private let rows: [Row] = [
+            .init(action: "Toggle panel",       keys: "set above (default F12)"),
+            .init(action: "Hide panel",         keys: "Esc"),
+            .init(action: "New tab",            keys: "⌘T"),
+            .init(action: "Close tab",          keys: "⌘W"),
+            .init(action: "Switch to tab N",    keys: "⌘1 – ⌘9"),
+            .init(action: "Next tab",           keys: "⌃Tab"),
+            .init(action: "Previous tab",       keys: "⌃⇧Tab"),
+            .init(action: "Settings",           keys: "⌘, (from menu)"),
+            .init(action: "Quit",               keys: "⌘Q (from menu)"),
+        ]
+
+        var body: some View {
+            VStack(spacing: 4) {
+                ForEach(rows) { row in
+                    HStack {
+                        Text(row.action)
+                        Spacer()
+                        Text(row.keys)
+                            .foregroundStyle(.secondary)
+                            .monospaced()
+                    }
+                }
+            }
+        }
     }
 
     @ViewBuilder

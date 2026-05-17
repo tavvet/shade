@@ -75,9 +75,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Floating git-branch badge above the terminal area.
         let badgeHost = NSHostingView(rootView: BranchBadgeView(tabs: tabsObservable))
         badgeHost.translatesAutoresizingMaskIntoConstraints = false
-        badgeHost.isHidden = false
 
-        // Container that overlays the badge on top of the terminal stack of sessions.
+        // Container that overlays the badge on top of the active terminal view.
         let terminalOverlay = NSView()
         terminalOverlay.translatesAutoresizingMaskIntoConstraints = false
         terminalOverlay.addSubview(terminals.containerView)
@@ -95,7 +94,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         stack.orientation = .vertical
         stack.spacing = 0
         stack.distribution = .fill
-        stack.alignment = .leading
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.addArrangedSubview(terminalOverlay)
         stack.addArrangedSubview(tabBarHost)
@@ -116,53 +114,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.isVisible, let view = terminals.activeSession?.view {
             panel.makeFirstResponder(view)
         }
-    }
-
-}
-
-extension AppDelegate: PanelKeyHandler {
-    /// Tab shortcuts follow the macOS convention used by iTerm2/Terminal/Safari/Chrome.
-    /// ⌘-keys are safe — shell uses ⌃-combinations.
-    func panelHandleKey(_ event: NSEvent) -> Bool {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let cmd: NSEvent.ModifierFlags = [.command]
-        let ctrl: NSEvent.ModifierFlags = [.control]
-        let ctrlShift: NSEvent.ModifierFlags = [.control, .shift]
-        let chars = event.charactersIgnoringModifiers ?? ""
-
-        // Tab key has its own keyCode (48) and `chars` is `\t`.
-        let isTab = event.keyCode == 48
-
-        if flags == cmd {
-            switch chars.lowercased() {
-            case "t":
-                terminals.newSession()
-                return true
-            case "w":
-                terminals.closeActive()
-                return true
-            default:
-                if let digit = Int(chars), (1...9).contains(digit) {
-                    terminals.select(at: digit - 1)
-                    return true
-                }
-            }
-        }
-
-        if isTab && flags == ctrl {
-            terminals.selectNext()
-            return true
-        }
-        if isTab && flags == ctrlShift {
-            terminals.selectPrev()
-            return true
-        }
-
-        return false
-    }
-
-    func panelSendToActiveTerminal(_ bytes: [UInt8]) {
-        terminals.activeSession?.view.send(bytes)
     }
 
     private func installStatusItem() {
@@ -189,5 +140,57 @@ extension AppDelegate: PanelKeyHandler {
 
     @objc private func showSettings() {
         settings.present()
+    }
+}
+
+extension AppDelegate: PanelKeyHandler {
+    /// Tab shortcuts follow the macOS convention used by iTerm2/Terminal/Safari/Chrome.
+    /// ⌘-keys are safe — shell uses ⌃-combinations.
+    func panelHandleKey(_ event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let cmd: NSEvent.ModifierFlags = [.command]
+        let ctrl: NSEvent.ModifierFlags = [.control]
+        let ctrlShift: NSEvent.ModifierFlags = [.control, .shift]
+        let chars = event.charactersIgnoringModifiers ?? ""
+
+        // Tab key has its own keyCode (48) and `chars` is `\t`.
+        let isTab = event.keyCode == 48
+
+        if flags == cmd {
+            switch chars.lowercased() {
+            case "t":
+                terminals.newSession()
+                return true
+            case "w":
+                terminals.closeActive()
+                return true
+            default:
+                if let digit = Int(chars), (1...9).contains(digit) {
+                    // Only consume the event when the index actually exists, otherwise
+                    // the keystroke silently disappears (e.g. ⌘5 with only 3 tabs).
+                    let target = digit - 1
+                    if terminals.sessions.indices.contains(target) {
+                        terminals.select(at: target)
+                        return true
+                    }
+                    return false
+                }
+            }
+        }
+
+        if isTab && flags == ctrl {
+            terminals.selectNext()
+            return true
+        }
+        if isTab && flags == ctrlShift {
+            terminals.selectPrev()
+            return true
+        }
+
+        return false
+    }
+
+    func panelSendToActiveTerminal(_ bytes: [UInt8]) {
+        terminals.activeSession?.view.send(bytes)
     }
 }

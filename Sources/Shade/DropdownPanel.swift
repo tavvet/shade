@@ -99,7 +99,11 @@ final class DropdownPanel: NSPanel {
         setFrame(hiddenFrame, display: false)
         orderFrontRegardless()
         makeKey()
-        NSApp.activate(ignoringOtherApps: true)
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
         setFrame(finalFrame, display: true, animate: true)
     }
 

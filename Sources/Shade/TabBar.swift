@@ -10,7 +10,7 @@ final class TabsObservable: ObservableObject {
     }
 
     @Published private(set) var tabs: [TabInfo] = []
-    @Published private(set) var activeIndex: Int = 0
+    @Published private(set) var activeIndex: Int = -1
     @Published private(set) var activeBranch: String = ""
     @Published private(set) var activeStatus: GitStatus? = nil
 

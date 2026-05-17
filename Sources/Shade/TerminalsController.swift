@@ -22,7 +22,11 @@ final class TerminalsController {
     private func startCwdPolling() {
         cwdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                self?.sessions.forEach { $0.refreshContext() }
+                guard let self else { return }
+                let activeIdx = self.activeIndex
+                for (i, session) in self.sessions.enumerated() {
+                    session.refreshContext(includeGitStatus: i == activeIdx)
+                }
             }
         }
     }
@@ -38,8 +42,8 @@ final class TerminalsController {
 
     @discardableResult
     func newSession() -> TerminalSession {
+        // TerminalSession.init already calls apply(Preferences.load()).
         let session = TerminalSession()
-        session.apply(Preferences.load())
         sessions.append(session)
         select(at: sessions.count - 1)
         return session
@@ -81,6 +85,9 @@ final class TerminalsController {
         containerView.layoutSubtreeIfNeeded()
         activeIndex = index
         session.start()
+        // Refresh status now so the badge picks up the newly-active session's repo
+        // without waiting for the next polling tick.
+        session.refreshContext(includeGitStatus: true)
         containerView.window?.makeFirstResponder(v)
         NotificationCenter.default.post(name: Self.tabsChanged, object: self)
     }
