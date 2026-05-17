@@ -8,6 +8,7 @@ APP_NAME="Shade"
 APP_DIR="build/${APP_NAME}.app"
 CONTENTS="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS}/MacOS"
+RESOURCES_DIR="${CONTENTS}/Resources"
 
 echo "→ swift build -c ${CONFIG}"
 swift build -c "${CONFIG}"
@@ -22,11 +23,26 @@ fi
 
 echo "→ bundling ${APP_DIR}"
 rm -rf "${APP_DIR}"
-mkdir -p "${MACOS_DIR}"
+mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}"
 cp "${EXECUTABLE}" "${MACOS_DIR}/${APP_NAME}"
 cp Resources/Info.plist "${CONTENTS}/Info.plist"
 
-# Ad-hoc sign so the app can request system permissions cleanly.
-codesign --force --sign - "${APP_DIR}" >/dev/null
+# Copy app icon if one has been built. Resources/AppIcon.icns is .gitignored;
+# generate it once via `./Scripts/make-icon.sh path/to/icon.png`.
+if [[ -f Resources/AppIcon.icns ]]; then
+    cp Resources/AppIcon.icns "${RESOURCES_DIR}/AppIcon.icns"
+fi
+
+# Code-sign: real Developer ID if provided, otherwise ad-hoc.
+# Pass DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)" to sign for distribution.
+SIGN_IDENTITY="${DEVELOPER_ID:--}"
+if [[ "${SIGN_IDENTITY}" == "-" ]]; then
+    echo "→ ad-hoc signing"
+    codesign --force --sign - "${APP_DIR}" >/dev/null
+else
+    echo "→ signing with ${SIGN_IDENTITY}"
+    codesign --force --options runtime --timestamp \
+        --sign "${SIGN_IDENTITY}" "${APP_DIR}"
+fi
 
 echo "✓ built ${APP_DIR}"

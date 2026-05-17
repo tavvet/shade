@@ -1,0 +1,59 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build .app bundle
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build Shade.app (ad-hoc signed)
+        run: ./Scripts/build.sh
+
+      - name: Zip artifact
+        run: |
+          cd build
+          ditto -c -k --sequesterRsrc --keepParent Shade.app Shade.app.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shade.app
+          path: build/Shade.app.zip
+          if-no-files-found: error
+
+  release:
+    name: Attach build to GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Shade.app
+          path: ./artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ./artifacts/Shade.app.zip
+          draft: true
+          generate_release_notes: true
