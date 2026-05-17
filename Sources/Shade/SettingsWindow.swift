@@ -85,7 +85,7 @@ struct SettingsView: View {
 
                 HStack {
                     Text("Size")
-                        .frame(width: 56, alignment: .leading)
+                        .frame(width: 76, alignment: .leading)
                     Slider(value: $model.fontSize, in: 9...22, step: 1)
                     Text("\(Int(model.fontSize)) pt")
                         .monospacedDigit()
@@ -95,7 +95,7 @@ struct SettingsView: View {
 
                 HStack {
                     Text("Opacity")
-                        .frame(width: 56, alignment: .leading)
+                        .frame(width: 76, alignment: .leading)
                     Slider(value: $model.backgroundOpacity, in: 0.3...1.0, step: 0.05)
                     Text("\(Int((model.backgroundOpacity * 100).rounded()))%")
                         .monospacedDigit()
@@ -107,7 +107,7 @@ struct SettingsView: View {
             Section("Animation") {
                 HStack {
                     Text("Slide")
-                        .frame(width: 56, alignment: .leading)
+                        .frame(width: 76, alignment: .leading)
                     Slider(value: $model.animationDuration, in: 0.0...0.5, step: 0.02)
                     Text("\(Int((model.animationDuration * 1000).rounded())) ms")
                         .monospacedDigit()
@@ -117,14 +117,14 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 380, minHeight: 540)
+        .frame(minWidth: 540, minHeight: 540)
     }
 
     @ViewBuilder
     private func fractionRow(title: String, value: Binding<Double>) -> some View {
         HStack {
             Text(title)
-                .frame(width: 56, alignment: .leading)
+                .frame(width: 76, alignment: .leading)
             Slider(value: value, in: 0.1...1.0, step: 0.05)
             Text("\(Int((value.wrappedValue * 100).rounded()))%")
                 .monospacedDigit()
@@ -140,12 +140,12 @@ final class SettingsWindowController: NSWindowController {
 
     init() {
         let hosting = NSHostingController(rootView: SettingsView(model: model))
-        hosting.preferredContentSize = NSSize(width: 420, height: 580)
+        hosting.preferredContentSize = NSSize(width: 580, height: 580)
         let window = NSWindow(contentViewController: hosting)
-        window.styleMask = [.titled, .closable]
+        window.styleMask = [.titled, .closable, .resizable]
         window.title = "Shade Settings"
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 420, height: 580))
+        window.setContentSize(NSSize(width: 580, height: 580))
         super.init(window: window)
     }
 
