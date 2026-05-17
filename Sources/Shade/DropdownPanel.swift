@@ -47,15 +47,23 @@ final class DropdownPanel: NSPanel {
         return super.performKeyEquivalent(with: event)
     }
 
-    /// Intercept keyDown so we can translate Control+letter into the canonical control byte
-    /// regardless of the current keyboard layout (otherwise SwiftTerm applies the control
-    /// mask to whatever Cyrillic/Greek/etc character is produced, which the shell can't parse).
+    /// Intercept keyDown so we can:
+    /// * Translate Control+letter into the canonical control byte regardless of the
+    ///   current keyboard layout (otherwise SwiftTerm applies the control mask to whatever
+    ///   Cyrillic/Greek/etc character is produced, which the shell can't parse).
+    /// * Translate Option+Delete into the readline backward-kill-word escape (`ESC DEL`),
+    ///   which Terminal.app sends by default. Other Option+key combinations are left alone
+    ///   so SwiftTerm can still produce ´/©/etc.
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown,
-           let handler = keyHandler,
-           let bytes = controlBytes(for: event) {
-            handler.panelSendToActiveTerminal(bytes)
-            return
+        if event.type == .keyDown, let handler = keyHandler {
+            if let bytes = controlBytes(for: event) {
+                handler.panelSendToActiveTerminal(bytes)
+                return
+            }
+            if let bytes = optionDeleteBytes(for: event) {
+                handler.panelSendToActiveTerminal(bytes)
+                return
+            }
         }
         super.sendEvent(event)
     }
@@ -67,6 +75,15 @@ final class DropdownPanel: NSPanel {
         guard flags == control || flags == controlShift else { return nil }
         guard let byte = KeyCodes.controlByte(forKeyCode: event.keyCode) else { return nil }
         return [byte]
+    }
+
+    /// Option+Delete → ESC DEL (readline backward-kill-word).
+    private func optionDeleteBytes(for event: NSEvent) -> [UInt8]? {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags == [.option] else { return nil }
+        // 51 = kVK_Delete (Backspace on Mac keyboards).
+        guard event.keyCode == 51 else { return nil }
+        return [0x1B, 0x7F]
     }
 
     override func animationResizeTime(_ newWindow: NSRect) -> TimeInterval {

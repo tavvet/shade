@@ -53,6 +53,10 @@ First public release.
   still need the dispatch table). Installing a small Edit menu wires
   copy/paste/cut/select-all to SwiftTerm's existing responder-chain
   handlers.
+- `⌥⌫` deletes the previous word (sends `ESC DEL`, matching
+  Terminal.app and readline's `backward-kill-word`). Other Option+key
+  combinations are left alone so SwiftTerm can still produce `´` / `©`
+  / etc.
 - Shells start in `$HOME` instead of `/`.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.

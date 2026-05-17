@@ -106,6 +106,7 @@ live shell.
 | Hide panel           | `Esc`       |
 | Copy / Paste / Cut   | `⌘C` / `⌘V` / `⌘X` |
 | Select all           | `⌘A`        |
+| Delete word back     | `⌥⌫` (readline `backward-kill-word`) |
 | Open link / file     | `⌘`-click (URLs go to the default browser, file paths reveal in Finder) |
 | Open Settings        | `⌘,`        |
 | Quit Shade           | `⌘Q`        |
