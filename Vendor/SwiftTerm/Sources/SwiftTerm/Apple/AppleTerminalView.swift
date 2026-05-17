@@ -457,10 +457,21 @@ extension TerminalView {
         if flags.contains (.dim) {
             fgColor = fgColor.dimmedColor (towards: bgColor)
         }
+        #if os(macOS)
+        let effectiveBgColor: NSColor = {
+            guard withUrl, let highlight = self.linkHoverColor else { return bgColor }
+            // 35% highlight mixed onto the cell's normal background — enough to read as
+            // a "link is here" cue, not so much it drowns the foreground text.
+            return bgColor.blended(withFraction: 0.35, of: highlight) ?? bgColor
+        }()
+        #else
+        let effectiveBgColor = bgColor
+        #endif
+
         var nsattr: [NSAttributedString.Key:Any] = [
             .font: tf,
             .foregroundColor: fgColor,
-            .backgroundColor: bgColor
+            .backgroundColor: effectiveBgColor
         ]
         if flags.contains (.underline) {
             let underlineColor = attribute.underlineColor.map {

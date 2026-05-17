@@ -12,6 +12,7 @@ struct Preferences {
     var fontName: String              // "" = system monospaced
     var backgroundOpacity: Double     // 0.3 – 1.0
     var animationDuration: Double     // 0.0 – 0.5 seconds
+    var linkHighlightHex: String      // 6-char RRGGBB; falls back to systemYellow if invalid
 
     enum HorizontalAlignment: String {
         case left, center, right
@@ -30,7 +31,8 @@ struct Preferences {
         fontSize: 13,
         fontName: "",
         backgroundOpacity: 0.94,
-        animationDuration: 0.16
+        animationDuration: 0.16,
+        linkHighlightHex: "FFCC00"      // ≈ NSColor.systemYellow
     )
 
     static func load(from store: UserDefaults = .standard) -> Preferences {
@@ -61,6 +63,10 @@ struct Preferences {
         if store.object(forKey: Key.animationDuration) != nil {
             prefs.animationDuration = min(max(store.double(forKey: Key.animationDuration), 0.0), 0.5)
         }
+        if let raw = store.string(forKey: Key.linkHighlightHex),
+           Self.parseHex(raw) != nil {
+            prefs.linkHighlightHex = Self.normalize(hex: raw)
+        }
         return prefs
     }
 
@@ -73,6 +79,27 @@ struct Preferences {
         static let fontName = "fontName"
         static let backgroundOpacity = "backgroundOpacity"
         static let animationDuration = "animationDuration"
+        static let linkHighlightHex = "linkHighlightHex"
+    }
+
+    /// Parses a 6-char `RRGGBB` (with or without leading `#`) into an NSColor.
+    /// Returns nil for any other shape — caller should fall back to a default.
+    static func parseHex(_ raw: String) -> NSColor? {
+        var s = raw.uppercased()
+        if s.hasPrefix("#") { s.removeFirst() }
+        guard s.count == 6, let value = UInt32(s, radix: 16) else { return nil }
+        return NSColor(
+            red:   CGFloat((value >> 16) & 0xFF) / 255.0,
+            green: CGFloat((value >> 8)  & 0xFF) / 255.0,
+            blue:  CGFloat( value        & 0xFF) / 255.0,
+            alpha: 1.0
+        )
+    }
+
+    private static func normalize(hex: String) -> String {
+        var s = hex.uppercased()
+        if s.hasPrefix("#") { s.removeFirst() }
+        return s
     }
 
     private static func clampFraction(_ value: Double) -> CGFloat {
@@ -110,6 +137,10 @@ extension Preferences {
             return font
         }
         return NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+    }
+
+    func linkHighlightColor() -> NSColor {
+        Self.parseHex(linkHighlightHex) ?? .systemYellow
     }
 }
 

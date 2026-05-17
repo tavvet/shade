@@ -42,6 +42,11 @@ First public release.
   color, so it stays readable when the terminal background is translucent.
   Required vendoring SwiftTerm to add a public `linkHoverColor` property —
   see `Vendor/SwiftTerm/` and `THIRDPARTY.md`.
+- Color picker in Settings → Appearance for the link highlight (also tints
+  the cells under the hovered link). Stored as `linkHighlightHex` in
+  `defaults`. Settings briefly switches the app to `.regular` activation
+  while open so `NSColorPanel` actually shows (LSUIElement / `.accessory`
+  apps otherwise can't surface it).
 - Shells start in `$HOME` instead of `/`.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.

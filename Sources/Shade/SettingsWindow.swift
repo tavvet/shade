@@ -13,6 +13,7 @@ final class SettingsModel: ObservableObject {
     @Published var fontName: String               { didSet { save() } }
     @Published var backgroundOpacity: Double      { didSet { save() } }
     @Published var animationDuration: Double      { didSet { save() } }
+    @Published var linkHighlightColor: Color      { didSet { save() } }
     @Published var openAtLogin: Bool {
         didSet {
             guard oldValue != openAtLogin, !suppressOpenAtLoginWrite else { return }
@@ -32,6 +33,7 @@ final class SettingsModel: ObservableObject {
         fontName = prefs.fontName
         backgroundOpacity = prefs.backgroundOpacity
         animationDuration = prefs.animationDuration
+        linkHighlightColor = Color(nsColor: prefs.linkHighlightColor())
         openAtLogin = SMAppService.mainApp.status == .enabled
     }
 
@@ -61,7 +63,16 @@ final class SettingsModel: ObservableObject {
         store.set(fontName, forKey: Preferences.Key.fontName)
         store.set(backgroundOpacity, forKey: Preferences.Key.backgroundOpacity)
         store.set(animationDuration, forKey: Preferences.Key.animationDuration)
+        store.set(Self.hexString(from: linkHighlightColor), forKey: Preferences.Key.linkHighlightHex)
         NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+    }
+
+    private static func hexString(from color: Color) -> String {
+        let ns = NSColor(color).usingColorSpace(.sRGB) ?? NSColor(color)
+        let r = Int(round(ns.redComponent * 255))
+        let g = Int(round(ns.greenComponent * 255))
+        let b = Int(round(ns.blueComponent * 255))
+        return String(format: "%02X%02X%02X", r, g, b)
     }
 }
 
@@ -132,6 +143,8 @@ struct SettingsView: View {
                         .frame(width: 44, alignment: .trailing)
                         .foregroundStyle(.secondary)
                 }
+
+                ColorPicker("Link highlight", selection: $model.linkHighlightColor, supportsOpacity: false)
             }
 
             Section("Startup") {
@@ -203,7 +216,7 @@ struct SettingsView: View {
 }
 
 @MainActor
-final class SettingsWindowController: NSWindowController {
+final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let model = SettingsModel()
 
     init() {
@@ -215,15 +228,48 @@ final class SettingsWindowController: NSWindowController {
         window.isReleasedWhenClosed = false
         window.setContentSize(NSSize(width: 580, height: 580))
         super.init(window: window)
+        window.delegate = self
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("SettingsWindowController is not Storyboard-loadable") }
 
     func present() {
+        // Switch from .accessory to .regular while the Settings window is open so that
+        // system panels (notably NSColorPanel used by SwiftUI's ColorPicker) actually
+        // open — they refuse to show for LSUIElement / .accessory apps.
+        NSApp.setActivationPolicy(.regular)
         showWindow(nil)
         window?.center()
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        positionColorPanelNearSettings()
+    }
+
+    /// Without nudging it, NSColorPanel opens in the bottom-left of the active screen
+    /// the first time it's used. Position it next to the Settings window instead.
+    private func positionColorPanelNearSettings() {
+        let panel = NSColorPanel.shared   // touching `.shared` creates the panel if needed
+        guard let settingsFrame = window?.frame, let screen = NSScreen.main else {
+            panel.center()
+            return
+        }
+        let panelSize = panel.frame.size
+        var origin = NSPoint(
+            x: settingsFrame.maxX + 20,
+            y: settingsFrame.midY - panelSize.height / 2
+        )
+        // If we'd overflow the right edge of the visible screen, fall back to the left.
+        let visible = screen.visibleFrame
+        if origin.x + panelSize.width > visible.maxX {
+            origin.x = max(visible.minX, settingsFrame.minX - panelSize.width - 20)
+        }
+        // Keep within vertical bounds too.
+        origin.y = min(max(origin.y, visible.minY), visible.maxY - panelSize.height)
+        panel.setFrameOrigin(origin)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        NSApp.setActivationPolicy(.accessory)
     }
 }

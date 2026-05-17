@@ -107,6 +107,34 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(font.familyName, "Menlo")
         XCTAssertEqual(font.pointSize, 12)
     }
+
+    func testParseHexAcceptsSixCharStringWithOrWithoutHash() {
+        let a = Preferences.parseHex("FFCC00")
+        let b = Preferences.parseHex("#ffcc00")
+        XCTAssertNotNil(a)
+        XCTAssertNotNil(b)
+        let target = NSColor(red: 1, green: 0.8, blue: 0, alpha: 1)
+        for color in [a!, b!] {
+            let srgb = color.usingColorSpace(.sRGB)!
+            XCTAssertEqual(Double(srgb.redComponent),   1.0, accuracy: 0.01)
+            XCTAssertEqual(Double(srgb.greenComponent), 0.8, accuracy: 0.01)
+            XCTAssertEqual(Double(srgb.blueComponent),  0.0, accuracy: 0.01)
+            _ = target  // silence unused
+        }
+    }
+
+    func testParseHexRejectsBadInput() {
+        XCTAssertNil(Preferences.parseHex(""))
+        XCTAssertNil(Preferences.parseHex("12345"))    // too short
+        XCTAssertNil(Preferences.parseHex("ZZZZZZ"))   // not hex
+        XCTAssertNil(Preferences.parseHex("FFCC0000")) // too long (no alpha support)
+    }
+
+    func testLinkHighlightColorFallsBackForGarbageInput() {
+        var prefs = Preferences.defaults
+        prefs.linkHighlightHex = "not-a-color"
+        XCTAssertEqual(prefs.linkHighlightColor(), NSColor.systemYellow)
+    }
 }
 
 /// Lets us hand a known visibleFrame to dropdownFrame(on:) without instantiating NSScreen.
