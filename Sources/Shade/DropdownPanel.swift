@@ -4,6 +4,8 @@ import AppKit
 protocol PanelKeyHandler: AnyObject {
     /// Return true if the event was handled and should not propagate.
     func panelHandleKey(_ event: NSEvent) -> Bool
+    /// Forward raw bytes to the currently active terminal session (PTY input).
+    func panelSendToActiveTerminal(_ bytes: [UInt8])
 }
 
 /// Borderless panel that slides down from the top of the screen.
@@ -43,6 +45,28 @@ final class DropdownPanel: NSPanel {
             return true
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    /// Intercept keyDown so we can translate Control+letter into the canonical control byte
+    /// regardless of the current keyboard layout (otherwise SwiftTerm applies the control
+    /// mask to whatever Cyrillic/Greek/etc character is produced, which the shell can't parse).
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown,
+           let handler = keyHandler,
+           let bytes = controlBytes(for: event) {
+            handler.panelSendToActiveTerminal(bytes)
+            return
+        }
+        super.sendEvent(event)
+    }
+
+    private func controlBytes(for event: NSEvent) -> [UInt8]? {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let control: NSEvent.ModifierFlags = [.control]
+        let controlShift: NSEvent.ModifierFlags = [.control, .shift]
+        guard flags == control || flags == controlShift else { return nil }
+        guard let byte = KeyCodes.controlByte(forKeyCode: event.keyCode) else { return nil }
+        return [byte]
     }
 
     override func animationResizeTime(_ newWindow: NSRect) -> TimeInterval {

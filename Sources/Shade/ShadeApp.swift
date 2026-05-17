@@ -143,6 +143,10 @@ extension AppDelegate: PanelKeyHandler {
         return false
     }
 
+    func panelSendToActiveTerminal(_ bytes: [UInt8]) {
+        terminals.activeSession?.view.send(bytes)
+    }
+
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
