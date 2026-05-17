@@ -28,6 +28,10 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). Free for personal use.
   panel's height.
 - **Layout-agnostic shortcuts** — Control+letter shortcuts (`⌃R`, `⌃A`, `⌃E`,
   `⌃W`, …) work correctly on Cyrillic / Greek / non-Latin keyboard layouts.
+- **Git badge** — floating pill in the top-right of the terminal shows the
+  current branch plus `±N` files, `+X` insertions, `-Y` deletions when the
+  working tree is dirty. Hidden outside git repos. Updates on `cd` and
+  `git checkout` within ~1 second.
 - **Open at Login** toggle.
 
 ---
@@ -214,7 +218,9 @@ executable directly (e.g. for debugging) rather than via the `.app` bundle.
 ```
 Sources/Shade/
 ├── ShadeApp.swift           @main + AppDelegate (menu bar, hotkey, panel wiring)
+├── BranchBadge.swift        Floating git branch + status pill (SwiftUI)
 ├── DropdownPanel.swift      NSPanel: borderless, floating, slide-in animation
+├── GitInfo.swift            Branch from .git/HEAD, status via git subprocess
 ├── HotkeyManager → removed (replaced by KeyboardShortcuts library)
 ├── Hotkeys.swift            KeyboardShortcuts.Name declarations (toggleShade)
 ├── KeyCodes.swift           Layout-agnostic keyCode → ASCII mapping

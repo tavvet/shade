@@ -11,6 +11,8 @@ final class TabsObservable: ObservableObject {
 
     @Published private(set) var tabs: [TabInfo] = []
     @Published private(set) var activeIndex: Int = 0
+    @Published private(set) var activeBranch: String = ""
+    @Published private(set) var activeStatus: GitStatus? = nil
 
     private weak var controller: TerminalsController?
 
@@ -36,6 +38,8 @@ final class TabsObservable: ObservableObject {
             TabInfo(id: idx, label: Self.formatLabel(index: idx, title: session.displayTitle))
         }
         activeIndex = controller.activeIndex
+        activeBranch = controller.activeSession?.branch ?? ""
+        activeStatus = controller.activeSession?.gitStatus
     }
 
     private static func formatLabel(index: Int, title: String) -> String {

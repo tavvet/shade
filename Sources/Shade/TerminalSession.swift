@@ -20,9 +20,22 @@ final class TerminalSession: NSObject {
         }
     }
 
+    private(set) var branch: String = "" {
+        didSet { notifyTitle(from: oldValue) }
+    }
+
+    private(set) var gitStatus: GitStatus? = nil {
+        didSet {
+            if oldValue != gitStatus {
+                NotificationCenter.default.post(name: Self.titleDidChange, object: self)
+            }
+        }
+    }
+
     let shellName: String
 
-    /// What the tab bar shows: shell-provided title, else CWD (abbreviated), else shell name.
+    /// What the tab bar shows: shell-provided title or abbreviated CWD or shell name.
+    /// The git branch is rendered separately as a floating badge over the terminal.
     var displayTitle: String {
         if !title.isEmpty { return title }
         if !cwd.isEmpty   { return abbreviateHome(cwd) }
@@ -86,11 +99,27 @@ final class TerminalSession: NSObject {
         }
     }
 
-    /// Re-read the shell's working directory; called by the controller's polling timer.
-    func refreshCwd() {
+    /// Re-read the shell's working directory and current git branch.
+    /// Called by the controller's 1 Hz polling timer.
+    func refreshContext() {
         guard view.process.running else { return }
         if let path = ProcessCwd.read(pid: view.process.shellPid), path != cwd {
             cwd = path
+        }
+        let newBranch = cwd.isEmpty ? "" : (GitInfo.branch(forCwd: cwd) ?? "")
+        if newBranch != branch {
+            branch = newBranch
+        }
+
+        // Git status is potentially slow; run it off the main thread.
+        let pathSnapshot = cwd
+        let inRepo = !branch.isEmpty
+        Task.detached(priority: .utility) { [weak self] in
+            let status: GitStatus? = inRepo ? GitInfo.status(forCwd: pathSnapshot) : nil
+            await MainActor.run {
+                guard let self else { return }
+                self.gitStatus = status
+            }
         }
     }
 }

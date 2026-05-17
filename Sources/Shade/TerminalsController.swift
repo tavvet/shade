@@ -22,7 +22,7 @@ final class TerminalsController {
     private func startCwdPolling() {
         cwdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                self?.sessions.forEach { $0.refreshCwd() }
+                self?.sessions.forEach { $0.refreshContext() }
             }
         }
     }

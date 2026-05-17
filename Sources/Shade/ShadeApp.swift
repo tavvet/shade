@@ -72,22 +72,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let tabBarHost = NSHostingView(rootView: tabBar)
         tabBarHost.translatesAutoresizingMaskIntoConstraints = false
 
+        // Floating git-branch badge above the terminal area.
+        let badgeHost = NSHostingView(rootView: BranchBadgeView(tabs: tabsObservable))
+        badgeHost.translatesAutoresizingMaskIntoConstraints = false
+        badgeHost.isHidden = false
+
+        // Container that overlays the badge on top of the terminal stack of sessions.
+        let terminalOverlay = NSView()
+        terminalOverlay.translatesAutoresizingMaskIntoConstraints = false
+        terminalOverlay.addSubview(terminals.containerView)
+        terminalOverlay.addSubview(badgeHost)
+        NSLayoutConstraint.activate([
+            terminals.containerView.topAnchor.constraint(equalTo: terminalOverlay.topAnchor),
+            terminals.containerView.bottomAnchor.constraint(equalTo: terminalOverlay.bottomAnchor),
+            terminals.containerView.leadingAnchor.constraint(equalTo: terminalOverlay.leadingAnchor),
+            terminals.containerView.trailingAnchor.constraint(equalTo: terminalOverlay.trailingAnchor),
+            badgeHost.topAnchor.constraint(equalTo: terminalOverlay.topAnchor),
+            badgeHost.trailingAnchor.constraint(equalTo: terminalOverlay.trailingAnchor),
+        ])
+
         let stack = NSStackView()
         stack.orientation = .vertical
         stack.spacing = 0
         stack.distribution = .fill
         stack.alignment = .leading
         stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.addArrangedSubview(terminals.containerView)
+        stack.addArrangedSubview(terminalOverlay)
         stack.addArrangedSubview(tabBarHost)
 
-        // Tab bar fixed height, terminal fills the rest, both span the full width.
         NSLayoutConstraint.activate([
             tabBarHost.heightAnchor.constraint(equalToConstant: 28),
             tabBarHost.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
             tabBarHost.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
-            terminals.containerView.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
-            terminals.containerView.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
+            terminalOverlay.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
+            terminalOverlay.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
         ])
 
         panel.contentView = stack
