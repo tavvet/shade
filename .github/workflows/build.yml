@@ -30,16 +30,14 @@ jobs:
       - name: Build Shade.app (ad-hoc signed)
         run: ./Scripts/build.sh
 
-      - name: Zip artifact
-        run: |
-          cd build
-          ditto -c -k --sequesterRsrc --keepParent Shade.app Shade.app.zip
+      - name: Build Shade.dmg
+        run: ./Scripts/make-dmg.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Shade.app
-          path: build/Shade.app.zip
+          name: Shade.dmg
+          path: build/Shade.dmg
           if-no-files-found: error
 
   release:
@@ -52,11 +50,11 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Shade.app
+          name: Shade.dmg
           path: ./artifacts
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: ./artifacts/Shade.app.zip
+          files: ./artifacts/Shade.dmg
           draft: true
           generate_release_notes: true
