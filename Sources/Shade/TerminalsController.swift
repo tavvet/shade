@@ -12,8 +12,19 @@ final class TerminalsController {
     /// Posted whenever the tab set or selection changes (for the future tab bar UI).
     static let tabsChanged = Notification.Name("ShadeTerminalsTabsChanged")
 
+    private var cwdTimer: Timer?
+
     init() {
         containerView.translatesAutoresizingMaskIntoConstraints = false
+        startCwdPolling()
+    }
+
+    private func startCwdPolling() {
+        cwdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.sessions.forEach { $0.refreshCwd() }
+            }
+        }
     }
 
     var activeSession: TerminalSession? {

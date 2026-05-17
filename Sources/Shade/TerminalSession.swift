@@ -4,9 +4,45 @@ import SwiftTerm
 /// Thin wrapper around SwiftTerm's LocalProcessTerminalView that owns one shell session.
 @MainActor
 final class TerminalSession: NSObject {
+    static let titleDidChange = Notification.Name("ShadeTerminalSessionTitleDidChange")
+
     let view: LocalProcessTerminalView
 
+    private(set) var title: String = "" {
+        didSet { notifyTitle(from: oldValue) }
+    }
+
+    private var cwd: String = "" {
+        didSet {
+            // CWD changes also affect displayTitle when no explicit title was set.
+            guard title.isEmpty else { return }
+            notifyTitle(from: oldValue)
+        }
+    }
+
+    let shellName: String
+
+    /// What the tab bar shows: shell-provided title, else CWD (abbreviated), else shell name.
+    var displayTitle: String {
+        if !title.isEmpty { return title }
+        if !cwd.isEmpty   { return abbreviateHome(cwd) }
+        return shellName
+    }
+
+    private func notifyTitle(from oldDisplay: String) {
+        NotificationCenter.default.post(name: Self.titleDidChange, object: self)
+    }
+
+    private func abbreviateHome(_ path: String) -> String {
+        let home = NSHomeDirectory()
+        if path == home { return "~" }
+        if path.hasPrefix(home + "/") { return "~" + path.dropFirst(home.count) }
+        return path
+    }
+
     override init() {
+        let shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        shellName = (shellPath as NSString).lastPathComponent
         view = LocalProcessTerminalView(frame: .zero)
         super.init()
         view.processDelegate = self
@@ -49,12 +85,33 @@ final class TerminalSession: NSObject {
             kill(view.process.shellPid, SIGTERM)
         }
     }
+
+    /// Re-read the shell's working directory; called by the controller's polling timer.
+    func refreshCwd() {
+        guard view.process.running else { return }
+        if let path = ProcessCwd.read(pid: view.process.shellPid), path != cwd {
+            cwd = path
+        }
+    }
 }
 
 extension TerminalSession: LocalProcessTerminalViewDelegate {
     nonisolated func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
-    nonisolated func setTerminalTitle(source: LocalProcessTerminalView, title: String) {}
-    nonisolated func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+    nonisolated func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated {
+                self?.title = title
+            }
+        }
+    }
+    nonisolated func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
+        let path = directory ?? ""
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated {
+                self?.cwd = path
+            }
+        }
+    }
 
     nonisolated func processTerminated(source: TerminalView, exitCode: Int32?) {
         DispatchQueue.main.async { [weak self] in

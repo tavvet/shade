@@ -4,7 +4,12 @@ import SwiftUI
 /// Lightweight reflection of TerminalsController for SwiftUI consumption.
 @MainActor
 final class TabsObservable: ObservableObject {
-    @Published private(set) var tabs: [String] = []
+    struct TabInfo: Identifiable {
+        let id: Int
+        let label: String
+    }
+
+    @Published private(set) var tabs: [TabInfo] = []
     @Published private(set) var activeIndex: Int = 0
 
     private weak var controller: TerminalsController?
@@ -12,21 +17,34 @@ final class TabsObservable: ObservableObject {
     init(controller: TerminalsController) {
         self.controller = controller
         sync()
-        NotificationCenter.default.addObserver(
-            forName: TerminalsController.tabsChanged,
-            object: controller,
-            queue: .main
-        ) { [weak self] _ in
+        let center = NotificationCenter.default
+        center.addObserver(forName: TerminalsController.tabsChanged,
+                           object: controller,
+                           queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.sync() }
+        }
+        center.addObserver(forName: TerminalSession.titleDidChange,
+                           object: nil,
+                           queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.sync() }
         }
     }
 
     private func sync() {
         guard let controller else { return }
-        tabs = (1...max(1, controller.sessions.count)).map { String($0) }
-        // If there are no sessions yet, keep a single placeholder so the bar isn't empty.
-        if controller.sessions.isEmpty { tabs = [] }
+        tabs = controller.sessions.enumerated().map { idx, session in
+            TabInfo(id: idx, label: Self.formatLabel(index: idx, title: session.displayTitle))
+        }
         activeIndex = controller.activeIndex
+    }
+
+    private static func formatLabel(index: Int, title: String) -> String {
+        let number = "\(index + 1)"
+        let clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return number }
+        let maxLen = 24
+        let truncated = clean.count > maxLen ? "…" + String(clean.suffix(maxLen)) : clean
+        return "\(number) · \(truncated)"
     }
 }
 
@@ -38,12 +56,12 @@ struct TabBarView: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(Array(tabs.tabs.enumerated()), id: \.offset) { idx, title in
+            ForEach(tabs.tabs) { tab in
                 TabChip(
-                    title: title,
-                    isActive: idx == tabs.activeIndex,
-                    onClick: { onSelect(idx) },
-                    onClose: { onClose(idx) }
+                    title: tab.label,
+                    isActive: tab.id == tabs.activeIndex,
+                    onClick: { onSelect(tab.id) },
+                    onClose: { onClose(tab.id) }
                 )
             }
             Button(action: onNew) {
