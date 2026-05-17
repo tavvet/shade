@@ -14,7 +14,6 @@ struct BranchBadgeView: View {
                     Text(tabs.activeBranch)
                         .font(.system(size: 13, weight: .medium, design: .monospaced))
                         .lineLimit(1)
-                        .truncationMode(.middle)
                 }
                 .foregroundStyle(.white.opacity(0.9))
 
@@ -42,7 +41,7 @@ struct BranchBadgeView: View {
                     .fill(Color.black.opacity(0.55))
                     .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
             )
-            .frame(maxWidth: 320, alignment: .trailing)
+            .fixedSize(horizontal: true, vertical: false)
             .help("Current git branch and uncommitted changes")
             .allowsHitTesting(false)
             .padding(.top, 6)

@@ -10,6 +10,12 @@ import SwiftTerm
 /// picks the default extension over a subclass method that doesn't carry
 /// `override`), so we install this proxy and forward every other method
 /// untouched to the original delegate.
+///
+/// `TerminalViewDelegate` is not `@MainActor`-isolated upstream, so this
+/// proxy can't be either (the conformance would no longer match the protocol
+/// contract). In practice SwiftTerm dispatches all of these callbacks on the
+/// main thread, which is why `onOpenLink` is allowed to call back into
+/// `TerminalSession` via `MainActor.assumeIsolated`.
 final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     weak var forward: TerminalViewDelegate?
     var onOpenLink: ((String) -> Void)?
@@ -60,6 +66,7 @@ final class TerminalSession: NSObject {
 
     let view: LocalProcessTerminalView
     private let delegateProxy: TerminalDelegateProxy
+    private var didPadInitialPrompt = false
 
     private(set) var title: String = "" {
         didSet { notifyTitleChanged() }
@@ -138,7 +145,13 @@ final class TerminalSession: NSObject {
 
     func start() {
         guard !view.process.running else { return }
-        padCursorToBottom()
+        // Only pad once, on the very first start. On auto-restart (after the user
+        // types `exit`) the previous session's output already fills the visible
+        // area, so feeding more newlines would push the new prompt off-screen.
+        if !didPadInitialPrompt {
+            padCursorToBottom()
+            didPadInitialPrompt = true
+        }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         view.startProcess(
             executable: shell,
@@ -150,7 +163,7 @@ final class TerminalSession: NSObject {
 
     /// Push the emulator cursor to the last visible row so the shell prompt
     /// appears at the bottom of the panel (Guake-style), not the top.
-    func padCursorToBottom() {
+    private func padCursorToBottom() {
         let rows = view.getTerminal().rows
         guard rows > 1 else { return }
         view.feed(text: String(repeating: "\n", count: rows - 1))
@@ -264,8 +277,11 @@ extension TerminalSession: LocalProcessTerminalViewDelegate {
                 return
             }
         }
-        // 4. Anything else: treat as a URL and let the OS pick the handler.
-        if let url = URL(string: link) {
+        // 4. Anything else with a real URL scheme — open via the default handler.
+        // Don't fall back to NSWorkspace.open for schemeless garbage: SwiftTerm
+        // shouldn't produce it, but `URL(string:)` happily succeeds on plain
+        // words and NSWorkspace would then surface a "could not open" alert.
+        if let url = URL(string: link), url.scheme != nil {
             NSWorkspace.shared.open(url)
         }
     }
