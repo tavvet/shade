@@ -78,8 +78,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         stack.distribution = .fill
         stack.alignment = .leading
         stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.addArrangedSubview(tabBarHost)
         stack.addArrangedSubview(terminals.containerView)
+        stack.addArrangedSubview(tabBarHost)
 
         // Tab bar fixed height, terminal fills the rest, both span the full width.
         NSLayoutConstraint.activate([
