@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var about = AboutWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        installMainMenu()
         installStatusItem()
         installTerminals()
         primePanelFrame()
@@ -45,6 +46,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         KeyboardShortcuts.onKeyDown(for: .toggleShade) { [weak self] in
             self?.toggle()
         }
+    }
+
+    /// macOS routes ⌘C/⌘V/⌘X/⌘A through whatever menu items declare those key
+    /// equivalents. Without an Edit menu the terminal view never sees them.
+    /// LSUIElement apps don't show the menu bar visually, but the dispatch
+    /// machinery still works as long as `NSApp.mainMenu` is set.
+    private func installMainMenu() {
+        let main = NSMenu()
+
+        // App menu (slot 0 is mandatory; macOS pulls the app name from here).
+        let appItem = NSMenuItem()
+        let appMenu = NSMenu(title: "Shade")
+        appMenu.addItem(withTitle: "About Shade", action: #selector(showAbout), keyEquivalent: "")
+            .target = self
+        appMenu.addItem(.separator())
+        let settingsItem = appMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Hide Shade",
+                        action: #selector(NSApplication.hide(_:)),
+                        keyEquivalent: "h")
+        appMenu.addItem(withTitle: "Quit Shade",
+                        action: #selector(NSApplication.terminate(_:)),
+                        keyEquivalent: "q")
+        appItem.submenu = appMenu
+        main.addItem(appItem)
+
+        // Edit menu — needed so ⌘C/V/X/A reach the responder chain.
+        let editItem = NSMenuItem()
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Cut",
+                         action: #selector(NSText.cut(_:)),
+                         keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy",
+                         action: #selector(NSText.copy(_:)),
+                         keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste",
+                         action: #selector(NSText.paste(_:)),
+                         keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All",
+                         action: #selector(NSResponder.selectAll(_:)),
+                         keyEquivalent: "a")
+        editItem.submenu = editMenu
+        main.addItem(editItem)
+
+        NSApp.mainMenu = main
     }
 
     /// Lay out the panel off-screen so each new terminal view computes its rows/cols.

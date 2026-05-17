@@ -182,8 +182,11 @@ struct SettingsView: View {
             .init(action: "Switch to tab N",    keys: "⌘1 – ⌘9"),
             .init(action: "Next tab",           keys: "⌃Tab"),
             .init(action: "Previous tab",       keys: "⌃⇧Tab"),
-            .init(action: "Settings",           keys: "⌘, (from menu)"),
-            .init(action: "Quit",               keys: "⌘Q (from menu)"),
+            .init(action: "Copy / Paste / Cut", keys: "⌘C / ⌘V / ⌘X"),
+            .init(action: "Select all",         keys: "⌘A"),
+            .init(action: "Open link / file",   keys: "⌘-click"),
+            .init(action: "Settings",           keys: "⌘,"),
+            .init(action: "Quit",               keys: "⌘Q"),
         ]
 
         var body: some View {

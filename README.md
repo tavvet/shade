@@ -104,8 +104,11 @@ live shell.
 |----------------------|-------------|
 | Toggle panel         | `F12`       |
 | Hide panel           | `Esc`       |
-| Open Settings        | `⌘,` (from the menu-bar icon) |
-| Quit Shade           | `⌘Q` (from the menu-bar icon) |
+| Copy / Paste / Cut   | `⌘C` / `⌘V` / `⌘X` |
+| Select all           | `⌘A`        |
+| Open link / file     | `⌘`-click (URLs go to the default browser, file paths reveal in Finder) |
+| Open Settings        | `⌘,`        |
+| Quit Shade           | `⌘Q`        |
 
 `⌃R`, `⌃A`, `⌃E`, `⌃W`, `⌃U`, `⌃K`, … are all forwarded to the shell
 unchanged — they work even when your keyboard layout is non-Latin

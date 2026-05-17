@@ -47,6 +47,12 @@ First public release.
   `defaults`. Settings briefly switches the app to `.regular` activation
   while open so `NSColorPanel` actually shows (LSUIElement / `.accessory`
   apps otherwise can't surface it).
+- `⌘C` / `⌘V` / `⌘X` / `⌘A` now work inside the terminal. macOS only
+  routes those key equivalents through `NSApp.mainMenu`, which Shade
+  didn't have until now (LSUIElement apps skip the visible menu bar but
+  still need the dispatch table). Installing a small Edit menu wires
+  copy/paste/cut/select-all to SwiftTerm's existing responder-chain
+  handlers.
 - Shells start in `$HOME` instead of `/`.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
