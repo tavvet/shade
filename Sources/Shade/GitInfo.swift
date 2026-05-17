@@ -69,7 +69,7 @@ enum GitInfo {
     }
 
     /// Pulls the integer that immediately precedes `keyword` in a shortstat-like line.
-    private static func firstNumber(in text: String, before keyword: String) -> Int? {
+    static func firstNumber(in text: String, before keyword: String) -> Int? {
         guard let kwRange = text.range(of: keyword) else { return nil }
         let prefix = text[..<kwRange.lowerBound]
         var digits = ""
@@ -82,7 +82,7 @@ enum GitInfo {
 
     /// Walks up from `path` looking for a `.git` directory (or a worktree pointer file).
     /// Returns the resolved git directory path, or nil.
-    private static func findGitDir(from path: String) -> String? {
+    static func findGitDir(from path: String) -> String? {
         let fm = FileManager.default
         var current = (path as NSString).standardizingPath
         while !current.isEmpty, current != "/" {

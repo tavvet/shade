@@ -42,7 +42,7 @@ final class TabsObservable: ObservableObject {
         activeStatus = controller.activeSession?.gitStatus
     }
 
-    private static func formatLabel(index: Int, title: String) -> String {
+    static func formatLabel(index: Int, title: String) -> String {
         let number = "\(index + 1)"
         let clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return number }

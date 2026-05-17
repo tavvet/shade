@@ -24,6 +24,9 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: Run unit tests
+        run: swift test
+
       - name: Build Shade.app (ad-hoc signed)
         run: ./Scripts/build.sh
 

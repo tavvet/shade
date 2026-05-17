@@ -48,6 +48,7 @@ git clone <this repo>
 cd shade
 ./Scripts/build.sh      # produces build/Shade.app
 ./Scripts/run.sh        # build + launch
+swift test              # unit tests for pure modules
 ```
 
 For everyday use:

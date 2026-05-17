@@ -16,6 +16,11 @@ let package = Package(
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ],
             path: "Sources/Shade"
-        )
+        ),
+        .testTarget(
+            name: "ShadeTests",
+            dependencies: ["Shade"],
+            path: "Tests/ShadeTests"
+        ),
     ]
 )

@@ -23,6 +23,7 @@ open `Package.swift` directly in Xcode if you prefer the IDE.
 
 ## Before you open a PR
 
+- `swift test` passes (CI runs this on every push).
 - `swift build -c release` passes cleanly (no warnings introduced).
 - `./Scripts/build.sh` produces a working `Shade.app`.
 - New behavior is exercised manually — describe what you tested in the PR
@@ -40,6 +41,8 @@ open `Package.swift` directly in Xcode if you prefer the IDE.
   use `nonisolated` + `MainActor.assumeIsolated` (see existing examples).
 - New user-facing settings go through `Preferences` (UserDefaults) and get a
   control in `SettingsWindow.swift`.
+- Pure logic (parsers, models, layout math) belongs in a module that's already
+  covered by `Tests/ShadeTests/` — add a test alongside the change.
 
 ## Reporting bugs
 
