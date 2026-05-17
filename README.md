@@ -4,7 +4,7 @@ A drop-down terminal for macOS in the spirit of [Guake] / [Yakuake] on Linux —
 hidden by default, slides down from the top of the screen on a global hotkey,
 disappears just as fast. Tabs, transparency, keyboard-first.
 
-Native Swift / SwiftUI. Status-bar app (no Dock icon). Free for personal use.
+Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
 [Guake]: http://guake-project.org/
 [Yakuake]: https://apps.kde.org/yakuake/
@@ -261,7 +261,14 @@ Key design choices:
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
   global hotkey registration with a SwiftUI recorder UI.
 
-Both are pinned via Swift Package Manager (`Package.swift`).
+Both are pinned via Swift Package Manager (`Package.swift`) and both are MIT
+licensed, the same as Shade.
+
+---
+
+## License
+
+[MIT](./LICENSE) — © 2026 Anton Rudakov.
 
 ---
 
