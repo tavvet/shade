@@ -262,13 +262,16 @@ Key design choices:
   global hotkey registration with a SwiftUI recorder UI.
 
 Both are pinned via Swift Package Manager (`Package.swift`) and both are MIT
-licensed, the same as Shade.
+licensed, the same as Shade. Full license texts: [THIRDPARTY.md](./THIRDPARTY.md).
 
 ---
 
 ## License
 
 [MIT](./LICENSE) — © 2026 Anton Rudakov.
+
+Third-party components retain their respective licenses; see
+[THIRDPARTY.md](./THIRDPARTY.md).
 
 ---
 
