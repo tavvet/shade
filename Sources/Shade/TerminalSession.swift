@@ -17,6 +17,7 @@ final class TerminalSession: NSObject {
 
     func start() {
         guard !view.process.running else { return }
+        padCursorToBottom()
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
         view.startProcess(
@@ -25,6 +26,14 @@ final class TerminalSession: NSObject {
             environment: nil,
             execName: "-" + shellName  // leading dash → login shell
         )
+    }
+
+    /// Push the emulator cursor to the last visible row so the shell prompt
+    /// appears at the bottom of the panel (Guake-style), not the top.
+    func padCursorToBottom() {
+        let rows = view.getTerminal().rows
+        guard rows > 1 else { return }
+        view.feed(text: String(repeating: "\n", count: rows - 1))
     }
 
     func apply(_ prefs: Preferences) {

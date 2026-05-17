@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         installStatusItem()
         installTerminal()
+        primePanelFrame()    // give the terminal its real rows count before starting the shell
         terminal.start()
         NotificationCenter.default.addObserver(
             self,
@@ -32,6 +33,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         KeyboardShortcuts.onKeyDown(for: .toggleShade) { [weak self] in
             self?.toggle()
         }
+    }
+
+    /// Lay out the panel off-screen so the terminal view computes its rows/cols.
+    /// Without this the shell starts in a default 24-row buffer and the prompt
+    /// ends up far from the actual bottom of the panel.
+    private func primePanelFrame() {
+        let prefs = Preferences.load()
+        guard let screen = prefs.resolvedScreen() else { return }
+        panel.setFrame(prefs.dropdownFrame(on: screen), display: false)
+        panel.contentView?.layoutSubtreeIfNeeded()
     }
 
     @objc private func applyPreferences() {
