@@ -42,31 +42,52 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
 ---
 
-## Install / build
+## Install
 
-Requirements:
+### Download (recommended)
 
-- macOS 13 or later
-- Xcode 15+ (uses Swift 6 toolchain)
+Grab `Shade.dmg` from the
+[latest GitHub release](https://github.com/tavvet/shade/releases/latest),
+open it, drag `Shade.app` into your `Applications` folder.
+
+**First launch needs one extra step** while the project doesn't have an
+Apple Developer ID. macOS Gatekeeper will refuse a normal double-click
+with *"Apple could not verify Shade is free of malware…"* —
+**right-click `Shade.app` → Open → Open** the once, and macOS will
+remember the decision forever. (Alternative: `xattr -d com.apple.quarantine
+/Applications/Shade.app` from any terminal.) Notarized builds will follow
+in a later release and remove this step.
+
+Once Shade is running you'll see a `▾` icon in the menu bar. Press
+`F12` (the default toggle hotkey — rebindable in Settings) and the
+drop-down terminal slides in from the top of the screen.
+
+To start on login: open `Settings…` from the menu-bar icon and flip
+**Open at Login**.
+
+### Build from source
 
 ```sh
-git clone <this repo>
+git clone https://github.com/tavvet/shade.git
 cd shade
 ./Scripts/build.sh      # produces build/Shade.app
 ./Scripts/run.sh        # build + launch
-swift test              # unit tests for pure modules
+swift test              # unit tests
 ```
 
-For everyday use:
+Requirements: macOS 13+ and Xcode 15+ (Swift 6 toolchain). The build
+script ad-hoc codesigns the bundle so the OS can prompt cleanly for any
+future entitlements / permissions. To sign with a real Developer ID for
+distribution: `DEVELOPER_ID="Developer ID Application: Name (TEAMID)"
+./Scripts/build.sh`.
+
+Move it where you want it:
 
 ```sh
 cp -R build/Shade.app /Applications/
 open /Applications/Shade.app
-# then toggle "Open at Login" in Settings so the new bundle path is registered
+# if "Open at Login" was on, toggle it off and on so the new path is registered
 ```
-
-The build script ad-hoc codesigns the bundle so the OS can prompt cleanly
-for any future entitlements / permissions.
 
 ---
 
@@ -207,6 +228,11 @@ precmd() { print -Pn "\e]7;file://${HOST}${PWD}\a\e]0;%~\a" }
 
 ## Troubleshooting
 
+**"Apple could not verify Shade is free of malware…"** Pre-notarization
+builds are ad-hoc signed. Right-click `Shade.app` → **Open** → **Open** —
+macOS will remember the decision for future launches. Or, in a terminal:
+`xattr -d com.apple.quarantine /Applications/Shade.app`.
+
 **`F12` does nothing.** macOS may be intercepting it as a media key. Either
 press `Fn+F12`, flip *System Settings → Keyboard → Use F1, F2, etc. keys as
 standard function keys*, or rebind to e.g. `Ctrl+\`` in Shade's Settings.
@@ -231,6 +257,20 @@ A–Z by default; non-letter rows are forwarded to SwiftTerm unmodified.
 LaunchServices start with `cwd = /`. Shade `chdir`s to `$HOME` at launch so
 spawned shells inherit it — if you still see `/`, you launched the
 executable directly (e.g. for debugging) rather than via the `.app` bundle.
+
+**Tab title and git badge show wrong info during an SSH session.** This is
+expected — Shade detects `ssh` / `mosh` / `tmate` in the shell's pid tree
+and hides the local-only readouts (the tab title shows `[ssh]` and the
+git badge disappears). Local cwd / git state can't describe a remote
+machine. To see the remote machine's path in the title, configure
+**that machine's** `~/.zshrc` (or equivalent) to emit OSC 7 — see the
+"Recommended shell setup" section. Shade picks that up automatically.
+
+**Settings won't open / "About Shade" crashes / color picker doesn't
+appear.** Make sure you're running the bundled `.app` and not the raw
+executable — several features rely on `NSApp.applicationIconImage` and on
+the bundle's `Info.plist`. Run via `./Scripts/run.sh` or `open
+build/Shade.app`.
 
 ---
 
