@@ -57,6 +57,13 @@ First public release.
   Terminal.app and readline's `backward-kill-word`). Other Option+key
   combinations are left alone so SwiftTerm can still produce `´` / `©`
   / etc.
+- Keyboard selection in the visible buffer: `⇧←/→/↑/↓` (char-by-char),
+  `⌥⇧←/→` (word-by-word), `⌘⇧←/→` (to line edges). Anchors at the
+  cursor, extends from there, and SwiftTerm's normal "any keyDown
+  clears selection" behavior tears it back down on the next keystroke
+  (so a plain arrow returns control to shell navigation). `⌘C` copies
+  whatever is selected. Required adding a public `extendKeyboardSelection`
+  / `clearKeyboardSelection` API on the vendored SwiftTerm fork.
 - Shells start in `$HOME` instead of `/`.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.

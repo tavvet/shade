@@ -1,5 +1,6 @@
 import AppKit
 import KeyboardShortcuts
+import SwiftTerm
 import SwiftUI
 
 @main
@@ -254,5 +255,9 @@ extension AppDelegate: PanelKeyHandler {
 
     func panelSendToActiveTerminal(_ bytes: [UInt8]) {
         terminals.activeSession?.view.send(bytes)
+    }
+
+    func panelExtendKeyboardSelection(direction: TerminalView.ShadeKeyboardDirection, byWord: Bool) {
+        terminals.activeSession?.view.extendKeyboardSelection(direction: direction, byWord: byWord)
     }
 }

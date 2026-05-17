@@ -1,4 +1,5 @@
 import AppKit
+import SwiftTerm
 
 @MainActor
 protocol PanelKeyHandler: AnyObject {
@@ -6,6 +7,8 @@ protocol PanelKeyHandler: AnyObject {
     func panelHandleKey(_ event: NSEvent) -> Bool
     /// Forward raw bytes to the currently active terminal session (PTY input).
     func panelSendToActiveTerminal(_ bytes: [UInt8])
+    /// Extend the keyboard selection of the active session in `direction`.
+    func panelExtendKeyboardSelection(direction: TerminalView.ShadeKeyboardDirection, byWord: Bool)
 }
 
 /// Borderless panel that slides down from the top of the screen.
@@ -64,6 +67,10 @@ final class DropdownPanel: NSPanel {
                 handler.panelSendToActiveTerminal(bytes)
                 return
             }
+            if let (direction, byWord) = keyboardSelectionAction(for: event) {
+                handler.panelExtendKeyboardSelection(direction: direction, byWord: byWord)
+                return
+            }
         }
         super.sendEvent(event)
     }
@@ -84,6 +91,35 @@ final class DropdownPanel: NSPanel {
         // 51 = kVK_Delete (Backspace on Mac keyboards).
         guard event.keyCode == 51 else { return nil }
         return [0x1B, 0x7F]
+    }
+
+    /// Shift+arrow (and ⌥⇧+arrow for word jumps) drive in-buffer keyboard selection.
+    /// Plain arrow keys (no modifier) are NOT intercepted here — they flow through to
+    /// SwiftTerm so the shell still gets its history / cursor navigation, and the
+    /// existing `selection.active = false` at the top of SwiftTerm's `keyDown` clears
+    /// the selection automatically.
+    private func keyboardSelectionAction(for event: NSEvent) -> (TerminalView.ShadeKeyboardDirection, Bool)? {
+        // Arrow keys carry .function and .numericPad in their modifier flags on macOS;
+        // mask those off so we only compare the explicit user-held modifier keys.
+        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        let flags = event.modifierFlags.intersection(userKeys)
+        let shift: NSEvent.ModifierFlags = [.shift]
+        let optShift: NSEvent.ModifierFlags = [.option, .shift]
+        let cmdShift: NSEvent.ModifierFlags = [.command, .shift]
+        guard flags == shift || flags == optShift || flags == cmdShift else { return nil }
+
+        let direction: TerminalView.ShadeKeyboardDirection
+        switch (event.keyCode, flags == cmdShift) {
+        case (123, false): direction = .left
+        case (124, false): direction = .right
+        case (126, false): direction = .up
+        case (125, false): direction = .down
+        case (123, true):  direction = .lineStart   // ⌘⇧← → select to beginning of line
+        case (124, true):  direction = .lineEnd     // ⌘⇧→ → select to end of line
+        default: return nil
+        }
+        let byWord = flags == optShift
+        return (direction, byWord)
     }
 
     override func animationResizeTime(_ newWindow: NSRect) -> TimeInterval {

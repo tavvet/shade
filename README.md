@@ -107,6 +107,9 @@ live shell.
 | Copy / Paste / Cut   | `⌘C` / `⌘V` / `⌘X` |
 | Select all           | `⌘A`        |
 | Delete word back     | `⌥⌫` (readline `backward-kill-word`) |
+| Extend selection (char) | `⇧←` / `⇧→` / `⇧↑` / `⇧↓` |
+| Extend selection (word) | `⌥⇧←` / `⌥⇧→` |
+| Extend selection (line edge) | `⌘⇧←` / `⌘⇧→` |
 | Open link / file     | `⌘`-click (URLs go to the default browser, file paths reveal in Finder) |
 | Open Settings        | `⌘,`        |
 | Quit Shade           | `⌘Q`        |
