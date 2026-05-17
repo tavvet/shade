@@ -155,6 +155,10 @@ the Settings window.
 
 ---
 
+## Releases
+
+See [CHANGELOG.md](./CHANGELOG.md) for release notes.
+
 ## Recommended shell setup
 
 Shade is a *terminal*, not a *shell* — features like ghost auto-completion
