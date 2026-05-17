@@ -25,6 +25,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var panel: DropdownPanel = {
         let p = DropdownPanel()
         p.keyHandler = self
+        p.onBecomeKey = { [weak self] in
+            // Re-anchor first responder on the active terminal view every time the
+            // panel becomes key — covers focus loss after switching apps or after
+            // showing/hiding the panel mid-activation.
+            guard let self, let view = self.terminals.activeSession?.view else { return }
+            self.panel.makeFirstResponder(view)
+        }
         return p
     }()
     private let terminals = TerminalsController()
@@ -159,10 +166,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func toggle() {
+        // Focus is restored by panel.onBecomeKey whenever the panel actually
+        // becomes the key window, so toggle() only has to flip the panel.
         panel.toggle()
-        if panel.isVisible, let view = terminals.activeSession?.view {
-            panel.makeFirstResponder(view)
-        }
     }
 
     private func installStatusItem() {
@@ -227,6 +233,13 @@ extension AppDelegate: PanelKeyHandler {
             case "w":
                 terminals.closeActive()
                 return true
+            case "k":
+                // Guake-style clear: erase the visible screen and put the
+                // cursor at the bottom row so the next prompt lands there
+                // (the builtin `clear` puts the cursor at row 0 → prompt at
+                // the top, which feels wrong in a drop-down).
+                clearVisibleScreen()
+                return true
             default:
                 if let digit = Int(chars), (1...9).contains(digit) {
                     // Only consume the event when the index actually exists, otherwise
@@ -259,5 +272,23 @@ extension AppDelegate: PanelKeyHandler {
 
     func panelExtendKeyboardSelection(direction: TerminalView.ShadeKeyboardDirection, byWord: Bool) {
         terminals.activeSession?.view.extendKeyboardSelection(direction: direction, byWord: byWord)
+    }
+
+    /// Guake-style clear: erase the visible grid and park the cursor at the bottom row,
+    /// then prompt the shell to redraw at its new (now bottom) cursor position.
+    ///
+    /// The CSI sequence goes through `view.feed(text:)` — that path drops the bytes
+    /// straight into the terminal emulator the way the *shell* would write them.
+    /// If we used `view.send(...)` instead, the bytes would land in the shell's
+    /// stdin and zsh would happily try to execute `3;1H` as a command.
+    /// Then a single CR on the input side asks the shell to redraw its prompt at
+    /// the freshly-moved cursor.
+    private func clearVisibleScreen() {
+        guard let session = terminals.activeSession else { return }
+        let rows = session.view.getTerminal().rows
+        let lastRow = max(1, rows)
+        let escape = "\u{1B}[2J\u{1B}[\(lastRow);1H"
+        session.view.feed(text: escape)
+        session.view.send([0x0D])
     }
 }

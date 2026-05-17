@@ -184,6 +184,7 @@ struct SettingsView: View {
             .init(action: "Previous tab",       keys: "⌃⇧Tab"),
             .init(action: "Copy / Paste / Cut", keys: "⌘C / ⌘V / ⌘X"),
             .init(action: "Select all",         keys: "⌘A"),
+            .init(action: "Clear (prompt → bottom)", keys: "⌘K"),
             .init(action: "Delete word back",   keys: "⌥⌫"),
             .init(action: "Extend selection",   keys: "⇧← ⇧→ ⇧↑ ⇧↓"),
             .init(action: "  by word",          keys: "⌥⇧← / ⌥⇧→"),

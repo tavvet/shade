@@ -129,6 +129,7 @@ live shell.
 | Hide panel           | `Esc`       |
 | Copy / Paste / Cut   | `⌘C` / `⌘V` / `⌘X` |
 | Select all           | `⌘A`        |
+| Clear screen         | `⌘K` (Guake-style — prompt lands at the bottom, unlike the builtin `clear` which leaves it at the top) |
 | Delete word back     | `⌥⌫` (readline `backward-kill-word`) |
 | Extend selection (char) | `⇧←` / `⇧→` / `⇧↑` / `⇧↓` |
 | Extend selection (word) | `⌥⇧←` / `⌥⇧→` |
@@ -222,6 +223,14 @@ Shade's 1-second poll), you can also add:
 ```sh
 # In ~/.zshrc — emits OSC 7 + OSC 0 on every prompt
 precmd() { print -Pn "\e]7;file://${HOST}${PWD}\a\e]0;%~\a" }
+```
+
+To make the shell builtin `clear` behave like Shade's `⌘K` (prompt at the
+bottom instead of the top), override it:
+
+```sh
+# In ~/.zshrc — clears screen and parks the cursor on the last row
+clear() { printf '\e[2J\e[%d;1H' "$LINES" }
 ```
 
 ---

@@ -20,6 +20,17 @@ final class DropdownPanel: NSPanel {
     /// Set by AppDelegate to receive tab keyboard shortcuts.
     weak var keyHandler: PanelKeyHandler?
 
+    /// Fired every time the panel transitions to key window. Lets AppDelegate
+    /// re-anchor first responder on the active terminal view — relying only on
+    /// a one-shot makeFirstResponder right after toggle() racy when
+    /// NSApp.activate hasn't fully landed yet.
+    var onBecomeKey: (() -> Void)?
+
+    override func becomeKey() {
+        super.becomeKey()
+        onBecomeKey?()
+    }
+
     init() {
         super.init(
             contentRect: .zero,
@@ -150,13 +161,11 @@ final class DropdownPanel: NSPanel {
                                  height: 0)
 
         setFrame(hiddenFrame, display: false)
-        orderFrontRegardless()
-        makeKey()
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        // ignoringOtherApps is more aggressive than the no-arg .activate() on
+        // macOS 14+ and reliably promotes an .accessory app back to active when
+        // the user is returning from another application via the global hotkey.
+        NSApp.activate(ignoringOtherApps: true)
+        makeKeyAndOrderFront(nil)
         setFrame(finalFrame, display: true, animate: true)
     }
 
