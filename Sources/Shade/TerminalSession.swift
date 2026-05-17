@@ -11,7 +11,8 @@ final class TerminalSession: NSObject {
         super.init()
         view.processDelegate = self
         view.translatesAutoresizingMaskIntoConstraints = false
-        configureAppearance()
+        view.nativeForegroundColor = NSColor(white: 0.92, alpha: 1.0)
+        apply(Preferences.load())
     }
 
     func start() {
@@ -26,10 +27,12 @@ final class TerminalSession: NSObject {
         )
     }
 
-    private func configureAppearance() {
-        view.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-        view.nativeBackgroundColor = NSColor(white: 0.08, alpha: 1.0)
-        view.nativeForegroundColor = NSColor(white: 0.92, alpha: 1.0)
+    func apply(_ prefs: Preferences) {
+        view.font = prefs.terminalFont()
+        view.nativeBackgroundColor = NSColor(white: 0.08, alpha: prefs.backgroundOpacity)
+        view.wantsLayer = true
+        view.layer?.isOpaque = false
+        view.layer?.backgroundColor = NSColor.clear.cgColor
     }
 }
 

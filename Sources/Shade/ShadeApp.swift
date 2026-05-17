@@ -23,10 +23,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installStatusItem()
         installTerminal()
         terminal.start()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyPreferences),
+            name: .shadePreferencesChanged,
+            object: nil
+        )
         let ok = hotkey.register { [weak self] in self?.toggle() }
         if !ok {
             NSLog("Shade: failed to register F12 hotkey")
         }
+    }
+
+    @objc private func applyPreferences() {
+        let prefs = Preferences.load()
+        terminal.apply(prefs)
+        panel.apply(prefs)
     }
 
     private func installTerminal() {

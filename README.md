@@ -32,12 +32,24 @@ defaults write dev.shade.Shade horizontalAlignment center
 # Which screen the dropdown appears on: main | mouseLocation. Default: mouseLocation
 defaults write dev.shade.Shade screenChoice mouseLocation
 
+# Font: size (9–22 pt) and family. Family "" = system monospaced.
+defaults write dev.shade.Shade fontSize 14
+defaults write dev.shade.Shade fontName "Menlo"
+
+# Background opacity (0.3 – 1.0). Default: 0.94
+defaults write dev.shade.Shade backgroundOpacity 0.85
+
+# Slide animation duration in seconds (0.0 – 0.5). Default: 0.16
+defaults write dev.shade.Shade animationDuration 0.12
+
 # Inspect current values
 defaults read dev.shade.Shade
 
 # Reset everything
 defaults delete dev.shade.Shade
 ```
+
+Changes made via the GUI (Settings… in the menu bar) apply instantly. Changes made via `defaults write` apply on the next `F12` toggle.
 
 ## Stack
 

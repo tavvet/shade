@@ -3,7 +3,7 @@ import AppKit
 /// Borderless, non-activating panel that slides down from the top of the screen.
 @MainActor
 final class DropdownPanel: NSPanel {
-    private let slideDuration: TimeInterval = 0.16
+    private var slideDuration: TimeInterval = Preferences.defaults.animationDuration
 
     init() {
         super.init(
@@ -13,7 +13,6 @@ final class DropdownPanel: NSPanel {
             defer: false
         )
         isOpaque = false
-        backgroundColor = NSColor(white: 0.08, alpha: 0.94)
         hasShadow = true
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
@@ -21,19 +20,25 @@ final class DropdownPanel: NSPanel {
         hidesOnDeactivate = false
         becomesKeyOnlyIfNeeded = false
         animationBehavior = .none
+        apply(Preferences.load())
     }
 
-    // NSPanel with .borderless refuses key status by default.
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
-    /// Esc hides the panel. Other keys pass through to the content view (the terminal, later).
     override func cancelOperation(_ sender: Any?) {
         hide()
     }
 
     override func animationResizeTime(_ newWindow: NSRect) -> TimeInterval {
         slideDuration
+    }
+
+    func apply(_ prefs: Preferences) {
+        slideDuration = prefs.animationDuration
+        // Panel itself is transparent; the terminal view paints its own background
+        // (with the user-controlled opacity) so the effect is uniform across the panel.
+        backgroundColor = .clear
     }
 
     // MARK: - Show / hide with slide animation
@@ -44,6 +49,7 @@ final class DropdownPanel: NSPanel {
 
     func show() {
         let prefs = Preferences.load()
+        apply(prefs)
         guard let screen = prefs.resolvedScreen() else { return }
         let finalFrame = prefs.dropdownFrame(on: screen)
         let hiddenFrame = NSRect(x: finalFrame.minX,

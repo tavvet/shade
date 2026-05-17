@@ -3,10 +3,14 @@ import SwiftUI
 
 @MainActor
 final class SettingsModel: ObservableObject {
-    @Published var widthFraction: Double { didSet { save() } }
-    @Published var heightFraction: Double { didSet { save() } }
+    @Published var widthFraction: Double          { didSet { save() } }
+    @Published var heightFraction: Double         { didSet { save() } }
     @Published var horizontalAlignment: Preferences.HorizontalAlignment { didSet { save() } }
-    @Published var screenChoice: Preferences.ScreenChoice { didSet { save() } }
+    @Published var screenChoice: Preferences.ScreenChoice               { didSet { save() } }
+    @Published var fontSize: Double               { didSet { save() } }
+    @Published var fontName: String               { didSet { save() } }
+    @Published var backgroundOpacity: Double      { didSet { save() } }
+    @Published var animationDuration: Double      { didSet { save() } }
 
     init() {
         let prefs = Preferences.load()
@@ -14,19 +18,36 @@ final class SettingsModel: ObservableObject {
         heightFraction = Double(prefs.heightFraction)
         horizontalAlignment = prefs.horizontalAlignment
         screenChoice = prefs.screenChoice
+        fontSize = Double(prefs.fontSize)
+        fontName = prefs.fontName
+        backgroundOpacity = prefs.backgroundOpacity
+        animationDuration = prefs.animationDuration
     }
 
     private func save() {
         let store = UserDefaults.standard
-        store.set(widthFraction, forKey: "widthFraction")
-        store.set(heightFraction, forKey: "heightFraction")
-        store.set(horizontalAlignment.rawValue, forKey: "horizontalAlignment")
-        store.set(screenChoice.rawValue, forKey: "screenChoice")
+        store.set(widthFraction, forKey: Preferences.Key.widthFraction)
+        store.set(heightFraction, forKey: Preferences.Key.heightFraction)
+        store.set(horizontalAlignment.rawValue, forKey: Preferences.Key.horizontalAlignment)
+        store.set(screenChoice.rawValue, forKey: Preferences.Key.screenChoice)
+        store.set(fontSize, forKey: Preferences.Key.fontSize)
+        store.set(fontName, forKey: Preferences.Key.fontName)
+        store.set(backgroundOpacity, forKey: Preferences.Key.backgroundOpacity)
+        store.set(animationDuration, forKey: Preferences.Key.animationDuration)
+        NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
     }
 }
 
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
+
+    private let fontChoices: [(label: String, value: String)] = [
+        ("System Monospace", ""),
+        ("Menlo", "Menlo"),
+        ("Monaco", "Monaco"),
+        ("SF Mono", "SF Mono"),
+        ("Courier New", "Courier New"),
+    ]
 
     var body: some View {
         Form {
@@ -34,6 +55,7 @@ struct SettingsView: View {
                 fractionRow(title: "Width", value: $model.widthFraction)
                 fractionRow(title: "Height", value: $model.heightFraction)
             }
+
             Section("Position") {
                 Picker("Horizontal", selection: $model.horizontalAlignment) {
                     Text("Left").tag(Preferences.HorizontalAlignment.left)
@@ -48,14 +70,49 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
             }
-            Section {
-                Text("Changes apply on next F12.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+            Section("Appearance") {
+                Picker("Font", selection: $model.fontName) {
+                    ForEach(fontChoices, id: \.value) { choice in
+                        Text(choice.label).tag(choice.value)
+                    }
+                }
+
+                HStack {
+                    Text("Size")
+                        .frame(width: 56, alignment: .leading)
+                    Slider(value: $model.fontSize, in: 9...22, step: 1)
+                    Text("\(Int(model.fontSize)) pt")
+                        .monospacedDigit()
+                        .frame(width: 44, alignment: .trailing)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Text("Opacity")
+                        .frame(width: 56, alignment: .leading)
+                    Slider(value: $model.backgroundOpacity, in: 0.3...1.0, step: 0.05)
+                    Text("\(Int((model.backgroundOpacity * 100).rounded()))%")
+                        .monospacedDigit()
+                        .frame(width: 44, alignment: .trailing)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section("Animation") {
+                HStack {
+                    Text("Slide")
+                        .frame(width: 56, alignment: .leading)
+                    Slider(value: $model.animationDuration, in: 0.0...0.5, step: 0.02)
+                    Text("\(Int((model.animationDuration * 1000).rounded())) ms")
+                        .monospacedDigit()
+                        .frame(width: 56, alignment: .trailing)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 360, minHeight: 280)
+        .frame(minWidth: 380, minHeight: 460)
     }
 
     @ViewBuilder
@@ -78,12 +135,12 @@ final class SettingsWindowController: NSWindowController {
 
     init() {
         let hosting = NSHostingController(rootView: SettingsView(model: model))
-        hosting.preferredContentSize = NSSize(width: 380, height: 320)
+        hosting.preferredContentSize = NSSize(width: 420, height: 500)
         let window = NSWindow(contentViewController: hosting)
         window.styleMask = [.titled, .closable]
         window.title = "Shade Settings"
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 380, height: 320))
+        window.setContentSize(NSSize(width: 420, height: 500))
         super.init(window: window)
     }
 
