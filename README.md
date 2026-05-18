@@ -6,6 +6,8 @@ disappears just as fast. Tabs, transparency, keyboard-first.
 
 Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
+![Shade demo](docs/demo.gif)
+
 [Guake]: http://guake-project.org/
 [Yakuake]: https://apps.kde.org/yakuake/
 
