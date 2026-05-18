@@ -226,9 +226,11 @@ final class TerminalSession: NSObject {
         let inRepo = !branch.isEmpty
         Task.detached(priority: .utility) { [weak self] in
             let status: GitStatus? = inRepo ? GitInfo.status(forCwd: pathSnapshot) : nil
-            await MainActor.run {
-                guard let self else { return }
-                self.gitStatus = status
+            // Re-capture weak self inside the main-actor closure rather than letting
+            // the outer detached-task `self` cross actor boundaries (strict Sendable
+            // checking on newer Swift toolchains rejects the cross-actor send).
+            await MainActor.run { [weak self] in
+                self?.gitStatus = status
             }
         }
     }

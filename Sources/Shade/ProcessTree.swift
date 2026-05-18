@@ -40,7 +40,12 @@ enum ProcessTree {
         var buf = [CChar](repeating: 0, count: Int(MAXPATHLEN))
         let r = proc_pidpath(pid, &buf, UInt32(MAXPATHLEN))
         guard r > 0 else { return nil }
-        let path = String(cString: buf)
+        // String(decoding:as:) — non-deprecated and available on macOS 13.
+        // (String(validating:as:) is macOS 15+; String(cString:) is deprecated
+        // on Swift 6 toolchains.)
+        let bytes = buf.prefix(while: { $0 != 0 }).map { UInt8(bitPattern: $0) }
+        let path = String(decoding: bytes, as: UTF8.self)
+        guard !path.isEmpty else { return nil }
         return (path as NSString).lastPathComponent
     }
 
