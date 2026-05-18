@@ -344,6 +344,18 @@ licensed, the same as Shade. Full license texts: [THIRDPARTY.md](./THIRDPARTY.md
 
 ---
 
+## Support
+
+Shade is and will stay MIT-licensed. If it saves you time and you want to
+chip in, USDT works on either chain — pick whichever has lower fees for
+you:
+
+- **USDT (BEP-20, BNB Smart Chain):** `0x9fbaa332ef68433d17c350d085bc5a4b404ec495`
+- **USDT (TRC-20, TRON):** `TT8jU9Tbw5iLrNANTnCZgFCnCp6ZhAe2xm`
+- **USDT (SPL, Solana):** `4sGwS8KgVanzCUeMNnWXBHwxv6voCKY7TmPkWRhdt2pR`
+
+Strictly optional, no obligation either way.
+
 ## License
 
 [MIT](./LICENSE) — © 2026 Anton Rudakov.
