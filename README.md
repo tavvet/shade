@@ -46,7 +46,16 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
 ## Install
 
-### Download (recommended)
+### Homebrew (recommended)
+
+```sh
+brew tap tavvet/tap
+brew install --cask shade
+```
+
+Tap source: [tavvet/homebrew-tap](https://github.com/tavvet/homebrew-tap).
+
+### Download .dmg
 
 Grab `Shade.dmg` from the
 [latest GitHub release](https://github.com/tavvet/shade/releases/latest),
