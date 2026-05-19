@@ -14,8 +14,8 @@ Requirements:
 ```sh
 git clone <fork-url>
 cd shade
-./Scripts/build.sh      # → build/Shade.app
-./Scripts/run.sh        # build + launch
+make            # → build/Shade.app
+make run        # build + launch
 ```
 
 The project uses Swift Package Manager — there is no `.xcodeproj`. You can
@@ -25,7 +25,7 @@ open `Package.swift` directly in Xcode if you prefer the IDE.
 
 - `swift test` passes (CI runs this on every push).
 - `swift build -c release` passes cleanly (no warnings introduced).
-- `./Scripts/build.sh` produces a working `Shade.app`.
+- `make build` produces a working `Shade.app`.
 - New behavior is exercised manually — describe what you tested in the PR
   description (we don't have UI tests yet).
 - One logical change per PR. Refactors that mix with feature work are hard

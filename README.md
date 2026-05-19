@@ -81,16 +81,16 @@ To start on login: open `Settings…` from the menu-bar icon and flip
 ```sh
 git clone https://github.com/tavvet/shade.git
 cd shade
-./Scripts/build.sh      # produces build/Shade.app
-./Scripts/run.sh        # build + launch
-swift test              # unit tests
+make            # produces build/Shade.app
+make run        # build + launch
+swift test      # unit tests
 ```
 
 Requirements: macOS 13+ and Xcode 15+ (Swift 6 toolchain). The build
-script ad-hoc codesigns the bundle so the OS can prompt cleanly for any
-future entitlements / permissions. To sign with a real Developer ID for
+ad-hoc codesigns the bundle so the OS can prompt cleanly for any future
+entitlements / permissions. To sign with a real Developer ID for
 distribution: `DEVELOPER_ID="Developer ID Application: Name (TEAMID)"
-./Scripts/build.sh`.
+make build`.
 
 Move it where you want it:
 
@@ -291,7 +291,7 @@ machine. To see the remote machine's path in the title, configure
 **Settings won't open / "About Shade" crashes / color picker doesn't
 appear.** Make sure you're running the bundled `.app` and not the raw
 executable — several features rely on `NSApp.applicationIconImage` and on
-the bundle's `Info.plist`. Run via `./Scripts/run.sh` or `open
+the bundle's `Info.plist`. Run via `make run` or `open
 build/Shade.app`.
 
 ---
@@ -318,8 +318,8 @@ Sources/Shade/
 Key design choices:
 
 - **SwiftPM, not Xcode project.** Sources, `Package.swift`, `Resources/Info.plist`,
-  and a small bash script in `Scripts/build.sh` package everything into a
-  bundle. Source-only, plain text, easy to grep / diff.
+  and a small `Makefile` package everything into a bundle. Source-only,
+  plain text, easy to grep / diff.
 - **Borderless `NSPanel`**, no `.nonactivatingPanel`. The app activates fully
   when the panel is shown so that `⌘`-shortcuts route to us instead of
   leaking to whichever browser was last focused.
@@ -380,9 +380,7 @@ Third-party components retain their respective licenses; see
 shade/
 ├── Package.swift            SwiftPM manifest
 ├── Resources/Info.plist     LSUIElement = true, bundle metadata
-├── Scripts/
-│   ├── build.sh             swift build → wrap into Shade.app → ad-hoc codesign
-│   └── run.sh               build + open
+├── Makefile                 swift build → wrap into Shade.app → codesign; `make run`, `make dmg`
 ├── Sources/Shade/           Swift sources (see Architecture)
 └── README.md                this file
 ```
