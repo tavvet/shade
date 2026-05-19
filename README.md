@@ -254,54 +254,38 @@ clear() { printf '\e[2J\e[%d;1H' "$LINES" }
 
 ### Prompt marking (OSC 133)
 
-Emit OSC 133 sequences from your shell to enable Shade's prompt-mark
-navigation (`⌘⇧↑` / `⌘⇧↓`) and "copy previous command's output" (`⌘⇧O`).
-The sequences are invisible to the user and ignored by terminals that
-don't understand them. Spec: `A` = prompt start, `C` = command output
-begins, `D;<exit>` = command finished.
+Enables Shade's prompt-mark navigation (`⌘⇧↑` / `⌘⇧↓`) and "copy previous
+command's output" (`⌘⇧O`). The shell emits invisible OSC 133 sequences
+around each prompt (`A` = prompt start, `C` = command output begins,
+`D;<exit>` = command finished); Shade records the positions and lets you
+jump between them. Terminals that don't understand the sequences ignore
+them, so the snippets are safe to leave on everywhere.
 
-**zsh**:
-
-```sh
-# In ~/.zshrc
-_shade_osc133() { printf '\e]133;%s\a' "$1" }
-_shade_precmd()  { _shade_osc133 "D;$?"; _shade_osc133 A }
-_shade_preexec() { _shade_osc133 C }
-precmd_functions+=(_shade_precmd)
-preexec_functions+=(_shade_preexec)
-```
-
-**bash** — requires [bash-preexec](https://github.com/rcaloras/bash-preexec)
-for the `preexec` hook:
+Shade ships ready-to-source files for zsh, bash, and fish in
+[`integrations/`](./integrations). Add one line to your shell rc:
 
 ```sh
-# In ~/.bashrc — after sourcing bash-preexec.sh
-_shade_osc133()  { printf '\e]133;%s\a' "$1"; }
-_shade_precmd()  { _shade_osc133 "D;$?"; _shade_osc133 A; }
-_shade_preexec() { _shade_osc133 C; }
-precmd_functions+=(_shade_precmd)
-preexec_functions+=(_shade_preexec)
+# ~/.zshrc — Homebrew install
+source "$(brew --prefix)/share/shade/shade.zsh"
+# or from a source checkout
+source /path/to/shade/integrations/shade.zsh
 ```
 
-**fish**:
+```sh
+# ~/.bashrc — after sourcing bash-preexec.sh
+# (see https://github.com/rcaloras/bash-preexec)
+source "$(brew --prefix)/share/shade/shade.bash"
+```
 
 ```fish
-# In ~/.config/fish/config.fish
-function _shade_osc133
-    printf '\e]133;%s\a' $argv[1]
-end
-function _shade_precmd --on-event fish_prompt
-    _shade_osc133 "D;$status"
-    _shade_osc133 A
-end
-function _shade_preexec --on-event fish_preexec
-    _shade_osc133 C
-end
+# ~/.config/fish/config.fish
+source (brew --prefix)/share/shade/shade.fish
 ```
 
 If `⌘⇧↑` / `⌘⇧↓` does nothing, the shell isn't emitting marks yet — quickly
 check by running `printf '\e]133;A\a'` a few times between commands and
-trying the shortcut.
+trying the shortcut. Note that the shortcuts only have a visible effect
+when there's scrollback to scroll into.
 
 ---
 
@@ -438,6 +422,7 @@ shade/
 ├── Package.swift            SwiftPM manifest
 ├── Resources/Info.plist     LSUIElement = true, bundle metadata
 ├── Makefile                 swift build → wrap into Shade.app → codesign; `make run`, `make dmg`
+├── integrations/            Opt-in OSC 133 shell snippets (zsh / bash / fish)
 ├── Sources/Shade/           Swift sources (see Architecture)
 └── README.md                this file
 ```
