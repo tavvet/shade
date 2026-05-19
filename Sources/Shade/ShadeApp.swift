@@ -278,8 +278,8 @@ extension AppDelegate: PanelKeyHandler {
         let chars = event.charactersIgnoringModifiers ?? ""
         let letter = KeyCodes.asciiLetterForKeyCode[event.keyCode]
 
-        // Tab key has its own keyCode (48) and `chars` is `\t`.
-        let isTab = event.keyCode == 48
+        // Tab key has its own keyCode (kVK_Tab); `chars` is `\t`.
+        let isTab = event.keyCode == KeyCodes.tab
 
         if flags == cmd {
             switch letter {
@@ -335,7 +335,7 @@ extension AppDelegate: PanelKeyHandler {
         let cmdShiftOnly: NSEvent.ModifierFlags = [.command, .shift]
         if userFlags == cmdShiftOnly {
             switch event.keyCode {
-            case 126: // up arrow
+            case KeyCodes.upArrow:
                 // Always consume: if there's no prompt mark to jump to we
                 // still don't want the event leaking into SwiftTerm, where
                 // AppKit's default `moveToBeginningOfDocumentAndModifySelection`
@@ -343,7 +343,7 @@ extension AppDelegate: PanelKeyHandler {
                 // like an opacity change on the translucent background).
                 terminals.activeSession?.jumpToPreviousPrompt()
                 return true
-            case 125: // down arrow
+            case KeyCodes.downArrow:
                 terminals.activeSession?.jumpToNextPrompt()
                 return true
             default:
