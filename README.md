@@ -262,11 +262,13 @@ jump between them. Terminals that don't understand the sequences ignore
 them, so the snippets are safe to leave on everywhere.
 
 Shade ships ready-to-source files for zsh, bash, and fish in
-[`integrations/`](./integrations). Add one line to your shell rc:
+[`integrations/`](./integrations); the build copies them into
+`Shade.app/Contents/Resources/integrations/` so they ride with each
+Homebrew release. Add one line to your shell rc:
 
 ```sh
-# ~/.zshrc — Homebrew install
-source "$(brew --prefix)/share/shade/shade.zsh"
+# ~/.zshrc — Homebrew install (Cask drops Shade.app in /Applications)
+source "/Applications/Shade.app/Contents/Resources/integrations/shade.zsh"
 # or from a source checkout
 source /path/to/shade/integrations/shade.zsh
 ```
@@ -274,12 +276,12 @@ source /path/to/shade/integrations/shade.zsh
 ```sh
 # ~/.bashrc — after sourcing bash-preexec.sh
 # (see https://github.com/rcaloras/bash-preexec)
-source "$(brew --prefix)/share/shade/shade.bash"
+source "/Applications/Shade.app/Contents/Resources/integrations/shade.bash"
 ```
 
 ```fish
 # ~/.config/fish/config.fish
-source (brew --prefix)/share/shade/shade.fish
+source /Applications/Shade.app/Contents/Resources/integrations/shade.fish
 ```
 
 If `⌘⇧↑` / `⌘⇧↓` does nothing, the shell isn't emitting marks yet — quickly
