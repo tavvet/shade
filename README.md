@@ -40,6 +40,10 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   opens them. URLs go through `NSWorkspace.shared.open`; absolute or
   relative file paths are revealed in Finder instead of being launched in
   the default app.
+- **Prompt-mark navigation (OSC 133)** — jump between previous / next shell
+  prompts with `⌘⇧↑` / `⌘⇧↓`, copy the previous command's output with
+  `⌘⇧O`. Opt-in via a short shell-side snippet (see "Recommended shell
+  setup"); without it Shade behaves identically to before.
 - **Open at Login** toggle.
 
 ---
@@ -147,6 +151,8 @@ live shell.
 | Extend selection (char) | `⇧←` / `⇧→` / `⇧↑` / `⇧↓` |
 | Extend selection (word) | `⌥⇧←` / `⌥⇧→` |
 | Extend selection (line edge) | `⌘⇧←` / `⌘⇧→` |
+| Jump to previous / next prompt | `⌘⇧↑` / `⌘⇧↓` (requires OSC 133 shell integration — see below) |
+| Copy previous command's output | `⌘⇧O` (requires OSC 133 shell integration — see below) |
 | Open link / file     | `⌘`-click (URLs go to the default browser, file paths reveal in Finder) |
 | Open Settings        | `⌘,`        |
 | Quit Shade           | `⌘Q`        |
@@ -245,6 +251,57 @@ bottom instead of the top), override it:
 # In ~/.zshrc — clears screen and parks the cursor on the last row
 clear() { printf '\e[2J\e[%d;1H' "$LINES" }
 ```
+
+### Prompt marking (OSC 133)
+
+Emit OSC 133 sequences from your shell to enable Shade's prompt-mark
+navigation (`⌘⇧↑` / `⌘⇧↓`) and "copy previous command's output" (`⌘⇧O`).
+The sequences are invisible to the user and ignored by terminals that
+don't understand them. Spec: `A` = prompt start, `C` = command output
+begins, `D;<exit>` = command finished.
+
+**zsh**:
+
+```sh
+# In ~/.zshrc
+_shade_osc133() { printf '\e]133;%s\a' "$1" }
+_shade_precmd()  { _shade_osc133 "D;$?"; _shade_osc133 A }
+_shade_preexec() { _shade_osc133 C }
+precmd_functions+=(_shade_precmd)
+preexec_functions+=(_shade_preexec)
+```
+
+**bash** — requires [bash-preexec](https://github.com/rcaloras/bash-preexec)
+for the `preexec` hook:
+
+```sh
+# In ~/.bashrc — after sourcing bash-preexec.sh
+_shade_osc133()  { printf '\e]133;%s\a' "$1"; }
+_shade_precmd()  { _shade_osc133 "D;$?"; _shade_osc133 A; }
+_shade_preexec() { _shade_osc133 C; }
+precmd_functions+=(_shade_precmd)
+preexec_functions+=(_shade_preexec)
+```
+
+**fish**:
+
+```fish
+# In ~/.config/fish/config.fish
+function _shade_osc133
+    printf '\e]133;%s\a' $argv[1]
+end
+function _shade_precmd --on-event fish_prompt
+    _shade_osc133 "D;$status"
+    _shade_osc133 A
+end
+function _shade_preexec --on-event fish_preexec
+    _shade_osc133 C
+end
+```
+
+If `⌘⇧↑` / `⌘⇧↓` does nothing, the shell isn't emitting marks yet — quickly
+check by running `printf '\e]133;A\a'` a few times between commands and
+trying the shortcut.
 
 ---
 
