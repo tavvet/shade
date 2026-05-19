@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.5] — 2026-05-19
+
 ### Fixed
 
 - Scroll wheel now works inside full-screen TUI apps (vim, less, htop,
@@ -178,7 +180,8 @@ First public release.
 - No window splits, scrollback search, or session save/restore yet.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/tavvet/shade/releases/tag/v0.1.5
 [0.1.4]: https://github.com/tavvet/shade/releases/tag/v0.1.4
 [0.1.3]: https://github.com/tavvet/shade/releases/tag/v0.1.3
 [0.1.2]: https://github.com/tavvet/shade/releases/tag/v0.1.2
