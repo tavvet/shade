@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var tabsObservable = TabsObservable(controller: terminals)
     private lazy var settings = SettingsWindowController()
     private lazy var about = AboutWindowController()
+    private lazy var diagnostics = DiagnosticsWindowController(terminals: terminals)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMainMenu()
@@ -75,6 +76,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appMenu.addItem(.separator())
         let settingsItem = appMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Diagnostics…", action: #selector(showDiagnostics), keyEquivalent: "")
+            .target = self
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Hide Shade",
                         action: #selector(NSApplication.hide(_:)),
@@ -201,6 +205,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
             .target = self
         menu.addItem(.separator())
+        menu.addItem(withTitle: "Diagnostics…", action: #selector(showDiagnostics), keyEquivalent: "")
+            .target = self
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Shade", action: #selector(quit), keyEquivalent: "q")
             .target = self
         item.menu = menu
@@ -218,6 +225,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showAbout() {
         about.present()
+    }
+
+    @objc private func showDiagnostics() {
+        diagnostics.present()
     }
 
     /// Wired to Edit → Cut.
