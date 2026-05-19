@@ -46,6 +46,16 @@ final class TerminalsController {
     func newSession() -> TerminalSession {
         // TerminalSession.init already calls apply(Preferences.load()).
         let session = TerminalSession()
+        // Close this tab when the shell exits (Ctrl-D / `exit` / crash).
+        // Weak self + weak session — onExit lives on the session, the
+        // session is owned by `sessions`, and the closure must not keep
+        // the controller alive on its own.
+        session.onExit = { [weak self, weak session] in
+            guard let self, let session else { return }
+            if let index = self.sessions.firstIndex(where: { $0 === session }) {
+                self.close(at: index)
+            }
+        }
         sessions.append(session)
         select(at: sessions.count - 1)
         return session
