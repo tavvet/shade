@@ -6,6 +6,17 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Git status badge no longer polls every second on the active tab. The
+  per-tick `git status` fork is replaced by event-driven refresh via a
+  new `GitRefreshCoordinator`: triggers are cwd change (OSC 7 / cwd
+  poll), OSC 133 `D` (command finished), tab activation, and panel
+  focus return. Debounced 350 ms with cancel-previous, plus a 5 s
+  weak-reason cooldown so rapid tab/focus switching doesn't re-fork
+  git. The cwd-polling timer still ticks for cwd / branch / remote
+  indicator (in-process reads, cheap).
+
 ## [0.1.1] — 2026-05-19
 
 ### Added

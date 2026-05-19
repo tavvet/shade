@@ -29,8 +29,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Re-anchor first responder on the active terminal view every time the
             // panel becomes key — covers focus loss after switching apps or after
             // showing/hiding the panel mid-activation.
-            guard let self, let view = self.terminals.activeSession?.view else { return }
-            self.panel.makeFirstResponder(view)
+            guard let self, let active = self.terminals.activeSession else { return }
+            self.panel.makeFirstResponder(active.view)
+            // Refresh-after-focus-return: the user may have changed git state
+            // from another tool while we were hidden. Weak reason — coordinator
+            // suppresses it if we just refreshed.
+            active.focusReturned()
         }
         return p
     }()
