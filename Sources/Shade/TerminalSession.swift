@@ -75,11 +75,28 @@ final class TerminalSession: NSObject {
 
     private var cwd: String = "" {
         didSet {
+            // Drive git-status refreshes off cwd changes (instead of polling).
+            // Any path where this differs from the previous cwd schedules a
+            // strong-reason refresh; emptying cwd (e.g. when ssh starts and
+            // local state is masked) cancels any pending refresh and clears
+            // the status badge directly.
+            if cwd != oldValue {
+                if cwd.isEmpty {
+                    gitRefresh.cancel()
+                    if gitStatus != nil { gitStatus = nil }
+                } else {
+                    gitRefresh.schedule(path: cwd, reason: .cwdChanged)
+                }
+            }
             // CWD changes also affect displayTitle when no explicit title was set.
             guard title.isEmpty else { return }
             notifyTitleChanged()
         }
     }
+
+    private lazy var gitRefresh: GitRefreshCoordinator = GitRefreshCoordinator(
+        apply: { [weak self] status in self?.gitStatus = status }
+    )
 
     private(set) var branch: String = "" {
         didSet { notifyTitleChanged() }
@@ -204,6 +221,11 @@ final class TerminalSession: NSObject {
         guard let mark = PromptMark.parse(payload: payload[...], row: row) else { return }
         pruneStalePromptMarks()
         promptMarks.append(mark)
+        // `D` (command finished) is the canonical "shell did something — git
+        // status may have changed" signal. Drive a strong-reason refresh.
+        if case .commandDone = mark.kind, !cwd.isEmpty {
+            gitRefresh.schedule(path: cwd, reason: .commandFinished)
+        }
     }
 
     private func pruneStalePromptMarks() {
@@ -275,13 +297,11 @@ final class TerminalSession: NSObject {
         return true
     }
 
-    /// Re-read the shell's working directory and current git branch.
-    /// Called by the controller's polling timer. `includeGitStatus` is true only for the
-    /// active session — `git status` / `git diff` are subprocesses, and running them every
-    /// tick for every tab would be heavy in large repos. Non-active tabs' working directory
-    /// can't change without user input anyway, so their status is only refreshed when they
-    /// become active (via `select`).
-    func refreshContext(includeGitStatus: Bool) {
+    /// Re-read the shell's working directory and current git branch — both
+    /// fast (libproc lookup + `.git/HEAD` read). `git status` is no longer
+    /// part of this tick; it runs through `GitRefreshCoordinator`, driven by
+    /// cwd changes and OSC 133 command-finished marks instead of polling.
+    func refreshContext() {
         guard view.process.running else { return }
         let shellPid = view.process.shellPid
 
@@ -297,9 +317,8 @@ final class TerminalSession: NSObject {
             // Also clear `title` — the remote shell typically pushes its own OSC 0
             // (e.g. "root@localhost"), and after `exit` the local shell won't reset
             // it, so without this you'd see a stale remote title on the tab.
-            if !cwd.isEmpty { cwd = "" }
+            if !cwd.isEmpty { cwd = "" }      // cwd.didSet cancels gitRefresh + clears gitStatus
             if !branch.isEmpty { branch = "" }
-            if gitStatus != nil { gitStatus = nil }
             if !title.isEmpty { title = "" }
             return
         }
@@ -311,18 +330,25 @@ final class TerminalSession: NSObject {
         if newBranch != branch {
             branch = newBranch
         }
+    }
 
-        guard includeGitStatus else { return }
-        let pathSnapshot = cwd
-        let inRepo = !branch.isEmpty
-        Task.detached(priority: .utility) { [weak self] in
-            let status: GitStatus? = inRepo ? GitInfo.status(forCwd: pathSnapshot) : nil
-            // Re-capture weak self inside the main-actor closure rather than letting
-            // the outer detached-task `self` cross actor boundaries (strict Sendable
-            // checking on newer Swift toolchains rejects the cross-actor send).
-            await MainActor.run { [weak self] in
-                self?.gitStatus = status
-            }
+    /// Called when this session's tab becomes active. Pulls fresh
+    /// cwd/branch immediately and schedules a status refresh under a weak
+    /// reason — the coordinator's rate limit will skip it if we just
+    /// refreshed (e.g. tab switched twice within a few seconds).
+    func tabActivated() {
+        refreshContext()
+        if !cwd.isEmpty {
+            gitRefresh.schedule(path: cwd, reason: .tabActivated)
+        }
+    }
+
+    /// Called when the panel regains key-window status. Same weak-reason
+    /// schedule as `tabActivated()` — covers the case where the user made
+    /// changes in another tool while the panel was hidden.
+    func focusReturned() {
+        if !cwd.isEmpty {
+            gitRefresh.schedule(path: cwd, reason: .focusReturned)
         }
     }
 }

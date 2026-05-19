@@ -20,12 +20,14 @@ final class TerminalsController {
     }
 
     private func startCwdPolling() {
+        // Polls cwd / branch / remote indicator only — fast, in-process reads.
+        // `git status` runs event-driven through GitRefreshCoordinator (driven
+        // by cwd-change, OSC 133 D, tab/focus events), not on this tick.
         cwdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                let activeIdx = self.activeIndex
-                for (i, session) in self.sessions.enumerated() {
-                    session.refreshContext(includeGitStatus: i == activeIdx)
+                for session in self.sessions {
+                    session.refreshContext()
                 }
             }
         }
@@ -85,9 +87,10 @@ final class TerminalsController {
         containerView.layoutSubtreeIfNeeded()
         activeIndex = index
         session.start()
-        // Refresh status now so the badge picks up the newly-active session's repo
-        // without waiting for the next polling tick.
-        session.refreshContext(includeGitStatus: true)
+        // Refresh cwd/branch now and let the coordinator decide whether to
+        // re-run git status (cwd change → strong, unchanged cwd within
+        // cooldown → skip).
+        session.tabActivated()
         containerView.window?.makeFirstResponder(v)
         NotificationCenter.default.post(name: Self.tabsChanged, object: self)
     }
