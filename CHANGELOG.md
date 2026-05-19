@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-05-19
+
 ### Changed
 
 - Git status badge no longer polls every second on the active tab. The
@@ -117,6 +119,7 @@ First public release.
 - No window splits, scrollback search, or session save/restore yet.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/tavvet/shade/releases/tag/v0.1.2
 [0.1.1]: https://github.com/tavvet/shade/releases/tag/v0.1.1
 [0.1.0]: https://github.com/tavvet/shade/releases/tag/v0.1.0
