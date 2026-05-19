@@ -2316,6 +2316,47 @@ open class TerminalView: NSView, NSTextInputClient, NSUserInterfaceValidations, 
             return
         }
         let velocity = calcScrollingVelocity(delta: Int (abs (event.deltaY)))
+        // App opted into mouse reporting (DECSET 1000/1002/1003 + 1006 …):
+        // forward the wheel as xterm button 4 / button 5 events so the app
+        // can react natively (claude-code, micro, fzf in --reverse …).
+        // Has to win over the arrow-key fallback below — these apps consume
+        // arrows for their own navigation.
+        if allowMouseReporting && terminal.mouseMode.sendButtonPress() {
+            let displayBuffer = terminal.displayBuffer
+            let hit = calculateMouseHit(with: event)
+            let screenRow = max(0, min(displayBuffer.rows - 1, hit.grid.row - displayBuffer.yDisp))
+            let flags = event.modifierFlags
+            let button = event.deltaY > 0 ? 4 : 5
+            let buttonFlags = terminal.encodeButton(
+                button: button,
+                release: false,
+                shift: flags.contains(.shift),
+                meta: flags.contains(.option),
+                control: flags.contains(.control))
+            let count = min(velocity, 5)
+            for _ in 0..<count {
+                terminal.sendEvent(
+                    buttonFlags: buttonFlags,
+                    x: hit.grid.col,
+                    y: screenRow,
+                    pixelX: hit.pixels.col,
+                    pixelY: hit.pixels.row)
+            }
+            return
+        }
+        // Alternate-screen apps (vim, less, htop, k9s …) have no scrollback
+        // to scroll into; translate the wheel into arrow-key presses so the
+        // app can move its own viewport. De-facto behavior in iTerm2 /
+        // Alacritty / kitty.
+        if terminal.isCurrentBufferAlternate {
+            let count = min(velocity, 5)
+            if event.deltaY > 0 {
+                for _ in 0..<count { sendKeyUp() }
+            } else {
+                for _ in 0..<count { sendKeyDown() }
+            }
+            return
+        }
         if event.deltaY > 0 {
             scrollUp (lines: velocity)
         } else {
