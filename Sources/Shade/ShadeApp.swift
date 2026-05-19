@@ -45,6 +45,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var diagnostics = DiagnosticsWindowController(terminals: terminals)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // macOS auto-installs "Show Tab Bar" / "Merge All Windows" key
+        // equivalents (⌘T / ⌘⇧T) on any app that has an NSWindow.
+        // Those bindings live above our panelHandleKey and would consume
+        // ⌘T before our new-tab handler sees it. Shade has its own tab
+        // model (the bottom tab bar), so the system feature is irrelevant.
+        NSWindow.allowsAutomaticWindowTabbing = false
+
         installMainMenu()
         installStatusItem()
         installTerminals()
@@ -257,18 +264,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 extension AppDelegate: PanelKeyHandler {
     /// Tab shortcuts follow the macOS convention used by iTerm2/Terminal/Safari/Chrome.
     /// ⌘-keys are safe — shell uses ⌃-combinations.
+    ///
+    /// Letter dispatch goes through `KeyCodes.asciiLetterForKeyCode` (physical
+    /// QWERTY position), not `charactersIgnoringModifiers`. macOS only does
+    /// the Command-key-to-QWERTY fallback inside `NSMenuItem.keyEquivalent`
+    /// matching; raw event inspection here would otherwise see "ц" / "е" / …
+    /// on a Cyrillic input source and fail the equality check.
     func panelHandleKey(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let cmd: NSEvent.ModifierFlags = [.command]
         let ctrl: NSEvent.ModifierFlags = [.control]
         let ctrlShift: NSEvent.ModifierFlags = [.control, .shift]
         let chars = event.charactersIgnoringModifiers ?? ""
+        let letter = KeyCodes.asciiLetterForKeyCode[event.keyCode]
 
         // Tab key has its own keyCode (48) and `chars` is `\t`.
         let isTab = event.keyCode == 48
 
         if flags == cmd {
-            switch chars.lowercased() {
+            switch letter {
             case "t":
                 terminals.newSession()
                 return true
@@ -286,6 +300,8 @@ extension AppDelegate: PanelKeyHandler {
             // we don't intercept it here because the main-menu dispatch wins
             // before performKeyEquivalent is consulted on the window.
             default:
+                // The digit row produces the same characters on every layout,
+                // so `chars` is fine for ⌘1…⌘9.
                 if let digit = Int(chars), (1...9).contains(digit) {
                     // Only consume the event when the index actually exists, otherwise
                     // the keystroke silently disappears (e.g. ⌘5 with only 3 tabs).
@@ -311,9 +327,9 @@ extension AppDelegate: PanelKeyHandler {
         // OSC 133 prompt navigation. Arrow keys on macOS carry .function and
         // .numericPad in their modifierFlags on top of the user-held keys, so
         // we compare against a user-only mask (the same trick DropdownPanel's
-        // keyboardSelectionAction uses for ⌘⇧← / ⌘⇧→). Arrows are matched
-        // by keyCode (layout-agnostic); ⌘⇧O uses charactersIgnoringModifiers
-        // because AppKit normalizes Command-key letters to QWERTY.
+        // keyboardSelectionAction uses for ⌘⇧← / ⌘⇧→). Letter & arrow keys
+        // are both matched by physical keyCode — `charactersIgnoringModifiers`
+        // would return Cyrillic / Greek / etc on non-Latin layouts.
         let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
         let userFlags = event.modifierFlags.intersection(userKeys)
         let cmdShiftOnly: NSEvent.ModifierFlags = [.command, .shift]
@@ -331,7 +347,7 @@ extension AppDelegate: PanelKeyHandler {
                 terminals.activeSession?.jumpToNextPrompt()
                 return true
             default:
-                if chars.lowercased() == "o" {
+                if letter == "o" {
                     terminals.activeSession?.copyLastCommandOutput()
                     return true
                 }
