@@ -103,8 +103,8 @@ final class DropdownPanel: NSPanel {
     private func optionDeleteBytes(for event: NSEvent) -> [UInt8]? {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         guard flags == [.option] else { return nil }
-        // 51 = kVK_Delete (Backspace on Mac keyboards).
-        guard event.keyCode == 51 else { return nil }
+        // kVK_Delete is the Backspace key on Mac keyboards.
+        guard event.keyCode == KeyCodes.delete else { return nil }
         return [0x1B, 0x7F]
     }
 
@@ -117,9 +117,9 @@ final class DropdownPanel: NSPanel {
         let flags = event.modifierFlags.intersection(userKeys)
         guard flags.isEmpty else { return nil }    // shift+Home/End → selection (TODO)
         switch event.keyCode {
-        case 115: return [0x01]   // Home → ⌃A
-        case 119: return [0x05]   // End  → ⌃E
-        default:  return nil
+        case KeyCodes.home: return [0x01]   // Home → ⌃A
+        case KeyCodes.end:  return [0x05]   // End  → ⌃E
+        default:            return nil
         }
     }
 
@@ -140,12 +140,12 @@ final class DropdownPanel: NSPanel {
 
         let direction: TerminalView.ShadeKeyboardDirection
         switch (event.keyCode, flags == cmdShift) {
-        case (123, false): direction = .left
-        case (124, false): direction = .right
-        case (126, false): direction = .up
-        case (125, false): direction = .down
-        case (123, true):  direction = .lineStart   // ⌘⇧← → select to beginning of line
-        case (124, true):  direction = .lineEnd     // ⌘⇧→ → select to end of line
+        case (KeyCodes.leftArrow,  false): direction = .left
+        case (KeyCodes.rightArrow, false): direction = .right
+        case (KeyCodes.upArrow,    false): direction = .up
+        case (KeyCodes.downArrow,  false): direction = .down
+        case (KeyCodes.leftArrow,  true):  direction = .lineStart   // ⌘⇧← → select to beginning of line
+        case (KeyCodes.rightArrow, true):  direction = .lineEnd     // ⌘⇧→ → select to end of line
         default: return nil
         }
         let byWord = flags == optShift
