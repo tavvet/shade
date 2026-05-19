@@ -293,6 +293,36 @@ extension AppDelegate: PanelKeyHandler {
             return true
         }
 
+        // OSC 133 prompt navigation. Arrow keys on macOS carry .function and
+        // .numericPad in their modifierFlags on top of the user-held keys, so
+        // we compare against a user-only mask (the same trick DropdownPanel's
+        // keyboardSelectionAction uses for ⌘⇧← / ⌘⇧→). Arrows are matched
+        // by keyCode (layout-agnostic); ⌘⇧O uses charactersIgnoringModifiers
+        // because AppKit normalizes Command-key letters to QWERTY.
+        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        let userFlags = event.modifierFlags.intersection(userKeys)
+        let cmdShiftOnly: NSEvent.ModifierFlags = [.command, .shift]
+        if userFlags == cmdShiftOnly {
+            switch event.keyCode {
+            case 126: // up arrow
+                // Always consume: if there's no prompt mark to jump to we
+                // still don't want the event leaking into SwiftTerm, where
+                // AppKit's default `moveToBeginningOfDocumentAndModifySelection`
+                // would extend the selection over the whole buffer (looks
+                // like an opacity change on the translucent background).
+                terminals.activeSession?.jumpToPreviousPrompt()
+                return true
+            case 125: // down arrow
+                terminals.activeSession?.jumpToNextPrompt()
+                return true
+            default:
+                if chars.lowercased() == "o" {
+                    terminals.activeSession?.copyLastCommandOutput()
+                    return true
+                }
+            }
+        }
+
         return false
     }
 

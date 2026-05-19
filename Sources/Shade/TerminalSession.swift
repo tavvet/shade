@@ -67,6 +67,7 @@ final class TerminalSession: NSObject {
     let view: LocalProcessTerminalView
     private let delegateProxy: TerminalDelegateProxy
     private var didPadInitialPrompt = false
+    private(set) var promptMarks: [PromptMark] = []
 
     private(set) var title: String = "" {
         didSet { notifyTitleChanged() }
@@ -138,6 +139,21 @@ final class TerminalSession: NSObject {
         delegateProxy.onOpenLink = { [weak self] link in
             MainActor.assumeIsolated { self?.openLink(link) }
         }
+        // OSC 133 prompt marks. Snapshot the cursor row synchronously inside
+        // the parser callback (which doesn't run on main); hop to the main
+        // actor to mutate session state. Capturing the terminal weakly avoids
+        // a retain cycle through parser.oscHandlers.
+        let terminal = view.getTerminal()
+        terminal.registerOscHandler(code: 133) { [weak self, weak terminal] data in
+            guard let terminal else { return }
+            let row = terminal.scrollInvariantCursorRow
+            let bytes = Array(data)
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    self?.recordPromptMark(payload: bytes, row: row)
+                }
+            }
+        }
         view.translatesAutoresizingMaskIntoConstraints = false
         view.nativeForegroundColor = NSColor(white: 0.92, alpha: 1.0)
         apply(Preferences.load())
@@ -182,6 +198,81 @@ final class TerminalSession: NSObject {
         if view.process.running {
             kill(view.process.shellPid, SIGTERM)
         }
+    }
+
+    private func recordPromptMark(payload: [UInt8], row: Int) {
+        guard let mark = PromptMark.parse(payload: payload[...], row: row) else { return }
+        pruneStalePromptMarks()
+        promptMarks.append(mark)
+    }
+
+    private func pruneStalePromptMarks() {
+        let terminal = view.getTerminal()
+        // Drop marks whose row has fallen out of scrollback. Lazy — runs on
+        // record and on jump, which is enough to keep the list bounded by
+        // recent activity without a separate timer.
+        promptMarks.removeAll { terminal.getScrollInvariantLine(row: $0.row) == nil }
+    }
+
+    /// Scroll the viewport up to the previous OSC 133 `A` (prompt-start) mark
+    /// strictly above the current viewport top. Returns `false` if there is
+    /// no earlier mark (already at the oldest prompt, or no marks at all).
+    @discardableResult
+    func jumpToPreviousPrompt() -> Bool {
+        jump(direction: .previous)
+    }
+
+    /// Mirror of `jumpToPreviousPrompt()`, scrolling down to the next mark.
+    @discardableResult
+    func jumpToNextPrompt() -> Bool {
+        jump(direction: .next)
+    }
+
+    private enum JumpDirection { case previous, next }
+
+    /// Copy the most recently completed command's output to the system
+    /// clipboard. Requires the shell to emit OSC 133 `C`/`D` around its
+    /// commands (see the README "Shell integration" section). Returns
+    /// `false` if no completed C/D pair exists or the command produced
+    /// no output.
+    @discardableResult
+    func copyLastCommandOutput() -> Bool {
+        pruneStalePromptMarks()
+        guard let range = PromptMark.lastCommandOutputRange(in: promptMarks) else { return false }
+        let terminal = view.getTerminal()
+        var lines: [String] = []
+        for row in range {
+            guard let bufferLine = terminal.getScrollInvariantLine(row: row) else { continue }
+            lines.append(bufferLine.translateToString(trimRight: true))
+        }
+        let text = lines.joined(separator: "\n")
+        guard !text.isEmpty else { return false }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        return true
+    }
+
+    private func jump(direction: JumpDirection) -> Bool {
+        pruneStalePromptMarks()
+        let terminal = view.getTerminal()
+        let viewportTopInvariant = terminal.scrollInvariantLinesTop + terminal.buffer.yDisp
+        let mark: PromptMark?
+        switch direction {
+        case .previous:
+            mark = PromptMark.previousPromptStart(before: viewportTopInvariant, in: promptMarks)
+        case .next:
+            mark = PromptMark.nextPromptStart(after: viewportTopInvariant, in: promptMarks)
+        }
+        guard let mark else { return false }
+        // Clamp into the valid yDisp range. Without this, a mark near the
+        // bottom of scrollback (cursor area) would scroll the viewport past
+        // the last line — empty rows appear below the content and the
+        // translucent panel background shows through, which reads as "the
+        // panel went transparent."
+        let rawViewportRow = mark.row - terminal.scrollInvariantLinesTop
+        let viewportRow = max(0, min(rawViewportRow, terminal.maxScrollbackRow))
+        view.scrollTo(row: viewportRow)
+        return true
     }
 
     /// Re-read the shell's working directory and current git branch.
