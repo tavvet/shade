@@ -3,8 +3,9 @@ import XCTest
 
 @MainActor
 final class GitRefreshCoordinatorTests: XCTestCase {
-    // Short debounce keeps tests fast while still exercising the timer path.
-    private let fastDebounce: Duration = .milliseconds(20)
+    // Generous default debounce — these tests still finish in milliseconds locally,
+    // and the slack matters under load on CI runners.
+    private let fastDebounce: Duration = .milliseconds(40)
 
     func testStrongReasonRefreshesAfterDebounce() async {
         let fetchCount = Counter()
@@ -19,10 +20,8 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             apply: { applied.set($0) }
         )
         coord.schedule(path: "/repo", reason: .cwdChanged)
-        try? await Task.sleep(for: .milliseconds(80))
+        await waitForCount(fetchCount, equals: 1)
 
-        let count = await fetchCount.value
-        XCTAssertEqual(count, 1)
         XCTAssertEqual(applied.get(), GitStatus(filesChanged: 3, insertions: 5, deletions: 2))
     }
 
@@ -40,7 +39,8 @@ final class GitRefreshCoordinatorTests: XCTestCase {
         coord.schedule(path: "/repo", reason: .cwdChanged)
         coord.schedule(path: "/repo", reason: .cwdChanged)
         coord.schedule(path: "/repo", reason: .cwdChanged)
-        try? await Task.sleep(for: .milliseconds(80))
+        // Wait a generous buffer past the debounce, then verify only one fired.
+        try? await Task.sleep(for: .milliseconds(400))
 
         let count = await fetchCount.value
         XCTAssertEqual(count, 1)
@@ -48,11 +48,11 @@ final class GitRefreshCoordinatorTests: XCTestCase {
 
     func testWeakReasonSkippedWithinCooldownAndSamePath() async {
         let fetchCount = Counter()
-        var now = Date(timeIntervalSince1970: 0)
+        let clock = TestClock()
         let coord = GitRefreshCoordinator(
             debounce: fastDebounce,
             weakReasonCooldown: 5,
-            clock: { now },
+            clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
                 return nil
@@ -60,25 +60,24 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             apply: { _ in }
         )
         coord.schedule(path: "/repo", reason: .cwdChanged)
-        try? await Task.sleep(for: .milliseconds(80))
-        let firstCount = await fetchCount.value
-        XCTAssertEqual(firstCount, 1)
+        await waitForCount(fetchCount, equals: 1)
 
-        // 2 seconds later (< 5s cooldown), weak reason on same path: skip.
-        now = Date(timeIntervalSince1970: 2)
+        // 2 seconds later (< 5s cooldown), weak reason on same path: should skip.
+        clock.advance(by: 2)
         coord.schedule(path: "/repo", reason: .tabActivated)
-        try? await Task.sleep(for: .milliseconds(80))
-        let secondCount = await fetchCount.value
-        XCTAssertEqual(secondCount, 1)
+        try? await Task.sleep(for: .milliseconds(400))
+
+        let count = await fetchCount.value
+        XCTAssertEqual(count, 1)
     }
 
     func testWeakReasonPassesAfterCooldownExpires() async {
         let fetchCount = Counter()
-        var now = Date(timeIntervalSince1970: 0)
+        let clock = TestClock()
         let coord = GitRefreshCoordinator(
             debounce: fastDebounce,
             weakReasonCooldown: 5,
-            clock: { now },
+            clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
                 return nil
@@ -86,25 +85,21 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             apply: { _ in }
         )
         coord.schedule(path: "/repo", reason: .cwdChanged)
-        try? await Task.sleep(for: .milliseconds(80))
-        let firstCount = await fetchCount.value
-        XCTAssertEqual(firstCount, 1)
+        await waitForCount(fetchCount, equals: 1)
 
         // 10 seconds later (> 5s cooldown), weak reason on same path: fires.
-        now = Date(timeIntervalSince1970: 10)
+        clock.advance(by: 10)
         coord.schedule(path: "/repo", reason: .focusReturned)
-        try? await Task.sleep(for: .milliseconds(80))
-        let secondCount = await fetchCount.value
-        XCTAssertEqual(secondCount, 2)
+        await waitForCount(fetchCount, equals: 2)
     }
 
     func testWeakReasonPassesOnDifferentPathEvenWithinCooldown() async {
         let fetchCount = Counter()
-        var now = Date(timeIntervalSince1970: 0)
+        let clock = TestClock()
         let coord = GitRefreshCoordinator(
             debounce: fastDebounce,
             weakReasonCooldown: 5,
-            clock: { now },
+            clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
                 return nil
@@ -112,25 +107,21 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             apply: { _ in }
         )
         coord.schedule(path: "/repo-a", reason: .cwdChanged)
-        try? await Task.sleep(for: .milliseconds(80))
-        let firstCount = await fetchCount.value
-        XCTAssertEqual(firstCount, 1)
+        await waitForCount(fetchCount, equals: 1)
 
         // 1 second later, weak reason on DIFFERENT path: fires.
-        now = Date(timeIntervalSince1970: 1)
+        clock.advance(by: 1)
         coord.schedule(path: "/repo-b", reason: .tabActivated)
-        try? await Task.sleep(for: .milliseconds(80))
-        let secondCount = await fetchCount.value
-        XCTAssertEqual(secondCount, 2)
+        await waitForCount(fetchCount, equals: 2)
     }
 
     func testStrongReasonAlwaysFiresEvenWithinCooldown() async {
         let fetchCount = Counter()
-        var now = Date(timeIntervalSince1970: 0)
+        let clock = TestClock()
         let coord = GitRefreshCoordinator(
             debounce: fastDebounce,
             weakReasonCooldown: 60,
-            clock: { now },
+            clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
                 return nil
@@ -138,22 +129,18 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             apply: { _ in }
         )
         coord.schedule(path: "/repo", reason: .cwdChanged)
-        try? await Task.sleep(for: .milliseconds(80))
-        let firstCount = await fetchCount.value
-        XCTAssertEqual(firstCount, 1)
+        await waitForCount(fetchCount, equals: 1)
 
         // 1 second later (well within cooldown), strong reason: fires.
-        now = Date(timeIntervalSince1970: 1)
+        clock.advance(by: 1)
         coord.schedule(path: "/repo", reason: .commandFinished)
-        try? await Task.sleep(for: .milliseconds(80))
-        let secondCount = await fetchCount.value
-        XCTAssertEqual(secondCount, 2)
+        await waitForCount(fetchCount, equals: 2)
     }
 
     func testCancelPreventsPendingRefresh() async {
         let fetchCount = Counter()
         let coord = GitRefreshCoordinator(
-            debounce: .milliseconds(100),
+            debounce: .milliseconds(150),
             weakReasonCooldown: 0,
             fetch: { _ in
                 await fetchCount.increment()
@@ -163,9 +150,9 @@ final class GitRefreshCoordinatorTests: XCTestCase {
         )
         coord.schedule(path: "/repo", reason: .cwdChanged)
         // Cancel before debounce elapses.
-        try? await Task.sleep(for: .milliseconds(20))
+        try? await Task.sleep(for: .milliseconds(40))
         coord.cancel()
-        try? await Task.sleep(for: .milliseconds(150))
+        try? await Task.sleep(for: .milliseconds(400))
 
         let count = await fetchCount.value
         XCTAssertEqual(count, 0)
@@ -173,11 +160,11 @@ final class GitRefreshCoordinatorTests: XCTestCase {
 
     func testCancelClearsCooldownState() async {
         let fetchCount = Counter()
-        var now = Date(timeIntervalSince1970: 0)
+        let clock = TestClock()
         let coord = GitRefreshCoordinator(
             debounce: fastDebounce,
             weakReasonCooldown: 60,
-            clock: { now },
+            clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
                 return nil
@@ -185,20 +172,39 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             apply: { _ in }
         )
         coord.schedule(path: "/repo", reason: .cwdChanged)
-        try? await Task.sleep(for: .milliseconds(80))
-        let firstCount = await fetchCount.value
-        XCTAssertEqual(firstCount, 1)
+        await waitForCount(fetchCount, equals: 1)
 
         coord.cancel()
-        // After cancel, weak reason should fire again because state is cleared.
+        // After cancel, a weak reason should fire again because state is cleared.
         coord.schedule(path: "/repo", reason: .tabActivated)
-        try? await Task.sleep(for: .milliseconds(80))
-        let secondCount = await fetchCount.value
-        XCTAssertEqual(secondCount, 2)
+        await waitForCount(fetchCount, equals: 2)
+    }
+
+    // MARK: - Helpers
+
+    /// Polls the counter until it hits `expected` or the timeout elapses.
+    /// Fails the test instead of hanging if the count never reaches it.
+    private func waitForCount(
+        _ counter: Counter,
+        equals expected: Int,
+        timeout: TimeInterval = 3.0,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let value = await counter.value
+            if value == expected { return }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        let final = await counter.value
+        XCTFail(
+            "Expected fetch count \(expected) within \(timeout)s, got \(final)",
+            file: file, line: line)
     }
 }
 
-// MARK: - Test helpers
+// MARK: - Test fixtures
 
 /// Sendable counter so tests can observe how often the injected fetcher ran
 /// from off-main detached tasks.
@@ -207,11 +213,23 @@ private actor Counter {
     func increment() { value += 1 }
 }
 
-/// Apply closures fire on @MainActor — this captures the last applied value
-/// without needing locking.
+/// Captures the last applied value from a `@MainActor` apply closure.
 @MainActor
 private final class ResultBox<T> {
     private var stored: T?
     func set(_ value: T) { stored = value }
     func get() -> T? { stored }
+}
+
+/// Class-based virtual clock — passes a method reference into the
+/// coordinator instead of capturing a mutable variable in a closure (the
+/// latter quietly misbehaves under strict-concurrency toolchains).
+@MainActor
+private final class TestClock {
+    private var current: Date = Date(timeIntervalSince1970: 0)
+
+    func read() -> Date { current }
+    func advance(by seconds: TimeInterval) {
+        current = current.addingTimeInterval(seconds)
+    }
 }
