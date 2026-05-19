@@ -6,6 +6,24 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Scroll wheel now works inside full-screen TUI apps (vim, less, htop,
+  k9s, Claude Code, micro, fzf, …). The vendored SwiftTerm previously
+  always scrolled its own viewport in response to the wheel, which is
+  a no-op while the alternate-screen buffer is active. `scrollWheel`
+  now picks one of three paths:
+  - If the app enabled mouse reporting (DECSET 1000 / 1002 / 1003 +
+    1006), the wheel is forwarded as xterm button 4 / button 5 events
+    so the app can react natively. Required for Claude CLI / micro /
+    fzf — they consume plain `↑` / `↓` for their own navigation, so
+    the arrow-key fallback alone made the wheel jump between messages
+    / items instead of scrolling the view.
+  - Otherwise, in the alternate-screen buffer, deltas are translated
+    into `↑` / `↓` key presses. Covers vim / less / htop / k9s and
+    matches iTerm2 / Alacritty / kitty defaults.
+  - In the normal buffer, behavior is unchanged (scrolls scrollback).
+
 ## [0.1.4] — 2026-05-19
 
 ### Fixed
