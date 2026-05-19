@@ -64,6 +64,14 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
 final class TerminalSession: NSObject {
     static let titleDidChange = Notification.Name("ShadeTerminalSessionTitleDidChange")
 
+    /// Invoked when the underlying shell process exits — whether via Ctrl-D
+    /// on an empty prompt, an explicit `exit`, or a crash. The controller
+    /// installs this on each new session to close the corresponding tab
+    /// (its "always keep at least one tab" rule handles the last-tab case).
+    /// Closure callback rather than a notification because `Notification`
+    /// isn't Sendable across the parser → main hop under strict concurrency.
+    var onExit: (@MainActor () -> Void)?
+
     let view: LocalProcessTerminalView
     private let delegateProxy: TerminalDelegateProxy
     private var didPadInitialPrompt = false
@@ -408,8 +416,12 @@ extension TerminalSession: LocalProcessTerminalViewDelegate {
     nonisolated func processTerminated(source: TerminalView, exitCode: Int32?) {
         DispatchQueue.main.async { [weak self] in
             MainActor.assumeIsolated {
-                // Auto-restart so the panel always shows a live shell.
-                self?.start()
+                // Tell the controller to close this tab. Standard macOS
+                // terminal behavior — Ctrl-D / `exit` ends the tab rather
+                // than silently respawning the shell inside it. Last-tab
+                // case is handled by TerminalsController.close, which
+                // spawns a fresh session when none are left.
+                self?.onExit?()
             }
         }
     }
