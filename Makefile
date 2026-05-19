@@ -51,6 +51,7 @@ build: $(ICON_OUT)
 	cp Resources/Info.plist "$(CONTENTS)/Info.plist"; \
 	if [ -f "$(ICON_OUT)" ]; then cp "$(ICON_OUT)" "$(RESOURCES_DIR)/AppIcon.icns"; fi; \
 	if [ -f Resources/MenubarIcon.png ]; then cp Resources/MenubarIcon.png "$(RESOURCES_DIR)/MenubarIcon.png"; fi; \
+	if [ -d integrations ]; then cp -R integrations "$(RESOURCES_DIR)/integrations"; fi; \
 	SIGN_IDENTITY="$${DEVELOPER_ID:--}"; \
 	if [ "$${SIGN_IDENTITY}" = "-" ]; then \
 	    echo "→ ad-hoc signing"; \

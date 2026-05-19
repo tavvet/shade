@@ -5,8 +5,8 @@
 #
 # Requires bash-preexec — see https://github.com/rcaloras/bash-preexec.
 # Source bash-preexec.sh in ~/.bashrc first, then source this:
-#   # Homebrew install:
-#   source "$(brew --prefix)/share/shade/shade.bash"
+#   # Homebrew install (Cask drops Shade.app in /Applications):
+#   source "/Applications/Shade.app/Contents/Resources/integrations/shade.bash"
 #   # From-source checkout:
 #   source /path/to/shade/integrations/shade.bash
 
