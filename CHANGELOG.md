@@ -10,12 +10,13 @@ All notable changes to Shade are documented in this file. Format follows
 
 - OSC 133 prompt-mark navigation: `⌘⇧↑` / `⌘⇧↓` jump between previous /
   next shell prompts, `⌘⇧O` copies the previous command's output to the
-  clipboard. Opt-in via a short shell-side snippet (zsh / bash + bash-preexec
-  / fish — see README "Recommended shell setup"). Marks are stored in
-  scroll-invariant row coordinates so they survive scrollback rotation;
-  stale entries are pruned lazily. Required two small additions to the
-  vendored SwiftTerm: public `scrollInvariantCursorRow` and
-  `scrollInvariantLinesTop` accessors on `Terminal`.
+  clipboard. Opt-in by sourcing a shell snippet shipped in
+  `integrations/shade.{zsh,bash,fish}` from the rc file (see README
+  "Prompt marking"). Marks are stored in scroll-invariant row coordinates
+  so they survive scrollback rotation; stale entries are pruned lazily.
+  Required three small additions to the vendored SwiftTerm: public
+  `scrollInvariantCursorRow`, `scrollInvariantLinesTop`, and
+  `maxScrollbackRow` accessors on `Terminal`.
 
 ## [0.1.0] — 2026-05-18
 
