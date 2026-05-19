@@ -11,6 +11,17 @@
 
 CONFIG ?= release
 APP_NAME := Shade
+
+# Version stamping. CI builds tagged commits and gets a clean "0.1.3"; local
+# dev builds on top of a tag get the descriptive "0.1.3-2-gabc123-dirty"
+# string, which is more useful than a stale "0.1.0" in About / Diagnostics
+# / bug reports. The `-` and hash characters in dev builds are non-standard
+# for CFBundleShortVersionString but accepted by macOS for ad-hoc bundles.
+VERSION ?= $(shell git describe --tags --dirty 2>/dev/null | sed 's/^v//')
+ifeq ($(VERSION),)
+VERSION := dev
+endif
+BUILD ?= $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
 APP_DIR := build/$(APP_NAME).app
 CONTENTS := $(APP_DIR)/Contents
 MACOS_DIR := $(CONTENTS)/MacOS
@@ -49,6 +60,8 @@ build: $(ICON_OUT)
 	mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"; \
 	cp "$${EXECUTABLE}" "$(MACOS_DIR)/$(APP_NAME)"; \
 	cp Resources/Info.plist "$(CONTENTS)/Info.plist"; \
+	plutil -replace CFBundleShortVersionString -string "$(VERSION)" "$(CONTENTS)/Info.plist"; \
+	plutil -replace CFBundleVersion -string "$(BUILD)" "$(CONTENTS)/Info.plist"; \
 	if [ -f "$(ICON_OUT)" ]; then cp "$(ICON_OUT)" "$(RESOURCES_DIR)/AppIcon.icns"; fi; \
 	if [ -f Resources/MenubarIcon.png ]; then cp Resources/MenubarIcon.png "$(RESOURCES_DIR)/MenubarIcon.png"; fi; \
 	if [ -d integrations ]; then cp -R integrations "$(RESOURCES_DIR)/integrations"; fi; \
