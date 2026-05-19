@@ -6,17 +6,23 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-05-19
+
 ### Added
 
 - OSC 133 prompt-mark navigation: `⌘⇧↑` / `⌘⇧↓` jump between previous /
   next shell prompts, `⌘⇧O` copies the previous command's output to the
   clipboard. Opt-in by sourcing a shell snippet shipped in
-  `integrations/shade.{zsh,bash,fish}` from the rc file (see README
-  "Prompt marking"). Marks are stored in scroll-invariant row coordinates
-  so they survive scrollback rotation; stale entries are pruned lazily.
-  Required three small additions to the vendored SwiftTerm: public
-  `scrollInvariantCursorRow`, `scrollInvariantLinesTop`, and
-  `maxScrollbackRow` accessors on `Terminal`.
+  `integrations/shade.{zsh,bash,fish}` (also bundled inside
+  `Shade.app/Contents/Resources/integrations/` for Homebrew users; see
+  README "Prompt marking"). Marks are stored in scroll-invariant row
+  coordinates so they survive scrollback rotation; stale entries are
+  pruned lazily. Required three small additions to the vendored
+  SwiftTerm: public `scrollInvariantCursorRow`, `scrollInvariantLinesTop`,
+  and `maxScrollbackRow` accessors on `Terminal`.
+- `Makefile` replaces the `Scripts/*.sh` shell scripts. Targets: `make`
+  (build), `make run`, `make dmg`, `make icon`, `make clean`. Honors
+  `CONFIG=debug|release` and `DEVELOPER_ID="…"` env vars.
 
 ## [0.1.0] — 2026-05-18
 
@@ -100,5 +106,6 @@ First public release.
 - No window splits, scrollback search, or session save/restore yet.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/tavvet/shade/releases/tag/v0.1.1
 [0.1.0]: https://github.com/tavvet/shade/releases/tag/v0.1.0
