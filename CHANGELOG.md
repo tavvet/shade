@@ -6,6 +6,16 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.4] — 2026-05-19
+
+### Fixed
+
+- About and Diagnostics now show the actual release version. The bundled
+  `Info.plist` previously hardcoded `0.1.0` for `CFBundleShortVersionString`
+  and never updated. The Makefile now stamps `git describe --tags --dirty`
+  into the bundle at build time, so CI release builds get a clean `0.1.4`
+  and local dev builds get a descriptive `0.1.3-2-gabc123-dirty`.
+
 ## [0.1.3] — 2026-05-19
 
 ### Added
@@ -150,7 +160,8 @@ First public release.
 - No window splits, scrollback search, or session save/restore yet.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/tavvet/shade/releases/tag/v0.1.4
 [0.1.3]: https://github.com/tavvet/shade/releases/tag/v0.1.3
 [0.1.2]: https://github.com/tavvet/shade/releases/tag/v0.1.2
 [0.1.1]: https://github.com/tavvet/shade/releases/tag/v0.1.1
