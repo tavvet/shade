@@ -6,6 +6,37 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-05-19
+
+### Added
+
+- **Diagnostics window** — a read-only snapshot of what Shade currently
+  sees: app version, macOS version, screen layout, hotkey, and active
+  session state (shell, cwd, branch, git status, OSC 133 mark count).
+  Includes a "Copy" button so the whole report can be pasted straight
+  into a bug report. Available from both the status-bar menu and the
+  App menu.
+
+### Changed
+
+- **Ctrl-D / `exit` now closes the tab instead of silently respawning
+  the shell.** Matches standard macOS terminal behavior — on the last
+  tab the existing "always keep at least one session" rule still
+  spawns a fresh shell, so the panel never goes empty.
+
+### Fixed
+
+- **⌘T / ⌘W / ⌘K / ⌘⇧O on non-Latin keyboard layouts.** The shortcuts
+  were dispatched through `event.charactersIgnoringModifiers`, which
+  on Cyrillic / Greek / etc. input sources returns the layout-native
+  character ("е" / "ц" / "л" / "щ") rather than falling back to QWERTY.
+  Letter dispatch now goes through the physical keyCode the same way
+  control-byte shortcuts do.
+- **System ⌘T / ⌘⇧T no longer hijacks Shade's tab shortcuts.** macOS
+  auto-installs "Show Tab Bar" / "Merge All Windows" key equivalents on
+  any app with an NSWindow; Shade has its own tab model and now
+  disables the system feature on launch.
+
 ## [0.1.2] — 2026-05-19
 
 ### Changed
@@ -119,7 +150,8 @@ First public release.
 - No window splits, scrollback search, or session save/restore yet.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/tavvet/shade/releases/tag/v0.1.3
 [0.1.2]: https://github.com/tavvet/shade/releases/tag/v0.1.2
 [0.1.1]: https://github.com/tavvet/shade/releases/tag/v0.1.1
 [0.1.0]: https://github.com/tavvet/shade/releases/tag/v0.1.0
