@@ -73,7 +73,7 @@ final class TerminalSession: NSObject {
         didSet { notifyTitleChanged() }
     }
 
-    private var cwd: String = "" {
+    private(set) var cwd: String = "" {
         didSet {
             // Drive git-status refreshes off cwd changes (instead of polling).
             // Any path where this differs from the previous cwd schedules a
