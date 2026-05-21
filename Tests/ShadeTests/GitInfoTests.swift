@@ -66,6 +66,20 @@ final class GitInfoTests: XCTestCase {
         XCTAssertEqual(GitInfo.branch(forCwd: work), "dev")
     }
 
+    func testFindGitDirResolvesRelativePointerFile() throws {
+        // Submodules commonly store a relative `gitdir:` pointer.
+        let root = NSTemporaryDirectory() + "shade-tests-" + UUID().uuidString
+        let real = (root as NSString).appendingPathComponent("real-git")
+        let work = (root as NSString).appendingPathComponent("work")
+        try FileManager.default.createDirectory(atPath: real, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(atPath: work, withIntermediateDirectories: true)
+        try "ref: refs/heads/submodule-branch\n".write(toFile: real + "/HEAD", atomically: true, encoding: .utf8)
+        try "gitdir: ../real-git\n".write(toFile: work + "/.git", atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(atPath: root) }
+
+        XCTAssertEqual(GitInfo.branch(forCwd: work), "submodule-branch")
+    }
+
     // MARK: - helpers
 
     private func makeFixtureRepo(headContents: String) throws -> String {

@@ -271,7 +271,8 @@ extension AppDelegate: PanelKeyHandler {
     /// matching; raw event inspection here would otherwise see "ц" / "е" / …
     /// on a Cyrillic input source and fail the equality check.
     func panelHandleKey(_ event: NSEvent) -> Bool {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        let flags = event.modifierFlags.intersection(userKeys)
         let cmd: NSEvent.ModifierFlags = [.command]
         let ctrl: NSEvent.ModifierFlags = [.control]
         let ctrlShift: NSEvent.ModifierFlags = [.control, .shift]
@@ -330,7 +331,6 @@ extension AppDelegate: PanelKeyHandler {
         // keyboardSelectionAction uses for ⌘⇧← / ⌘⇧→). Letter & arrow keys
         // are both matched by physical keyCode — `charactersIgnoringModifiers`
         // would return Cyrillic / Greek / etc on non-Latin layouts.
-        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
         let userFlags = event.modifierFlags.intersection(userKeys)
         let cmdShiftOnly: NSEvent.ModifierFlags = [.command, .shift]
         if userFlags == cmdShiftOnly {

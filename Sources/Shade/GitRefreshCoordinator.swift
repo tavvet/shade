@@ -22,13 +22,14 @@ final class GitRefreshCoordinator {
         case commandFinished
         case tabActivated
         case focusReturned
+        case fallbackPoll
 
         /// Strong reasons always run; weak ones are skipped when the repo
         /// root hasn't changed and the last refresh was recent.
         var isStrong: Bool {
             switch self {
             case .cwdChanged, .commandFinished: return true
-            case .tabActivated, .focusReturned: return false
+            case .tabActivated, .focusReturned, .fallbackPoll: return false
             }
         }
     }
@@ -51,7 +52,7 @@ final class GitRefreshCoordinator {
         weakReasonCooldown: TimeInterval = 5,
         clock: @escaping () -> Date = Date.init,
         fetch: @escaping Fetcher = { path in
-            await Task.detached(priority: .utility) { GitInfo.status(forCwd: path) }.value
+            await GitInfo.statusCancellable(forCwd: path)
         },
         apply: @escaping Apply
     ) {
