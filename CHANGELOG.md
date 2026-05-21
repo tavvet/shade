@@ -6,6 +6,26 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.6] — 2026-05-21
+
+### Fixed
+
+- Git badge now stays fresh even when Shade's optional OSC 133 shell
+  integration is not installed. The active session gets a weak fallback
+  `git status` refresh while command-finished marks are absent; once OSC
+  133 `D` marks are detected, those precise command-completion events take
+  over again.
+- Caps Lock no longer breaks Shade's custom shortcuts. Command/control/option
+  matching now ignores the Caps Lock modifier, so `⌘T`, `⌘W`, `⌘K`, `⌃R`,
+  and `⌥⌫` keep working while Caps Lock is enabled.
+- Git branch detection now handles relative `.git` pointer files, as used by
+  submodules and some worktrees (`gitdir: ../...` is resolved relative to the
+  `.git` file's directory).
+- Cancelled git refreshes now terminate any in-flight `git` subprocess before
+  it can keep doing background work after rapid tab or cwd changes.
+- Release builds are warning-clean again after silencing two unused-result
+  warnings in the vendored SwiftTerm Metal renderer.
+
 ## [0.1.5] — 2026-05-19
 
 ### Fixed
@@ -180,7 +200,8 @@ First public release.
 - No window splits, scrollback search, or session save/restore yet.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/tavvet/shade/releases/tag/v0.1.6
 [0.1.5]: https://github.com/tavvet/shade/releases/tag/v0.1.5
 [0.1.4]: https://github.com/tavvet/shade/releases/tag/v0.1.4
 [0.1.3]: https://github.com/tavvet/shade/releases/tag/v0.1.3

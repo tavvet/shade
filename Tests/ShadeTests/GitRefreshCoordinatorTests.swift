@@ -71,6 +71,30 @@ final class GitRefreshCoordinatorTests: XCTestCase {
         XCTAssertEqual(count, 1)
     }
 
+    func testFallbackPollIsSkippedWithinCooldownAndSamePath() async {
+        let fetchCount = Counter()
+        let clock = TestClock()
+        let coord = GitRefreshCoordinator(
+            debounce: fastDebounce,
+            weakReasonCooldown: 5,
+            clock: clock.read,
+            fetch: { _ in
+                await fetchCount.increment()
+                return nil
+            },
+            apply: { _ in }
+        )
+        coord.schedule(path: "/repo", reason: .cwdChanged)
+        await waitForCount(fetchCount, equals: 1)
+
+        clock.advance(by: 2)
+        coord.schedule(path: "/repo", reason: .fallbackPoll)
+        try? await Task.sleep(for: .milliseconds(400))
+
+        let count = await fetchCount.value
+        XCTAssertEqual(count, 1)
+    }
+
     func testWeakReasonPassesAfterCooldownExpires() async {
         let fetchCount = Counter()
         let clock = TestClock()
@@ -158,6 +182,28 @@ final class GitRefreshCoordinatorTests: XCTestCase {
         XCTAssertEqual(count, 0)
     }
 
+    func testCancelPreventsInFlightRefreshApply() async {
+        let fetchCount = Counter()
+        let applyCount = ApplyCounter()
+        let coord = GitRefreshCoordinator(
+            debounce: fastDebounce,
+            weakReasonCooldown: 0,
+            fetch: { _ in
+                await fetchCount.increment()
+                try? await Task.sleep(for: .milliseconds(500))
+                return GitStatus(filesChanged: 1, insertions: 0, deletions: 0)
+            },
+            apply: { _ in applyCount.increment() }
+        )
+        coord.schedule(path: "/repo", reason: .cwdChanged)
+        await waitForCount(fetchCount, equals: 1)
+
+        coord.cancel()
+        try? await Task.sleep(for: .milliseconds(700))
+
+        XCTAssertEqual(applyCount.value, 0)
+    }
+
     func testCancelClearsCooldownState() async {
         let fetchCount = Counter()
         let clock = TestClock()
@@ -219,6 +265,12 @@ private final class ResultBox<T> {
     private var stored: T?
     func set(_ value: T) { stored = value }
     func get() -> T? { stored }
+}
+
+@MainActor
+private final class ApplyCounter {
+    private(set) var value = 0
+    func increment() { value += 1 }
 }
 
 /// Class-based virtual clock — passes a method reference into the

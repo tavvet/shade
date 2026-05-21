@@ -75,6 +75,7 @@ final class TerminalSession: NSObject {
     let view: LocalProcessTerminalView
     private let delegateProxy: TerminalDelegateProxy
     private var didPadInitialPrompt = false
+    private var sawOsc133CommandDone = false
     private(set) var promptMarks: [PromptMark] = []
 
     private(set) var title: String = "" {
@@ -231,8 +232,11 @@ final class TerminalSession: NSObject {
         promptMarks.append(mark)
         // `D` (command finished) is the canonical "shell did something — git
         // status may have changed" signal. Drive a strong-reason refresh.
-        if case .commandDone = mark.kind, !cwd.isEmpty {
-            gitRefresh.schedule(path: cwd, reason: .commandFinished)
+        if case .commandDone = mark.kind {
+            sawOsc133CommandDone = true
+            if !cwd.isEmpty {
+                gitRefresh.schedule(path: cwd, reason: .commandFinished)
+            }
         }
     }
 
@@ -358,6 +362,15 @@ final class TerminalSession: NSObject {
         if !cwd.isEmpty {
             gitRefresh.schedule(path: cwd, reason: .focusReturned)
         }
+    }
+
+    /// Keeps the git badge fresh for users who have not installed Shade's OSC 133
+    /// shell snippet. Once we see command-finished marks, those become the precise
+    /// trigger and this fallback stays quiet.
+    func fallbackRefreshGitStatusIfNeeded() {
+        guard view.process.running else { return }
+        guard !sawOsc133CommandDone, !cwd.isEmpty, !branch.isEmpty else { return }
+        gitRefresh.schedule(path: cwd, reason: .fallbackPoll)
     }
 }
 

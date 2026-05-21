@@ -21,14 +21,15 @@ final class TerminalsController {
 
     private func startCwdPolling() {
         // Polls cwd / branch / remote indicator only — fast, in-process reads.
-        // `git status` runs event-driven through GitRefreshCoordinator (driven
-        // by cwd-change, OSC 133 D, tab/focus events), not on this tick.
+        // If the shell has not installed Shade's OSC 133 integration, the active
+        // session also gets a weak git-status fallback through GitRefreshCoordinator.
         cwdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
                 for session in self.sessions {
                     session.refreshContext()
                 }
+                self.activeSession?.fallbackRefreshGitStatusIfNeeded()
             }
         }
     }

@@ -91,7 +91,8 @@ final class DropdownPanel: NSPanel {
     }
 
     private func controlBytes(for event: NSEvent) -> [UInt8]? {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        let flags = event.modifierFlags.intersection(userKeys)
         let control: NSEvent.ModifierFlags = [.control]
         let controlShift: NSEvent.ModifierFlags = [.control, .shift]
         guard flags == control || flags == controlShift else { return nil }
@@ -101,7 +102,8 @@ final class DropdownPanel: NSPanel {
 
     /// Option+Delete → ESC DEL (readline backward-kill-word).
     private func optionDeleteBytes(for event: NSEvent) -> [UInt8]? {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        let flags = event.modifierFlags.intersection(userKeys)
         guard flags == [.option] else { return nil }
         // kVK_Delete is the Backspace key on Mac keyboards.
         guard event.keyCode == KeyCodes.delete else { return nil }
