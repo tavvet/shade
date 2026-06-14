@@ -344,14 +344,18 @@ build/Shade.app`.
 ```
 Sources/Shade/
 ├── ShadeApp.swift           @main + AppDelegate (menu bar, hotkey, panel wiring)
+├── AboutWindow.swift        About window — version, links, donation addresses
 ├── BranchBadge.swift        Floating git branch + status pill (SwiftUI)
+├── DiagnosticsWindow.swift  Read-only state snapshot, copy-paste for bug reports
 ├── DropdownPanel.swift      NSPanel: borderless, floating, slide-in animation
 ├── GitInfo.swift            Branch from .git/HEAD, status via git subprocess
-├── HotkeyManager → removed (replaced by KeyboardShortcuts library)
+├── GitRefreshCoordinator.swift  Event-driven, debounced git-status scheduler
 ├── Hotkeys.swift            KeyboardShortcuts.Name declarations (toggleShade)
 ├── KeyCodes.swift           Layout-agnostic keyCode → ASCII mapping
 ├── Preferences.swift        UserDefaults-backed settings struct + screen/frame resolution
 ├── ProcessCwd.swift         libproc-based CWD lookup for shell processes
+├── ProcessTree.swift        Walks the shell's descendants to spot ssh/mosh
+├── PromptMarks.swift        OSC 133 prompt-mark parsing + jump/copy helpers
 ├── SettingsWindow.swift     SwiftUI Settings view + NSWindowController
 ├── TabBar.swift             SwiftUI TabBarView + TabsObservable
 ├── TerminalSession.swift    Wrapper around SwiftTerm.LocalProcessTerminalView
