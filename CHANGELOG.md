@@ -6,6 +6,22 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Detecting an `ssh` / `mosh` session no longer scans the whole system
+  process table. Shade now walks the shell's own descendant tree, so the
+  once-a-second context refresh costs a few syscalls per tab instead of one
+  per process on the machine.
+- Settings coalesce live-preview updates while you drag a slider or the
+  link-color picker: the terminal re-applies font / opacity once the drag
+  settles rather than on every frame.
+
+### Fixed
+
+- The background `git status` behind the badge could hang if git wrote
+  enough to stderr to fill the pipe buffer (e.g. autocrlf warnings on a
+  large dirty tree). Its stderr is now discarded so it can't block.
+
 ## [0.1.6] — 2026-05-21
 
 ### Fixed
