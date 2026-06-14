@@ -187,9 +187,9 @@ final class TerminalSession: NSObject {
 
     func start() {
         guard !view.process.running else { return }
-        // Only pad once, on the very first start. On auto-restart (after the user
-        // types `exit`) the previous session's output already fills the visible
-        // area, so feeding more newlines would push the new prompt off-screen.
+        // Pad once so the first prompt lands at the bottom (Guake-style). start()
+        // no-ops while the shell is running, so this fires on the first real start;
+        // the flag stops a later restart from padding again over existing output.
         if !didPadInitialPrompt {
             padCursorToBottom()
             didPadInitialPrompt = true

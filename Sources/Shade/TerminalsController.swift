@@ -9,7 +9,7 @@ final class TerminalsController {
     private(set) var sessions: [TerminalSession] = []
     private(set) var activeIndex: Int = -1
 
-    /// Posted whenever the tab set or selection changes (for the future tab bar UI).
+    /// Posted whenever the tab set or selection changes (the tab bar observes it via TabsObservable).
     static let tabsChanged = Notification.Name("ShadeTerminalsTabsChanged")
 
     private var cwdTimer: Timer?
