@@ -331,9 +331,8 @@ extension AppDelegate: PanelKeyHandler {
         // keyboardSelectionAction uses for ⌘⇧← / ⌘⇧→). Letter & arrow keys
         // are both matched by physical keyCode — `charactersIgnoringModifiers`
         // would return Cyrillic / Greek / etc on non-Latin layouts.
-        let userFlags = event.modifierFlags.intersection(userKeys)
         let cmdShiftOnly: NSEvent.ModifierFlags = [.command, .shift]
-        if userFlags == cmdShiftOnly {
+        if flags == cmdShiftOnly {
             switch event.keyCode {
             case KeyCodes.upArrow:
                 // Always consume: if there's no prompt mark to jump to we
