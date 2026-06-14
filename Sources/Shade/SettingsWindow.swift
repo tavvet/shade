@@ -22,6 +22,7 @@ final class SettingsModel: ObservableObject {
     }
 
     private var suppressOpenAtLoginWrite = false
+    private var applyDebounce: Task<Void, Never>?
 
     init() {
         let prefs = Preferences.load()
@@ -64,7 +65,21 @@ final class SettingsModel: ObservableObject {
         store.set(backgroundOpacity, forKey: Preferences.Key.backgroundOpacity)
         store.set(animationDuration, forKey: Preferences.Key.animationDuration)
         store.set(Self.hexString(from: linkHighlightColor), forKey: Preferences.Key.linkHighlightHex)
-        NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+        scheduleApply()
+    }
+
+    /// Coalesce the live re-apply. A slider / color-picker drag fires `save()`
+    /// on every tick, and re-applying font/opacity to every terminal session is
+    /// the expensive part (SwiftTerm relayouts on each font change). The writes
+    /// above are cheap and stay immediate, so values are always persisted; only
+    /// the notification — and thus the re-apply — waits for a brief pause.
+    private func scheduleApply() {
+        applyDebounce?.cancel()
+        applyDebounce = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(120))
+            guard !Task.isCancelled else { return }
+            NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+        }
     }
 
     private static func hexString(from color: Color) -> String {
