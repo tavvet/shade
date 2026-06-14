@@ -32,23 +32,6 @@ enum GitInfo {
         return nil
     }
 
-    /// Runs `git status --porcelain` and `git diff --shortstat HEAD` to summarize working-tree
-    /// changes. Returns nil if not in a repo, .empty if the tree is clean.
-    static func status(forCwd cwd: String) -> GitStatus? {
-        guard findGitDir(from: cwd) != nil else { return nil }
-        let porcelain = runGit(["-C", cwd, "status", "--porcelain"]) ?? ""
-        let filesChanged = porcelain
-            .split(whereSeparator: { $0 == "\n" || $0 == "\r" })
-            .filter { !$0.isEmpty }
-            .count
-
-        let shortstat = runGit(["-C", cwd, "diff", "--shortstat", "HEAD"]) ?? ""
-        let insertions = firstNumber(in: shortstat, before: "insertion") ?? 0
-        let deletions = firstNumber(in: shortstat, before: "deletion") ?? 0
-
-        return GitStatus(filesChanged: filesChanged, insertions: insertions, deletions: deletions)
-    }
-
     /// Async variant used by the UI refresh coordinator. Cancellation terminates
     /// any in-flight `git` subprocess so rapid tab/cwd changes do not pile up work.
     static func statusCancellable(forCwd cwd: String) async -> GitStatus? {
@@ -66,25 +49,6 @@ enum GitInfo {
         let deletions = firstNumber(in: shortstat, before: "deletion") ?? 0
 
         return GitStatus(filesChanged: filesChanged, insertions: insertions, deletions: deletions)
-    }
-
-    private static func runGit(_ args: [String]) -> String? {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        proc.arguments = ["git"] + args
-        let out = Pipe()
-        let err = Pipe()
-        proc.standardOutput = out
-        proc.standardError = err
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-        } catch {
-            return nil
-        }
-        guard proc.terminationStatus == 0 else { return nil }
-        let data = out.fileHandleForReading.readDataToEndOfFile()
-        return String(data: data, encoding: .utf8)
     }
 
     private static func runGitCancellable(_ args: [String]) async -> String? {
@@ -161,9 +125,10 @@ private final class CancellableGitProcess: @unchecked Sendable {
             proc.executableURL = URL(fileURLWithPath: "/usr/bin/env")
             proc.arguments = ["git"] + self.args
             let out = Pipe()
-            let err = Pipe()
             proc.standardOutput = out
-            proc.standardError = err
+            // stderr is never read; route it to /dev/null so a chatty git (e.g. autocrlf
+            // warnings on a big dirty tree) can't fill the pipe buffer and wedge the process.
+            proc.standardError = FileHandle.nullDevice
 
             self.lock.lock()
             let shouldStart = !self.cancelled
