@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.8] — 2026-06-15
+
 ### Added
 
 - **Background blur** behind the terminal (Appearance → Background blur, on by
@@ -232,7 +234,8 @@ First public release.
 - No window splits, scrollback search, or session save/restore yet.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/tavvet/shade/releases/tag/v0.1.8
 [0.1.7]: https://github.com/tavvet/shade/releases/tag/v0.1.7
 [0.1.6]: https://github.com/tavvet/shade/releases/tag/v0.1.6
 [0.1.5]: https://github.com/tavvet/shade/releases/tag/v0.1.5
