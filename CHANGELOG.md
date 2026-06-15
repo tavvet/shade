@@ -13,6 +13,8 @@ All notable changes to Shade are documented in this file. Format follows
   behave.
 - **Blur material** — choose the frosted-glass style (HUD / under-window /
   sidebar / full-screen) in Settings → Appearance when background blur is on.
+- **New tab in the current directory** — opt in (Settings → Behavior) and `⌘T`
+  opens the new tab in the active tab's working directory instead of `$HOME`.
 
 ## [0.1.8] — 2026-06-15
 

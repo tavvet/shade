@@ -10,13 +10,6 @@ only a native Mac app can do well.
 
 ## Near-term — high leverage (reuses infrastructure already in the tree)
 
-- **New tab inherits the active tab's cwd** — *S.*
-  Optional: `⌘T` opens in the current directory instead of `$HOME`.
-  *Why:* one of the most common drop-down-terminal requests.
-  *How:* read `activeSession.cwd` and spawn the shell there. Caveat: SwiftTerm's
-  `startProcess` inherits the process cwd — needs a `chdir`-around-spawn or a
-  vendored cwd parameter. Settings toggle.
-
 - **Cursor style & visual bell** — *S.*
   Block / bar / underline + blink; a screen flash instead of (or alongside) the
   audible bell.
