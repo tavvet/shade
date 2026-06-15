@@ -51,6 +51,8 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Command-finished notifications** — opt-in: a command that runs past a
   threshold and finishes while the panel is hidden posts a native notification
   (needs the OSC 133 snippet). Enable in Settings → Notifications.
+- **Hide on focus loss** — optional: the panel slides away when you switch to
+  another app (Settings → Behavior). Off by default.
 - **Open at Login** toggle.
 
 ---
@@ -179,6 +181,7 @@ Open Settings from the menu-bar `▾` icon. Available sections:
 - **Hotkey** — recorder for the toggle hotkey
 - **Size** — width and height as a fraction of the screen
 - **Position** — horizontal alignment (left/center/right) and target screen
+- **Behavior** — auto-hide the panel when Shade loses focus
 - **Appearance** — monospace font family, size, background opacity, background blur
 - **Startup** — open at login
 - **Notifications** — notify when a long command finishes while the panel is hidden, with a duration threshold

@@ -21,14 +21,6 @@ only a native Mac app can do well.
   `startProcess` inherits the process cwd — needs a `chdir`-around-spawn or a
   vendored cwd parameter. Settings toggle.
 
-- **Hide on focus loss** — *S.*
-  Optional: the panel auto-hides when it stops being the key window (a Yakuake
-  default).
-  *Why:* staple of the genre.
-  *How:* symmetric to the existing `onBecomeKey` / `hide()` — hide on `resignKey`
-  when the pref is on. Must not fire while Settings or the color panel is open
-  (those already flip activation policy). Settings toggle.
-
 - **Cursor style & visual bell** — *S.*
   Block / bar / underline + blink; a screen flash instead of (or alongside) the
   audible bell.
