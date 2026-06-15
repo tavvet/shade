@@ -22,6 +22,7 @@ enum ShadeApp {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
+    private var blurView: NSVisualEffectView?
     private lazy var panel: DropdownPanel = {
         let p = DropdownPanel()
         p.keyHandler = self
@@ -136,6 +137,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let prefs = Preferences.load()
         terminals.applyToAll(prefs)
         panel.apply(prefs)
+        blurView?.isHidden = !prefs.backgroundBlur
     }
 
     private func installTerminals() {
@@ -182,7 +184,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             terminalOverlay.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
         ])
 
-        panel.contentView = stack
+        // Frosted-glass backdrop. The terminal paints its own background with the
+        // user's opacity, so wherever that alpha < 1 this blur of the content
+        // behind the window shows through instead of raw passthrough. It sits at
+        // the back of the panel; visibility is toggled live in applyPreferences.
+        let blur = NSVisualEffectView()
+        blur.material = .hudWindow
+        blur.blendingMode = .behindWindow
+        blur.state = .active
+        blur.appearance = NSAppearance(named: .darkAqua)
+        blur.translatesAutoresizingMaskIntoConstraints = false
+        blur.isHidden = !Preferences.load().backgroundBlur
+        blurView = blur
+
+        let root = NSView()
+        root.addSubview(blur)
+        root.addSubview(stack)
+        NSLayoutConstraint.activate([
+            blur.topAnchor.constraint(equalTo: root.topAnchor),
+            blur.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            blur.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            blur.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: root.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+        ])
+
+        panel.contentView = root
     }
 
     private func toggle() {

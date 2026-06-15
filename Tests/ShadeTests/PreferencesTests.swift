@@ -17,6 +17,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.fontName, "")
         XCTAssertEqual(prefs.backgroundOpacity, 0.94)
         XCTAssertEqual(prefs.animationDuration, 0.16)
+        XCTAssertTrue(prefs.backgroundBlur)
     }
 
     func testLoadReadsOverriddenValues() {
@@ -33,6 +34,15 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.screenChoice, .main)
         XCTAssertEqual(prefs.fontName, "Menlo")
         XCTAssertEqual(prefs.fontSize, 14)
+    }
+
+    func testBackgroundBlurReadsStoredValue() {
+        let store = freshStore()
+        store.set(false, forKey: Preferences.Key.backgroundBlur)
+        XCTAssertFalse(Preferences.load(from: store).backgroundBlur)
+
+        store.set(true, forKey: Preferences.Key.backgroundBlur)
+        XCTAssertTrue(Preferences.load(from: store).backgroundBlur)
     }
 
     func testFractionsAreClampedToValidRange() {
