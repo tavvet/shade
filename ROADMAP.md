@@ -10,10 +10,6 @@ only a native Mac app can do well.
 
 ## Near-term — high leverage (reuses infrastructure already in the tree)
 
-- **Blur material choice** — *S.*
-  Let the user pick the `NSVisualEffectView` material for the background blur
-  (e.g. HUD vs. under-window) instead of the fixed dark HUD it ships with.
-
 - **New tab inherits the active tab's cwd** — *S.*
   Optional: `⌘T` opens in the current directory instead of `$HOME`.
   *Why:* one of the most common drop-down-terminal requests.
