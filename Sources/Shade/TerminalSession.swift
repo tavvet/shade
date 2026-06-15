@@ -73,6 +73,30 @@ final class ActivityTerminalView: LocalProcessTerminalView {
         onData?()
         super.dataReceived(slice: slice)
     }
+
+    // MARK: - Drag a file in → insert its (shell-quoted) path
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        registerForDraggedTypes([.fileURL])
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        sender.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: nil) ? .copy : []
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
+              !urls.isEmpty else { return false }
+        let text = urls.map { Self.shellQuoted($0.path) }.joined(separator: " ") + " "
+        send(Array(text.utf8))
+        return true
+    }
+
+    /// POSIX single-quote a path so spaces and shell metacharacters survive intact.
+    nonisolated static func shellQuoted(_ path: String) -> String {
+        "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
 }
 
 /// Thin wrapper around SwiftTerm's LocalProcessTerminalView that owns one shell session.
