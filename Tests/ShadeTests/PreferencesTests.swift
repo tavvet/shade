@@ -21,6 +21,9 @@ final class PreferencesTests: XCTestCase {
         XCTAssertFalse(prefs.hideOnFocusLoss)
         XCTAssertEqual(prefs.blurMaterial, .hud)
         XCTAssertFalse(prefs.newTabInheritsCwd)
+        XCTAssertEqual(prefs.cursorShape, .block)
+        XCTAssertFalse(prefs.cursorBlink)
+        XCTAssertFalse(prefs.visualBell)
     }
 
     func testLoadReadsOverriddenValues() {
@@ -66,6 +69,24 @@ final class PreferencesTests: XCTestCase {
         let store = freshStore()
         store.set(true, forKey: Preferences.Key.newTabInheritsCwd)
         XCTAssertTrue(Preferences.load(from: store).newTabInheritsCwd)
+    }
+
+    func testCursorShapeReadsStoredValue() {
+        let store = freshStore()
+        store.set("bar", forKey: Preferences.Key.cursorShape)
+        XCTAssertEqual(Preferences.load(from: store).cursorShape, .bar)
+    }
+
+    func testCursorDECSCUSR() {
+        var p = Preferences.defaults
+        p.cursorShape = .block; p.cursorBlink = false
+        XCTAssertEqual(p.cursorDECSCUSR, "\u{1B}[2 q")
+        p.cursorBlink = true
+        XCTAssertEqual(p.cursorDECSCUSR, "\u{1B}[1 q")
+        p.cursorShape = .bar; p.cursorBlink = false
+        XCTAssertEqual(p.cursorDECSCUSR, "\u{1B}[6 q")
+        p.cursorShape = .underline; p.cursorBlink = true
+        XCTAssertEqual(p.cursorDECSCUSR, "\u{1B}[3 q")
     }
 
     func testFractionsAreClampedToValidRange() {
