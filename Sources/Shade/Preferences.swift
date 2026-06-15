@@ -19,6 +19,9 @@ struct Preferences {
     var hideOnFocusLoss: Bool         // auto-hide the panel when Shade stops being the active app
     var blurMaterial: BlurMaterial    // NSVisualEffectView material for the background blur
     var newTabInheritsCwd: Bool       // ⌘T opens in the active tab's directory instead of $HOME
+    var cursorShape: CursorShape      // block / bar / underline
+    var cursorBlink: Bool             // blink the cursor
+    var visualBell: Bool              // flash the terminal instead of relying on the audible bell
 
     enum HorizontalAlignment: String {
         case left, center, right
@@ -42,6 +45,19 @@ struct Preferences {
         }
     }
 
+    enum CursorShape: String {
+        case block, bar, underline
+
+        /// Steady DECSCUSR parameter (CSI Ps SP q); the blinking variant is this minus one.
+        var decscusrSteady: Int {
+            switch self {
+            case .block:     return 2
+            case .underline: return 4
+            case .bar:       return 6
+            }
+        }
+    }
+
     static let defaults = Preferences(
         widthFraction: 1.0,
         heightFraction: 0.4,
@@ -57,7 +73,10 @@ struct Preferences {
         notifyThresholdSeconds: 30,
         hideOnFocusLoss: false,
         blurMaterial: .hud,
-        newTabInheritsCwd: false
+        newTabInheritsCwd: false,
+        cursorShape: .block,
+        cursorBlink: false,
+        visualBell: false
     )
 
     static func load(from store: UserDefaults = .standard) -> Preferences {
@@ -111,6 +130,16 @@ struct Preferences {
         if store.object(forKey: Key.newTabInheritsCwd) != nil {
             prefs.newTabInheritsCwd = store.bool(forKey: Key.newTabInheritsCwd)
         }
+        if let raw = store.string(forKey: Key.cursorShape),
+           let value = CursorShape(rawValue: raw) {
+            prefs.cursorShape = value
+        }
+        if store.object(forKey: Key.cursorBlink) != nil {
+            prefs.cursorBlink = store.bool(forKey: Key.cursorBlink)
+        }
+        if store.object(forKey: Key.visualBell) != nil {
+            prefs.visualBell = store.bool(forKey: Key.visualBell)
+        }
         return prefs
     }
 
@@ -130,6 +159,9 @@ struct Preferences {
         static let hideOnFocusLoss = "hideOnFocusLoss"
         static let blurMaterial = "blurMaterial"
         static let newTabInheritsCwd = "newTabInheritsCwd"
+        static let cursorShape = "cursorShape"
+        static let cursorBlink = "cursorBlink"
+        static let visualBell = "visualBell"
     }
 
     /// Parses a 6-char `RRGGBB` (with or without leading `#`) into an NSColor.
@@ -191,6 +223,12 @@ extension Preferences {
 
     func linkHighlightColor() -> NSColor {
         Self.parseHex(linkHighlightHex) ?? .systemYellow
+    }
+
+    /// DECSCUSR escape (CSI Ps SP q) that sets the configured cursor shape + blink.
+    var cursorDECSCUSR: String {
+        let steady = cursorShape.decscusrSteady
+        return "\u{1B}[\(cursorBlink ? steady - 1 : steady) q"
     }
 }
 

@@ -17,6 +17,9 @@ final class SettingsModel: ObservableObject {
     @Published var linkHighlightColor: Color      { didSet { save() } }
     @Published var backgroundBlur: Bool           { didSet { save() } }
     @Published var blurMaterial: Preferences.BlurMaterial { didSet { save() } }
+    @Published var cursorShape: Preferences.CursorShape { didSet { save() } }
+    @Published var cursorBlink: Bool              { didSet { save() } }
+    @Published var visualBell: Bool               { didSet { save() } }
     @Published var hideOnFocusLoss: Bool          { didSet { save() } }
     @Published var newTabInheritsCwd: Bool        { didSet { save() } }
     @Published var notifyThresholdSeconds: Double { didSet { save() } }
@@ -51,6 +54,9 @@ final class SettingsModel: ObservableObject {
         linkHighlightColor = Color(nsColor: prefs.linkHighlightColor())
         backgroundBlur = prefs.backgroundBlur
         blurMaterial = prefs.blurMaterial
+        cursorShape = prefs.cursorShape
+        cursorBlink = prefs.cursorBlink
+        visualBell = prefs.visualBell
         hideOnFocusLoss = prefs.hideOnFocusLoss
         newTabInheritsCwd = prefs.newTabInheritsCwd
         notifyThresholdSeconds = prefs.notifyThresholdSeconds
@@ -87,6 +93,9 @@ final class SettingsModel: ObservableObject {
         store.set(Self.hexString(from: linkHighlightColor), forKey: Preferences.Key.linkHighlightHex)
         store.set(backgroundBlur, forKey: Preferences.Key.backgroundBlur)
         store.set(blurMaterial.rawValue, forKey: Preferences.Key.blurMaterial)
+        store.set(cursorShape.rawValue, forKey: Preferences.Key.cursorShape)
+        store.set(cursorBlink, forKey: Preferences.Key.cursorBlink)
+        store.set(visualBell, forKey: Preferences.Key.visualBell)
         store.set(hideOnFocusLoss, forKey: Preferences.Key.hideOnFocusLoss)
         store.set(newTabInheritsCwd, forKey: Preferences.Key.newTabInheritsCwd)
         store.set(notifyOnCommandFinish, forKey: Preferences.Key.notifyOnCommandFinish)
@@ -161,6 +170,7 @@ struct SettingsView: View {
             Section("Behavior") {
                 Toggle("Hide when Shade loses focus", isOn: $model.hideOnFocusLoss)
                 Toggle("New tab opens in the current directory", isOn: $model.newTabInheritsCwd)
+                Toggle("Visual bell (flash on bell)", isOn: $model.visualBell)
             }
 
             Section("Appearance") {
@@ -201,6 +211,13 @@ struct SettingsView: View {
                         Text("Full screen").tag(Preferences.BlurMaterial.fullScreen)
                     }
                 }
+
+                Picker("Cursor", selection: $model.cursorShape) {
+                    Text("Block").tag(Preferences.CursorShape.block)
+                    Text("Bar").tag(Preferences.CursorShape.bar)
+                    Text("Underline").tag(Preferences.CursorShape.underline)
+                }
+                Toggle("Blink cursor", isOn: $model.cursorBlink)
             }
 
             Section("Startup") {

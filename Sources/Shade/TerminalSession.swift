@@ -19,6 +19,7 @@ import SwiftTerm
 final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     weak var forward: TerminalViewDelegate?
     var onOpenLink: ((String) -> Void)?
+    var onBell: (() -> Void)?
 
     init(forward: TerminalViewDelegate?) {
         self.forward = forward
@@ -46,6 +47,7 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
         forward?.scrolled(source: source, position: position)
     }
     func bell(source: TerminalView) {
+        onBell?()
         forward?.bell(source: source)
     }
     func clipboardCopy(source: TerminalView, content: Data) {
@@ -218,6 +220,9 @@ final class TerminalSession: NSObject {
         activityView.onData = { [weak self] in
             MainActor.assumeIsolated { self?.noteActivity() }
         }
+        delegateProxy.onBell = { [weak self] in
+            MainActor.assumeIsolated { self?.flashBell() }
+        }
         // OSC 133 prompt marks. Snapshot the cursor row synchronously inside
         // the parser callback (which doesn't run on main); hop to the main
         // actor to mutate session state. Capturing the terminal weakly avoids
@@ -272,6 +277,23 @@ final class TerminalSession: NSObject {
         view.wantsLayer = true
         view.layer?.isOpaque = false
         view.layer?.backgroundColor = NSColor.clear.cgColor
+        view.feed(text: prefs.cursorDECSCUSR)
+    }
+
+    /// Brief white flash over the terminal as a visual bell (when enabled).
+    private func flashBell() {
+        guard Preferences.load().visualBell else { return }
+        let flash = NSView(frame: view.bounds)
+        flash.autoresizingMask = [.width, .height]
+        flash.wantsLayer = true
+        flash.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.22).cgColor
+        view.addSubview(flash)
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.18
+            flash.animator().alphaValue = 0
+        }, completionHandler: {
+            MainActor.assumeIsolated { flash.removeFromSuperview() }
+        })
     }
 
     func terminate() {
