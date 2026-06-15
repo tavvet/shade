@@ -44,6 +44,8 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   opens them. URLs go through `NSWorkspace.shared.open`; absolute or
   relative file paths are revealed in Finder instead of being launched in
   the default app.
+- **Drag-and-drop** — drop a file from Finder onto the terminal and its
+  shell-quoted path is inserted at the cursor.
 - **Prompt-mark navigation (OSC 133)** — jump between previous / next shell
   prompts with `⌘⇧↑` / `⌘⇧↓`, copy the previous command's output with
   `⌘⇧O`. Opt-in via a short shell-side snippet (see "Recommended shell
