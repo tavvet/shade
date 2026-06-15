@@ -6,6 +6,12 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Hide on focus loss** — opt in (Settings → Behavior, off by default) and the
+  panel slides away whenever you switch to another app, the way Guake / Yakuake
+  behave.
+
 ## [0.1.8] — 2026-06-15
 
 ### Added
