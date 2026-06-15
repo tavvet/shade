@@ -19,4 +19,22 @@ final class TabsObservableTests: XCTestCase {
         // Visible suffix of the original should still be present.
         XCTAssertTrue(result.contains(String(repeating: "x", count: 24)))
     }
+
+    func testIndicatorIsNoneWhenIdleOrSuccessful() {
+        XCTAssertEqual(TabsObservable.indicator(lastExitCode: nil, hasUnseenActivity: false), .none)
+        XCTAssertEqual(TabsObservable.indicator(lastExitCode: 0, hasUnseenActivity: false), .none)
+    }
+
+    func testIndicatorIsActivityForUnseenOutput() {
+        XCTAssertEqual(TabsObservable.indicator(lastExitCode: nil, hasUnseenActivity: true), .activity)
+        XCTAssertEqual(TabsObservable.indicator(lastExitCode: 0, hasUnseenActivity: true), .activity)
+    }
+
+    func testIndicatorIsFailedForNonZeroExit() {
+        XCTAssertEqual(TabsObservable.indicator(lastExitCode: 1, hasUnseenActivity: false), .failed)
+    }
+
+    func testIndicatorFailureWinsOverActivity() {
+        XCTAssertEqual(TabsObservable.indicator(lastExitCode: 127, hasUnseenActivity: true), .failed)
+    }
 }
