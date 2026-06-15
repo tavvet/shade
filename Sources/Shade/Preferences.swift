@@ -18,6 +18,7 @@ struct Preferences {
     var notifyThresholdSeconds: Double // minimum command duration (seconds) to notify
     var hideOnFocusLoss: Bool         // auto-hide the panel when Shade stops being the active app
     var blurMaterial: BlurMaterial    // NSVisualEffectView material for the background blur
+    var newTabInheritsCwd: Bool       // ⌘T opens in the active tab's directory instead of $HOME
 
     enum HorizontalAlignment: String {
         case left, center, right
@@ -55,7 +56,8 @@ struct Preferences {
         notifyOnCommandFinish: false,
         notifyThresholdSeconds: 30,
         hideOnFocusLoss: false,
-        blurMaterial: .hud
+        blurMaterial: .hud,
+        newTabInheritsCwd: false
     )
 
     static func load(from store: UserDefaults = .standard) -> Preferences {
@@ -106,6 +108,9 @@ struct Preferences {
            let value = BlurMaterial(rawValue: raw) {
             prefs.blurMaterial = value
         }
+        if store.object(forKey: Key.newTabInheritsCwd) != nil {
+            prefs.newTabInheritsCwd = store.bool(forKey: Key.newTabInheritsCwd)
+        }
         return prefs
     }
 
@@ -124,6 +129,7 @@ struct Preferences {
         static let notifyThresholdSeconds = "notifyThresholdSeconds"
         static let hideOnFocusLoss = "hideOnFocusLoss"
         static let blurMaterial = "blurMaterial"
+        static let newTabInheritsCwd = "newTabInheritsCwd"
     }
 
     /// Parses a 6-char `RRGGBB` (with or without leading `#`) into an NSColor.

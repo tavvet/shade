@@ -93,6 +93,8 @@ final class TerminalSession: NSObject {
     let view: LocalProcessTerminalView
     private let delegateProxy: TerminalDelegateProxy
     private var didPadInitialPrompt = false
+    /// Directory the next shell spawns in (nil = inherit the process cwd, i.e. $HOME).
+    var startupDirectory: String?
     private var sawOsc133CommandDone = false
     private(set) var promptMarks: [PromptMark] = []
 
@@ -250,7 +252,8 @@ final class TerminalSession: NSObject {
             executable: shell,
             args: ["-l"],
             environment: nil,
-            execName: "-" + shellName  // leading dash → login shell
+            execName: "-" + shellName,  // leading dash → login shell
+            currentDirectory: startupDirectory
         )
     }
 
