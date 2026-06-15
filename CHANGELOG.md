@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.9] — 2026-06-15
+
 ### Added
 
 - **Hide on focus loss** — opt in (Settings → Behavior, off by default) and the
@@ -250,7 +252,8 @@ First public release.
 - No window splits, scrollback search, or session save/restore yet.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/tavvet/shade/releases/tag/v0.1.9
 [0.1.8]: https://github.com/tavvet/shade/releases/tag/v0.1.8
 [0.1.7]: https://github.com/tavvet/shade/releases/tag/v0.1.7
 [0.1.6]: https://github.com/tavvet/shade/releases/tag/v0.1.6
