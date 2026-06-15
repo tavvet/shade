@@ -18,6 +18,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.backgroundOpacity, 0.94)
         XCTAssertEqual(prefs.animationDuration, 0.16)
         XCTAssertTrue(prefs.backgroundBlur)
+        XCTAssertFalse(prefs.hideOnFocusLoss)
     }
 
     func testLoadReadsOverriddenValues() {
@@ -43,6 +44,12 @@ final class PreferencesTests: XCTestCase {
 
         store.set(true, forKey: Preferences.Key.backgroundBlur)
         XCTAssertTrue(Preferences.load(from: store).backgroundBlur)
+    }
+
+    func testHideOnFocusLossReadsStoredValue() {
+        let store = freshStore()
+        store.set(true, forKey: Preferences.Key.hideOnFocusLoss)
+        XCTAssertTrue(Preferences.load(from: store).hideOnFocusLoss)
     }
 
     func testFractionsAreClampedToValidRange() {

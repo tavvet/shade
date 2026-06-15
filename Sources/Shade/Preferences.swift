@@ -16,6 +16,7 @@ struct Preferences {
     var backgroundBlur: Bool          // frosted-glass backdrop behind the translucent terminal
     var notifyOnCommandFinish: Bool   // notify when a long command finishes while the panel is hidden
     var notifyThresholdSeconds: Double // minimum command duration (seconds) to notify
+    var hideOnFocusLoss: Bool         // auto-hide the panel when Shade stops being the active app
 
     enum HorizontalAlignment: String {
         case left, center, right
@@ -38,7 +39,8 @@ struct Preferences {
         linkHighlightHex: "FFCC00",     // ≈ NSColor.systemYellow
         backgroundBlur: true,
         notifyOnCommandFinish: false,
-        notifyThresholdSeconds: 30
+        notifyThresholdSeconds: 30,
+        hideOnFocusLoss: false
     )
 
     static func load(from store: UserDefaults = .standard) -> Preferences {
@@ -82,6 +84,9 @@ struct Preferences {
         if store.object(forKey: Key.notifyThresholdSeconds) != nil {
             prefs.notifyThresholdSeconds = min(max(store.double(forKey: Key.notifyThresholdSeconds), 1), 600)
         }
+        if store.object(forKey: Key.hideOnFocusLoss) != nil {
+            prefs.hideOnFocusLoss = store.bool(forKey: Key.hideOnFocusLoss)
+        }
         return prefs
     }
 
@@ -98,6 +103,7 @@ struct Preferences {
         static let backgroundBlur = "backgroundBlur"
         static let notifyOnCommandFinish = "notifyOnCommandFinish"
         static let notifyThresholdSeconds = "notifyThresholdSeconds"
+        static let hideOnFocusLoss = "hideOnFocusLoss"
     }
 
     /// Parses a 6-char `RRGGBB` (with or without leading `#`) into an NSColor.
