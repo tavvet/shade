@@ -10,15 +10,6 @@ only a native Mac app can do well.
 
 ## Near-term — high leverage (reuses infrastructure already in the tree)
 
-- **Tab indicators: last-command exit code & unseen output** — *S–M.*
-  A small dot on a tab — red when its last command exited non-zero, neutral when
-  a background tab has produced output since you last looked at it.
-  *Why:* the data already exists. OSC 133 `D` exit codes are parsed into
-  `PromptMark.commandDone(exitCode:)` but only used to trigger a git refresh; the
-  code value itself is currently discarded. Cheapest possible differentiator.
-  *How:* track `lastExitCode` + an `unseenOutput` flag per `TerminalSession`,
-  surface them through `TabsObservable` into `TabChip`. No vendored API.
-
 - **"Command finished" notification while the panel is hidden** — *M.*
   When a long command completes while Shade is down, post a native notification
   with its exit status.

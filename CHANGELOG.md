@@ -12,6 +12,9 @@ All notable changes to Shade are documented in this file. Format follows
   default). A frosted-glass backdrop shows through wherever the background
   opacity is below 100%, replacing the plain see-through-to-desktop look with
   the Guake / Yakuake frosted panel. Turn it off for raw transparency.
+- **Tab status dots** — each tab shows a red dot when its last command exited
+  non-zero (requires the OSC 133 shell snippet) and a neutral dot when a
+  background tab has produced output you haven't looked at yet.
 
 ## [0.1.7] — 2026-06-15
 

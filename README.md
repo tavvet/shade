@@ -20,6 +20,9 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Tabs** with `⌘T` / `⌘W` / `⌘1…9` / `⌃Tab` (macOS-standard).
 - **Tab titles** track the shell's current working directory (no `.zshrc`
   cooperation required).
+- **Tab status dots** — a red dot when a tab's last command exited non-zero
+  (needs the OSC 133 snippet), a neutral dot when a background tab has new
+  output you haven't seen.
 - **Multi-monitor** aware — appears on the screen containing the mouse, or on
   the primary screen, your choice.
 - **Customizable layout** — width, height, horizontal alignment, screen
