@@ -66,6 +66,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: .shadePreferencesChanged,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidResignActive),
+            name: NSApplication.didResignActiveNotification,
+            object: nil
+        )
         KeyboardShortcuts.onKeyDown(for: .toggleShade) { [weak self] in
             self?.toggle()
         }
@@ -140,6 +146,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         terminals.applyToAll(prefs)
         panel.apply(prefs)
         blurView?.isHidden = !prefs.backgroundBlur
+    }
+
+    /// Switching to another app hides the panel when the user opted in. Re-check
+    /// on the next runloop: opening Shade's own Settings flips the activation
+    /// policy, which can momentarily fire resign-active even though the app
+    /// reactivates immediately. A real switch to another app leaves us inactive,
+    /// so only then do we hide.
+    @objc private func appDidResignActive() {
+        guard Preferences.load().hideOnFocusLoss, panel.isVisible else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !NSApp.isActive, self.panel.isVisible else { return }
+            self.panel.hide()
+        }
     }
 
     private func installNotifications() {

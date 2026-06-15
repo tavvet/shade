@@ -16,6 +16,7 @@ final class SettingsModel: ObservableObject {
     @Published var animationDuration: Double      { didSet { save() } }
     @Published var linkHighlightColor: Color      { didSet { save() } }
     @Published var backgroundBlur: Bool           { didSet { save() } }
+    @Published var hideOnFocusLoss: Bool          { didSet { save() } }
     @Published var notifyThresholdSeconds: Double { didSet { save() } }
     @Published var notifyOnCommandFinish: Bool {
         didSet {
@@ -47,6 +48,7 @@ final class SettingsModel: ObservableObject {
         animationDuration = prefs.animationDuration
         linkHighlightColor = Color(nsColor: prefs.linkHighlightColor())
         backgroundBlur = prefs.backgroundBlur
+        hideOnFocusLoss = prefs.hideOnFocusLoss
         notifyThresholdSeconds = prefs.notifyThresholdSeconds
         notifyOnCommandFinish = prefs.notifyOnCommandFinish
         openAtLogin = SMAppService.mainApp.status == .enabled
@@ -80,6 +82,7 @@ final class SettingsModel: ObservableObject {
         store.set(animationDuration, forKey: Preferences.Key.animationDuration)
         store.set(Self.hexString(from: linkHighlightColor), forKey: Preferences.Key.linkHighlightHex)
         store.set(backgroundBlur, forKey: Preferences.Key.backgroundBlur)
+        store.set(hideOnFocusLoss, forKey: Preferences.Key.hideOnFocusLoss)
         store.set(notifyOnCommandFinish, forKey: Preferences.Key.notifyOnCommandFinish)
         store.set(notifyThresholdSeconds, forKey: Preferences.Key.notifyThresholdSeconds)
         scheduleApply()
@@ -147,6 +150,10 @@ struct SettingsView: View {
                     Text("Under mouse").tag(Preferences.ScreenChoice.mouseLocation)
                 }
                 .pickerStyle(.segmented)
+            }
+
+            Section("Behavior") {
+                Toggle("Hide when Shade loses focus", isOn: $model.hideOnFocusLoss)
             }
 
             Section("Appearance") {
