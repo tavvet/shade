@@ -15,6 +15,10 @@ All notable changes to Shade are documented in this file. Format follows
   sidebar / full-screen) in Settings → Appearance when background blur is on.
 - **New tab in the current directory** — opt in (Settings → Behavior) and `⌘T`
   opens the new tab in the active tab's working directory instead of `$HOME`.
+- **Cursor style** — pick block / bar / underline and toggle blink in Settings →
+  Appearance (applied via DECSCUSR, so full-screen programs can still override it).
+- **Visual bell** — opt in (Settings → Behavior) for a brief screen flash on the
+  terminal bell.
 
 ## [0.1.8] — 2026-06-15
 

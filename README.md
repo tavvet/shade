@@ -55,6 +55,8 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   another app (Settings → Behavior). Off by default.
 - **New tab in the current directory** — optional: `⌘T` opens in the active
   tab's directory instead of `~` (Settings → Behavior). Off by default.
+- **Cursor & bell** — choose the cursor shape (block / bar / underline) and
+  blink, plus an optional visual bell (screen flash), in Settings.
 - **Open at Login** toggle.
 
 ---
@@ -183,8 +185,8 @@ Open Settings from the menu-bar `▾` icon. Available sections:
 - **Hotkey** — recorder for the toggle hotkey
 - **Size** — width and height as a fraction of the screen
 - **Position** — horizontal alignment (left/center/right) and target screen
-- **Behavior** — auto-hide on focus loss; open new tabs in the current directory
-- **Appearance** — monospace font family, size, background opacity, background blur (+ material)
+- **Behavior** — auto-hide on focus loss; open new tabs in the current directory; visual bell
+- **Appearance** — monospace font family, size, background opacity, background blur (+ material), cursor style
 - **Startup** — open at login
 - **Notifications** — notify when a long command finishes while the panel is hidden, with a duration threshold
 - **Animation** — slide duration
@@ -210,6 +212,8 @@ defaults write dev.shade.Shade fontName "Menlo"                # "" = system mon
 defaults write dev.shade.Shade backgroundOpacity 0.85          # 0.3 – 1.0
 defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdrop (most visible at lower opacity)
 defaults write dev.shade.Shade blurMaterial hud                # hud | underWindow | sidebar | fullScreen
+defaults write dev.shade.Shade cursorShape block               # block | bar | underline
+defaults write dev.shade.Shade cursorBlink -bool false
 
 # Animation
 defaults write dev.shade.Shade animationDuration 0.12          # 0.0 – 0.5 seconds
@@ -217,6 +221,7 @@ defaults write dev.shade.Shade animationDuration 0.12          # 0.0 – 0.5 sec
 # Behavior
 defaults write dev.shade.Shade hideOnFocusLoss -bool true      # hide when Shade loses focus
 defaults write dev.shade.Shade newTabInheritsCwd -bool true    # ⌘T opens in the current directory
+defaults write dev.shade.Shade visualBell -bool true           # flash on the terminal bell
 
 # Notifications (command finished while panel hidden; needs OSC 133)
 defaults write dev.shade.Shade notifyOnCommandFinish -bool true
