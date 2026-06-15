@@ -21,6 +21,32 @@ make run        # build + launch
 The project uses Swift Package Manager — there is no `.xcodeproj`. You can
 open `Package.swift` directly in Xcode if you prefer the IDE.
 
+## Development workflow
+
+A lightweight pipeline for landing a feature. Scale it to the change — small,
+obvious fixes can skip straight to the implementation step.
+
+1. **Plan (non-trivial features).** Sketch the design before coding: which files
+   change, whether it needs a new vendored SwiftTerm API, the edge cases and
+   risks. The [ROADMAP](ROADMAP.md) tags items S / M / L; M and L are worth a
+   plan, S usually isn't.
+2. **Implement.** Work on a feature branch, one logical change per commit. Keep
+   `swift test` and `swift build -c release` green as you go.
+3. **Review & fix.** Re-read the diff critically before merging — correctness
+   first, then simplification. Give extra scrutiny to anything touching the PTY,
+   concurrency (`@MainActor` boundaries), or AppKit lifecycle, then apply the
+   fixes.
+4. **Verify.** Run the automated checks (`swift test` plus a release build, both
+   enforced by CI) and exercise the new behavior in a real `Shade.app` — there are
+   no UI tests, so manual confirmation matters.
+5. **Update docs.** Keep documentation in step with the change: the
+   [README](README.md) (feature list, Architecture tree, shortcut tables),
+   `CHANGELOG.md` under `[Unreleased]`, the matching [ROADMAP](ROADMAP.md) entry,
+   and the `integrations/` snippets if they're affected.
+6. **Merge.** Open a PR — see [Before you open a PR](#before-you-open-a-pr) for
+   the pre-merge checklist — and land one logical change at a time. Releases are
+   cut from the accumulated `[Unreleased]` entries.
+
 ## Before you open a PR
 
 - `swift test` passes (CI runs this on every push).
