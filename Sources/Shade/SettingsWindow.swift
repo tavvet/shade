@@ -16,6 +16,7 @@ final class SettingsModel: ObservableObject {
     @Published var animationDuration: Double      { didSet { save() } }
     @Published var linkHighlightColor: Color      { didSet { save() } }
     @Published var backgroundBlur: Bool           { didSet { save() } }
+    @Published var blurMaterial: Preferences.BlurMaterial { didSet { save() } }
     @Published var hideOnFocusLoss: Bool          { didSet { save() } }
     @Published var notifyThresholdSeconds: Double { didSet { save() } }
     @Published var notifyOnCommandFinish: Bool {
@@ -48,6 +49,7 @@ final class SettingsModel: ObservableObject {
         animationDuration = prefs.animationDuration
         linkHighlightColor = Color(nsColor: prefs.linkHighlightColor())
         backgroundBlur = prefs.backgroundBlur
+        blurMaterial = prefs.blurMaterial
         hideOnFocusLoss = prefs.hideOnFocusLoss
         notifyThresholdSeconds = prefs.notifyThresholdSeconds
         notifyOnCommandFinish = prefs.notifyOnCommandFinish
@@ -82,6 +84,7 @@ final class SettingsModel: ObservableObject {
         store.set(animationDuration, forKey: Preferences.Key.animationDuration)
         store.set(Self.hexString(from: linkHighlightColor), forKey: Preferences.Key.linkHighlightHex)
         store.set(backgroundBlur, forKey: Preferences.Key.backgroundBlur)
+        store.set(blurMaterial.rawValue, forKey: Preferences.Key.blurMaterial)
         store.set(hideOnFocusLoss, forKey: Preferences.Key.hideOnFocusLoss)
         store.set(notifyOnCommandFinish, forKey: Preferences.Key.notifyOnCommandFinish)
         store.set(notifyThresholdSeconds, forKey: Preferences.Key.notifyThresholdSeconds)
@@ -186,6 +189,14 @@ struct SettingsView: View {
                 ColorPicker("Link highlight", selection: $model.linkHighlightColor, supportsOpacity: false)
 
                 Toggle("Background blur", isOn: $model.backgroundBlur)
+                if model.backgroundBlur {
+                    Picker("Blur material", selection: $model.blurMaterial) {
+                        Text("HUD").tag(Preferences.BlurMaterial.hud)
+                        Text("Under window").tag(Preferences.BlurMaterial.underWindow)
+                        Text("Sidebar").tag(Preferences.BlurMaterial.sidebar)
+                        Text("Full screen").tag(Preferences.BlurMaterial.fullScreen)
+                    }
+                }
             }
 
             Section("Startup") {

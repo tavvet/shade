@@ -17,6 +17,7 @@ struct Preferences {
     var notifyOnCommandFinish: Bool   // notify when a long command finishes while the panel is hidden
     var notifyThresholdSeconds: Double // minimum command duration (seconds) to notify
     var hideOnFocusLoss: Bool         // auto-hide the panel when Shade stops being the active app
+    var blurMaterial: BlurMaterial    // NSVisualEffectView material for the background blur
 
     enum HorizontalAlignment: String {
         case left, center, right
@@ -25,6 +26,19 @@ struct Preferences {
     enum ScreenChoice: String {
         case main
         case mouseLocation
+    }
+
+    enum BlurMaterial: String {
+        case hud, underWindow, sidebar, fullScreen
+
+        var nsMaterial: NSVisualEffectView.Material {
+            switch self {
+            case .hud:         return .hudWindow
+            case .underWindow: return .underWindowBackground
+            case .sidebar:     return .sidebar
+            case .fullScreen:  return .fullScreenUI
+            }
+        }
     }
 
     static let defaults = Preferences(
@@ -40,7 +54,8 @@ struct Preferences {
         backgroundBlur: true,
         notifyOnCommandFinish: false,
         notifyThresholdSeconds: 30,
-        hideOnFocusLoss: false
+        hideOnFocusLoss: false,
+        blurMaterial: .hud
     )
 
     static func load(from store: UserDefaults = .standard) -> Preferences {
@@ -87,6 +102,10 @@ struct Preferences {
         if store.object(forKey: Key.hideOnFocusLoss) != nil {
             prefs.hideOnFocusLoss = store.bool(forKey: Key.hideOnFocusLoss)
         }
+        if let raw = store.string(forKey: Key.blurMaterial),
+           let value = BlurMaterial(rawValue: raw) {
+            prefs.blurMaterial = value
+        }
         return prefs
     }
 
@@ -104,6 +123,7 @@ struct Preferences {
         static let notifyOnCommandFinish = "notifyOnCommandFinish"
         static let notifyThresholdSeconds = "notifyThresholdSeconds"
         static let hideOnFocusLoss = "hideOnFocusLoss"
+        static let blurMaterial = "blurMaterial"
     }
 
     /// Parses a 6-char `RRGGBB` (with or without leading `#`) into an NSColor.

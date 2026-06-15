@@ -146,6 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         terminals.applyToAll(prefs)
         panel.apply(prefs)
         blurView?.isHidden = !prefs.backgroundBlur
+        blurView?.material = prefs.blurMaterial.nsMaterial
     }
 
     /// Switching to another app hides the panel when the user opted in. Re-check
@@ -226,13 +227,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // user's opacity, so wherever that alpha < 1 this blur of the content
         // behind the window shows through instead of raw passthrough. It sits at
         // the back of the panel; visibility is toggled live in applyPreferences.
+        let blurPrefs = Preferences.load()
         let blur = NSVisualEffectView()
-        blur.material = .hudWindow
+        blur.material = blurPrefs.blurMaterial.nsMaterial
         blur.blendingMode = .behindWindow
         blur.state = .active
         blur.appearance = NSAppearance(named: .darkAqua)
         blur.translatesAutoresizingMaskIntoConstraints = false
-        blur.isHidden = !Preferences.load().backgroundBlur
+        blur.isHidden = !blurPrefs.backgroundBlur
         blurView = blur
 
         let root = NSView()
