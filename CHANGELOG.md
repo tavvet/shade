@@ -15,6 +15,10 @@ All notable changes to Shade are documented in this file. Format follows
 - **Tab status dots** — each tab shows a red dot when its last command exited
   non-zero (requires the OSC 133 shell snippet) and a neutral dot when a
   background tab has produced output you haven't looked at yet.
+- **Command-finished notifications** — opt in (Settings → Notifications) and
+  Shade posts a native notification when a command that ran past a threshold
+  (default 30 s) finishes while the panel is hidden. Click it to bring the
+  panel back. Needs the OSC 133 shell snippet.
 
 ## [0.1.7] — 2026-06-15
 
