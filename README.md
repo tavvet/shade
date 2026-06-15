@@ -48,6 +48,9 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   prompts with `⌘⇧↑` / `⌘⇧↓`, copy the previous command's output with
   `⌘⇧O`. Opt-in via a short shell-side snippet (see "Recommended shell
   setup"); without it Shade behaves identically to before.
+- **Command-finished notifications** — opt-in: a command that runs past a
+  threshold and finishes while the panel is hidden posts a native notification
+  (needs the OSC 133 snippet). Enable in Settings → Notifications.
 - **Open at Login** toggle.
 
 ---
@@ -178,6 +181,7 @@ Open Settings from the menu-bar `▾` icon. Available sections:
 - **Position** — horizontal alignment (left/center/right) and target screen
 - **Appearance** — monospace font family, size, background opacity, background blur
 - **Startup** — open at login
+- **Notifications** — notify when a long command finishes while the panel is hidden, with a duration threshold
 - **Animation** — slide duration
 
 Changes that affect the visible panel apply immediately; size/position changes
@@ -203,6 +207,10 @@ defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdro
 
 # Animation
 defaults write dev.shade.Shade animationDuration 0.12          # 0.0 – 0.5 seconds
+
+# Notifications (command finished while panel hidden; needs OSC 133)
+defaults write dev.shade.Shade notifyOnCommandFinish -bool true
+defaults write dev.shade.Shade notifyThresholdSeconds 30        # min command duration, seconds
 
 # Link highlight color (Cmd-hover underline + cell tint). 6-char hex, no '#'.
 defaults write dev.shade.Shade linkHighlightHex "00CCFF"       # default: FFCC00

@@ -10,15 +10,6 @@ only a native Mac app can do well.
 
 ## Near-term — high leverage (reuses infrastructure already in the tree)
 
-- **"Command finished" notification while the panel is hidden** — *M.*
-  When a long command completes while Shade is down, post a native notification
-  with its exit status.
-  *Why:* also rides the OSC 133 marks (`C` start → `D` done gives duration), and
-  the panel already knows when it's hidden.
-  *How:* time the `C`→`D` gap; if `!panel.isVisible` and duration exceeds a
-  threshold, fire a `UNUserNotification`. New small notifier + a Settings
-  toggle/threshold.
-
 - **Blur material choice** — *S.*
   Let the user pick the `NSVisualEffectView` material for the background blur
   (e.g. HUD vs. under-window) instead of the fixed dark HUD it ships with.
