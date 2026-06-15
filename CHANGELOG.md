@@ -19,6 +19,8 @@ All notable changes to Shade are documented in this file. Format follows
   Appearance (applied via DECSCUSR, so full-screen programs can still override it).
 - **Visual bell** — opt in (Settings → Behavior) for a brief screen flash on the
   terminal bell.
+- **Drag-and-drop** — drop a file from Finder onto the terminal and its
+  shell-quoted path is inserted at the cursor.
 
 ## [0.1.8] — 2026-06-15
 

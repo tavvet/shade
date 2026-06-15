@@ -29,11 +29,6 @@ only a native Mac app can do well.
   *How:* a mode flag that fans `panelSendToActiveTerminal` out to all sessions,
   with a visible indicator so it can't be left on by accident.
 
-- **Drag-and-drop a file into the terminal** — *S.*
-  Drop a Finder item → its (quoted) path is inserted at the cursor.
-  *How:* register a dragging destination on the terminal view and send the path
-  bytes on drop.
-
 ## Bigger bets
 
 - **Color themes / ANSI palette** — *L.*
