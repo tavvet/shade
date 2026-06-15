@@ -359,6 +359,7 @@ Sources/Shade/
 ├── ShadeApp.swift           @main + AppDelegate (menu bar, hotkey, panel wiring)
 ├── AboutWindow.swift        About window — version, links, donation addresses
 ├── BranchBadge.swift        Floating git branch + status pill (SwiftUI)
+├── CommandNotifier.swift    Command-finished notifications (OSC 133 C→D timing)
 ├── DiagnosticsWindow.swift  Read-only state snapshot, copy-paste for bug reports
 ├── DropdownPanel.swift      NSPanel: borderless, floating, slide-in animation
 ├── GitInfo.swift            Branch from .git/HEAD, status via git subprocess
