@@ -23,6 +23,7 @@ enum ShadeApp {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var blurView: NSVisualEffectView?
+    private let commandNotifier = CommandNotifier()
     private lazy var panel: DropdownPanel = {
         let p = DropdownPanel()
         p.keyHandler = self
@@ -56,6 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installMainMenu()
         installStatusItem()
         installTerminals()
+        installNotifications()
         primePanelFrame()
         terminals.ensureAtLeastOneSession()
         NotificationCenter.default.addObserver(
@@ -138,6 +140,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         terminals.applyToAll(prefs)
         panel.apply(prefs)
         blurView?.isHidden = !prefs.backgroundBlur
+    }
+
+    private func installNotifications() {
+        commandNotifier.start()
+        commandNotifier.onActivate = { [weak self] in self?.panel.show() }
+        terminals.commandFinishHandler = { [weak self] duration, exitCode, cwd in
+            self?.handleCommandFinish(duration: duration, exitCode: exitCode, cwd: cwd)
+        }
+    }
+
+    /// A command finished in some tab. Notify only when the panel is hidden
+    /// (you're looking elsewhere) and it ran long enough to be worth a ping.
+    private func handleCommandFinish(duration: TimeInterval, exitCode: Int?, cwd: String) {
+        guard !panel.isVisible else { return }
+        let prefs = Preferences.load()
+        guard prefs.notifyOnCommandFinish, duration >= prefs.notifyThresholdSeconds else { return }
+        commandNotifier.post(exitCode: exitCode, duration: duration, cwd: cwd)
     }
 
     private func installTerminals() {

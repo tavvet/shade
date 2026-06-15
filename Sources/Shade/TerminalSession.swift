@@ -86,6 +86,10 @@ final class TerminalSession: NSObject {
     /// isn't Sendable across the parser → main hop under strict concurrency.
     var onExit: (@MainActor () -> Void)?
 
+    /// Invoked when a command completes (OSC 133 C→D): duration, exit code, cwd.
+    /// AppDelegate uses it to post a "command finished" notification while hidden.
+    var onCommandFinish: ((TimeInterval, Int?, String) -> Void)?
+
     let view: LocalProcessTerminalView
     private let delegateProxy: TerminalDelegateProxy
     private var didPadInitialPrompt = false
@@ -165,6 +169,9 @@ final class TerminalSession: NSObject {
     /// Whether this is the visible tab. The controller keeps it in sync so output
     /// on the active tab doesn't flag itself as unseen.
     private(set) var isActive = false
+
+    /// When the current command started running (OSC 133 `C`); used to time C→D.
+    private var commandStartedAt: Date?
 
     let shellName: String
 
@@ -274,14 +281,24 @@ final class TerminalSession: NSObject {
         guard let mark = PromptMark.parse(payload: payload[...], row: row) else { return }
         pruneStalePromptMarks()
         promptMarks.append(mark)
-        // `D` (command finished) is the canonical "shell did something — git
-        // status may have changed" signal. Drive a strong-reason refresh.
-        if case .commandDone(let exit) = mark.kind {
+        switch mark.kind {
+        case .commandStart:
+            // Output is about to begin — start the clock for the C→D duration.
+            commandStartedAt = Date()
+        case .commandDone(let exit):
             lastExitCode = exit
             sawOsc133CommandDone = true
+            if let started = commandStartedAt {
+                onCommandFinish?(Date().timeIntervalSince(started), exit, cwd)
+                commandStartedAt = nil
+            }
+            // `D` is the canonical "shell did something — git status may have
+            // changed" signal. Drive a strong-reason refresh.
             if !cwd.isEmpty {
                 gitRefresh.schedule(path: cwd, reason: .commandFinished)
             }
+        default:
+            break
         }
     }
 
