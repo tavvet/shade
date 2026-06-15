@@ -23,7 +23,8 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Multi-monitor** aware — appears on the screen containing the mouse, or on
   the primary screen, your choice.
 - **Customizable layout** — width, height, horizontal alignment, screen
-  selection, font family/size, background opacity, slide-animation duration.
+  selection, font family/size, background opacity, background blur,
+  slide-animation duration.
 - **Live-apply** settings — most preferences take effect immediately; layout
   ones (size/position) on the next toggle.
 - **Prompt pinned to bottom** of the panel (Guake-style), regardless of the
@@ -172,7 +173,7 @@ Open Settings from the menu-bar `▾` icon. Available sections:
 - **Hotkey** — recorder for the toggle hotkey
 - **Size** — width and height as a fraction of the screen
 - **Position** — horizontal alignment (left/center/right) and target screen
-- **Appearance** — monospace font family, size, background opacity
+- **Appearance** — monospace font family, size, background opacity, background blur
 - **Startup** — open at login
 - **Animation** — slide duration
 
@@ -195,6 +196,7 @@ defaults write dev.shade.Shade screenChoice mouseLocation      # main | mouseLoc
 defaults write dev.shade.Shade fontSize 14
 defaults write dev.shade.Shade fontName "Menlo"                # "" = system monospaced
 defaults write dev.shade.Shade backgroundOpacity 0.85          # 0.3 – 1.0
+defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdrop (most visible at lower opacity)
 
 # Animation
 defaults write dev.shade.Shade animationDuration 0.12          # 0.0 – 0.5 seconds

@@ -6,6 +6,13 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Background blur** behind the terminal (Appearance → Background blur, on by
+  default). A frosted-glass backdrop shows through wherever the background
+  opacity is below 100%, replacing the plain see-through-to-desktop look with
+  the Guake / Yakuake frosted panel. Turn it off for raw transparency.
+
 ## [0.1.7] — 2026-06-15
 
 ### Changed
