@@ -14,6 +14,7 @@ final class SettingsModel: ObservableObject {
     @Published var backgroundOpacity: Double      { didSet { save() } }
     @Published var animationDuration: Double      { didSet { save() } }
     @Published var linkHighlightColor: Color      { didSet { save() } }
+    @Published var backgroundBlur: Bool           { didSet { save() } }
     @Published var openAtLogin: Bool {
         didSet {
             guard oldValue != openAtLogin, !suppressOpenAtLoginWrite else { return }
@@ -35,6 +36,7 @@ final class SettingsModel: ObservableObject {
         backgroundOpacity = prefs.backgroundOpacity
         animationDuration = prefs.animationDuration
         linkHighlightColor = Color(nsColor: prefs.linkHighlightColor())
+        backgroundBlur = prefs.backgroundBlur
         openAtLogin = SMAppService.mainApp.status == .enabled
     }
 
@@ -65,6 +67,7 @@ final class SettingsModel: ObservableObject {
         store.set(backgroundOpacity, forKey: Preferences.Key.backgroundOpacity)
         store.set(animationDuration, forKey: Preferences.Key.animationDuration)
         store.set(Self.hexString(from: linkHighlightColor), forKey: Preferences.Key.linkHighlightHex)
+        store.set(backgroundBlur, forKey: Preferences.Key.backgroundBlur)
         scheduleApply()
     }
 
@@ -160,6 +163,8 @@ struct SettingsView: View {
                 }
 
                 ColorPicker("Link highlight", selection: $model.linkHighlightColor, supportsOpacity: false)
+
+                Toggle("Background blur", isOn: $model.backgroundBlur)
             }
 
             Section("Startup") {

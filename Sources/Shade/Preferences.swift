@@ -13,6 +13,7 @@ struct Preferences {
     var backgroundOpacity: Double     // 0.3 – 1.0
     var animationDuration: Double     // 0.0 – 0.5 seconds
     var linkHighlightHex: String      // 6-char RRGGBB; falls back to systemYellow if invalid
+    var backgroundBlur: Bool          // frosted-glass backdrop behind the translucent terminal
 
     enum HorizontalAlignment: String {
         case left, center, right
@@ -32,7 +33,8 @@ struct Preferences {
         fontName: "",
         backgroundOpacity: 0.94,
         animationDuration: 0.16,
-        linkHighlightHex: "FFCC00"      // ≈ NSColor.systemYellow
+        linkHighlightHex: "FFCC00",     // ≈ NSColor.systemYellow
+        backgroundBlur: true
     )
 
     static func load(from store: UserDefaults = .standard) -> Preferences {
@@ -67,6 +69,9 @@ struct Preferences {
            Self.parseHex(raw) != nil {
             prefs.linkHighlightHex = Self.normalize(hex: raw)
         }
+        if store.object(forKey: Key.backgroundBlur) != nil {
+            prefs.backgroundBlur = store.bool(forKey: Key.backgroundBlur)
+        }
         return prefs
     }
 
@@ -80,6 +85,7 @@ struct Preferences {
         static let backgroundOpacity = "backgroundOpacity"
         static let animationDuration = "animationDuration"
         static let linkHighlightHex = "linkHighlightHex"
+        static let backgroundBlur = "backgroundBlur"
     }
 
     /// Parses a 6-char `RRGGBB` (with or without leading `#`) into an NSColor.
