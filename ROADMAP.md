@@ -8,14 +8,6 @@ Guiding bias: keyboard-first, native to macOS, stays minimal. A feature earns it
 place by being either a Guake / Yakuake / iTerm2 staple users miss, or something
 only a native Mac app can do well.
 
-## Near-term — high leverage (reuses infrastructure already in the tree)
-
-- **Cursor style & visual bell** — *S.*
-  Block / bar / underline + blink; a screen flash instead of (or alongside) the
-  audible bell.
-  *How:* cursor options via SwiftTerm; the `bell(source:)` delegate is already
-  forwarded through `TerminalDelegateProxy`. Lives in Appearance settings.
-
 ## Parity — Guake / Yakuake / iTerm2 staples
 
 - **Scrollback search (`⌘F`)** — *M.*
