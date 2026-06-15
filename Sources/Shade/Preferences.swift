@@ -14,6 +14,8 @@ struct Preferences {
     var animationDuration: Double     // 0.0 – 0.5 seconds
     var linkHighlightHex: String      // 6-char RRGGBB; falls back to systemYellow if invalid
     var backgroundBlur: Bool          // frosted-glass backdrop behind the translucent terminal
+    var notifyOnCommandFinish: Bool   // notify when a long command finishes while the panel is hidden
+    var notifyThresholdSeconds: Double // minimum command duration (seconds) to notify
 
     enum HorizontalAlignment: String {
         case left, center, right
@@ -34,7 +36,9 @@ struct Preferences {
         backgroundOpacity: 0.94,
         animationDuration: 0.16,
         linkHighlightHex: "FFCC00",     // ≈ NSColor.systemYellow
-        backgroundBlur: true
+        backgroundBlur: true,
+        notifyOnCommandFinish: false,
+        notifyThresholdSeconds: 30
     )
 
     static func load(from store: UserDefaults = .standard) -> Preferences {
@@ -72,6 +76,12 @@ struct Preferences {
         if store.object(forKey: Key.backgroundBlur) != nil {
             prefs.backgroundBlur = store.bool(forKey: Key.backgroundBlur)
         }
+        if store.object(forKey: Key.notifyOnCommandFinish) != nil {
+            prefs.notifyOnCommandFinish = store.bool(forKey: Key.notifyOnCommandFinish)
+        }
+        if store.object(forKey: Key.notifyThresholdSeconds) != nil {
+            prefs.notifyThresholdSeconds = min(max(store.double(forKey: Key.notifyThresholdSeconds), 1), 600)
+        }
         return prefs
     }
 
@@ -86,6 +96,8 @@ struct Preferences {
         static let animationDuration = "animationDuration"
         static let linkHighlightHex = "linkHighlightHex"
         static let backgroundBlur = "backgroundBlur"
+        static let notifyOnCommandFinish = "notifyOnCommandFinish"
+        static let notifyThresholdSeconds = "notifyThresholdSeconds"
     }
 
     /// Parses a 6-char `RRGGBB` (with or without leading `#`) into an NSColor.

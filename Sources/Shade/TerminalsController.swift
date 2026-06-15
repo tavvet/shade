@@ -9,6 +9,9 @@ final class TerminalsController {
     private(set) var sessions: [TerminalSession] = []
     private(set) var activeIndex: Int = -1
 
+    /// Set by AppDelegate; forwarded from each session's `onCommandFinish`.
+    var commandFinishHandler: ((TimeInterval, Int?, String) -> Void)?
+
     /// Posted whenever the tab set or selection changes (the tab bar observes it via TabsObservable).
     static let tabsChanged = Notification.Name("ShadeTerminalsTabsChanged")
 
@@ -56,6 +59,9 @@ final class TerminalsController {
             if let index = self.sessions.firstIndex(where: { $0 === session }) {
                 self.close(at: index)
             }
+        }
+        session.onCommandFinish = { [weak self] duration, exitCode, cwd in
+            self?.commandFinishHandler?(duration, exitCode, cwd)
         }
         sessions.append(session)
         select(at: sessions.count - 1)

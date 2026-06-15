@@ -2,6 +2,7 @@ import AppKit
 import KeyboardShortcuts
 import ServiceManagement
 import SwiftUI
+import UserNotifications
 
 @MainActor
 final class SettingsModel: ObservableObject {
@@ -15,6 +16,15 @@ final class SettingsModel: ObservableObject {
     @Published var animationDuration: Double      { didSet { save() } }
     @Published var linkHighlightColor: Color      { didSet { save() } }
     @Published var backgroundBlur: Bool           { didSet { save() } }
+    @Published var notifyThresholdSeconds: Double { didSet { save() } }
+    @Published var notifyOnCommandFinish: Bool {
+        didSet {
+            save()
+            if notifyOnCommandFinish, !oldValue {
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+            }
+        }
+    }
     @Published var openAtLogin: Bool {
         didSet {
             guard oldValue != openAtLogin, !suppressOpenAtLoginWrite else { return }
@@ -37,6 +47,8 @@ final class SettingsModel: ObservableObject {
         animationDuration = prefs.animationDuration
         linkHighlightColor = Color(nsColor: prefs.linkHighlightColor())
         backgroundBlur = prefs.backgroundBlur
+        notifyThresholdSeconds = prefs.notifyThresholdSeconds
+        notifyOnCommandFinish = prefs.notifyOnCommandFinish
         openAtLogin = SMAppService.mainApp.status == .enabled
     }
 
@@ -68,6 +80,8 @@ final class SettingsModel: ObservableObject {
         store.set(animationDuration, forKey: Preferences.Key.animationDuration)
         store.set(Self.hexString(from: linkHighlightColor), forKey: Preferences.Key.linkHighlightHex)
         store.set(backgroundBlur, forKey: Preferences.Key.backgroundBlur)
+        store.set(notifyOnCommandFinish, forKey: Preferences.Key.notifyOnCommandFinish)
+        store.set(notifyThresholdSeconds, forKey: Preferences.Key.notifyThresholdSeconds)
         scheduleApply()
     }
 
@@ -169,6 +183,24 @@ struct SettingsView: View {
 
             Section("Startup") {
                 Toggle("Open at Login", isOn: $model.openAtLogin)
+            }
+
+            Section("Notifications") {
+                Toggle("Notify when a command finishes while hidden", isOn: $model.notifyOnCommandFinish)
+                if model.notifyOnCommandFinish {
+                    HStack {
+                        Text("After")
+                            .frame(width: 76, alignment: .leading)
+                        Slider(value: $model.notifyThresholdSeconds, in: 5...300, step: 5)
+                        Text("\(Int(model.notifyThresholdSeconds)) s")
+                            .monospacedDigit()
+                            .frame(width: 44, alignment: .trailing)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Requires the OSC 133 shell snippet (see README).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section("Animation") {
