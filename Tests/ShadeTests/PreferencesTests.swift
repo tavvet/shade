@@ -20,6 +20,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertTrue(prefs.backgroundBlur)
         XCTAssertFalse(prefs.hideOnFocusLoss)
         XCTAssertEqual(prefs.blurMaterial, .hud)
+        XCTAssertFalse(prefs.newTabInheritsCwd)
     }
 
     func testLoadReadsOverriddenValues() {
@@ -59,6 +60,12 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(Preferences.load(from: store).blurMaterial, .sidebar)
         store.set("bogus", forKey: Preferences.Key.blurMaterial)
         XCTAssertEqual(Preferences.load(from: store).blurMaterial, Preferences.defaults.blurMaterial)
+    }
+
+    func testNewTabInheritsCwdReadsStoredValue() {
+        let store = freshStore()
+        store.set(true, forKey: Preferences.Key.newTabInheritsCwd)
+        XCTAssertTrue(Preferences.load(from: store).newTabInheritsCwd)
     }
 
     func testFractionsAreClampedToValidRange() {

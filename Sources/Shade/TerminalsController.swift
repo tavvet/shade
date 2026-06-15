@@ -50,6 +50,11 @@ final class TerminalsController {
     func newSession() -> TerminalSession {
         // TerminalSession.init already calls apply(Preferences.load()).
         let session = TerminalSession()
+        // ⌘T can open in the active tab's directory instead of $HOME. The first tab
+        // and the last-tab respawn have no active session, so they keep $HOME.
+        if Preferences.load().newTabInheritsCwd, let cwd = activeSession?.cwd, !cwd.isEmpty {
+            session.startupDirectory = cwd
+        }
         // Close this tab when the shell exits (Ctrl-D / `exit` / crash).
         // Weak self + weak session — onExit lives on the session, the
         // session is owned by `sessions`, and the closure must not keep

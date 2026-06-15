@@ -18,6 +18,7 @@ final class SettingsModel: ObservableObject {
     @Published var backgroundBlur: Bool           { didSet { save() } }
     @Published var blurMaterial: Preferences.BlurMaterial { didSet { save() } }
     @Published var hideOnFocusLoss: Bool          { didSet { save() } }
+    @Published var newTabInheritsCwd: Bool        { didSet { save() } }
     @Published var notifyThresholdSeconds: Double { didSet { save() } }
     @Published var notifyOnCommandFinish: Bool {
         didSet {
@@ -51,6 +52,7 @@ final class SettingsModel: ObservableObject {
         backgroundBlur = prefs.backgroundBlur
         blurMaterial = prefs.blurMaterial
         hideOnFocusLoss = prefs.hideOnFocusLoss
+        newTabInheritsCwd = prefs.newTabInheritsCwd
         notifyThresholdSeconds = prefs.notifyThresholdSeconds
         notifyOnCommandFinish = prefs.notifyOnCommandFinish
         openAtLogin = SMAppService.mainApp.status == .enabled
@@ -86,6 +88,7 @@ final class SettingsModel: ObservableObject {
         store.set(backgroundBlur, forKey: Preferences.Key.backgroundBlur)
         store.set(blurMaterial.rawValue, forKey: Preferences.Key.blurMaterial)
         store.set(hideOnFocusLoss, forKey: Preferences.Key.hideOnFocusLoss)
+        store.set(newTabInheritsCwd, forKey: Preferences.Key.newTabInheritsCwd)
         store.set(notifyOnCommandFinish, forKey: Preferences.Key.notifyOnCommandFinish)
         store.set(notifyThresholdSeconds, forKey: Preferences.Key.notifyThresholdSeconds)
         scheduleApply()
@@ -157,6 +160,7 @@ struct SettingsView: View {
 
             Section("Behavior") {
                 Toggle("Hide when Shade loses focus", isOn: $model.hideOnFocusLoss)
+                Toggle("New tab opens in the current directory", isOn: $model.newTabInheritsCwd)
             }
 
             Section("Appearance") {
