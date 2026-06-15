@@ -28,13 +28,9 @@ only a native Mac app can do well.
   threshold, fire a `UNUserNotification`. New small notifier + a Settings
   toggle/threshold.
 
-- **Background blur** — *M.*
-  Frosted-glass backdrop behind the terminal (the Yakuake look), complementing the
-  existing opacity slider.
-  *Why:* large visual payoff for little code.
-  *How:* an `NSVisualEffectView` behind the terminal overlay in
-  `AppDelegate.installTerminals`; the terminal background already composites with
-  alpha. Add a Preferences toggle (and maybe a material choice).
+- **Blur material choice** — *S.*
+  Let the user pick the `NSVisualEffectView` material for the background blur
+  (e.g. HUD vs. under-window) instead of the fixed dark HUD it ships with.
 
 - **New tab inherits the active tab's cwd** — *S.*
   Optional: `⌘T` opens in the current directory instead of `$HOME`.
