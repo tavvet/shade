@@ -182,7 +182,7 @@ Open Settings from the menu-bar `▾` icon. Available sections:
 - **Size** — width and height as a fraction of the screen
 - **Position** — horizontal alignment (left/center/right) and target screen
 - **Behavior** — auto-hide the panel when Shade loses focus
-- **Appearance** — monospace font family, size, background opacity, background blur
+- **Appearance** — monospace font family, size, background opacity, background blur (+ material)
 - **Startup** — open at login
 - **Notifications** — notify when a long command finishes while the panel is hidden, with a duration threshold
 - **Animation** — slide duration
@@ -207,6 +207,7 @@ defaults write dev.shade.Shade fontSize 14
 defaults write dev.shade.Shade fontName "Menlo"                # "" = system monospaced
 defaults write dev.shade.Shade backgroundOpacity 0.85          # 0.3 – 1.0
 defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdrop (most visible at lower opacity)
+defaults write dev.shade.Shade blurMaterial hud                # hud | underWindow | sidebar | fullScreen
 
 # Animation
 defaults write dev.shade.Shade animationDuration 0.12          # 0.0 – 0.5 seconds

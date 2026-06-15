@@ -11,6 +11,8 @@ All notable changes to Shade are documented in this file. Format follows
 - **Hide on focus loss** — opt in (Settings → Behavior, off by default) and the
   panel slides away whenever you switch to another app, the way Guake / Yakuake
   behave.
+- **Blur material** — choose the frosted-glass style (HUD / under-window /
+  sidebar / full-screen) in Settings → Appearance when background blur is on.
 
 ## [0.1.8] — 2026-06-15
 
