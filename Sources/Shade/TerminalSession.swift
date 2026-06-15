@@ -59,6 +59,20 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     }
 }
 
+/// LocalProcessTerminalView subclass that taps `dataReceived` — the PTY-output
+/// entry point — so we can flag activity on background tabs. SwiftTerm's
+/// `rangeChanged` runs from the display-update path and only fires for the
+/// visible view; `dataReceived` runs for every session whenever its child
+/// writes, regardless of whether the view is on screen.
+final class ActivityTerminalView: LocalProcessTerminalView {
+    var onData: (() -> Void)?
+
+    override func dataReceived(slice: ArraySlice<UInt8>) {
+        onData?()
+        super.dataReceived(slice: slice)
+    }
+}
+
 /// Thin wrapper around SwiftTerm's LocalProcessTerminalView that owns one shell session.
 @MainActor
 final class TerminalSession: NSObject {
@@ -128,6 +142,30 @@ final class TerminalSession: NSObject {
         }
     }
 
+    /// Exit code of the most recently completed command (OSC 133 `D;<exit>`);
+    /// nil until one completes or when the shell omits the code. Drives the red
+    /// "last command failed" dot on the tab — so it needs the OSC 133 snippet.
+    private(set) var lastExitCode: Int? = nil {
+        didSet {
+            guard oldValue != lastExitCode else { return }
+            notifyTitleChanged()
+        }
+    }
+
+    /// Set when a background tab emits output the user hasn't seen; cleared when
+    /// the tab is activated. Drives the neutral activity dot, and (unlike the
+    /// exit-code dot) works without OSC 133 — any content change counts.
+    private(set) var hasUnseenActivity = false {
+        didSet {
+            guard oldValue != hasUnseenActivity else { return }
+            notifyTitleChanged()
+        }
+    }
+
+    /// Whether this is the visible tab. The controller keeps it in sync so output
+    /// on the active tab doesn't flag itself as unseen.
+    private(set) var isActive = false
+
     let shellName: String
 
     /// What the tab bar shows: shell-provided title or abbreviated CWD or shell name.
@@ -155,7 +193,8 @@ final class TerminalSession: NSObject {
     override init() {
         let shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         shellName = (shellPath as NSString).lastPathComponent
-        view = LocalProcessTerminalView(frame: .zero)
+        let activityView = ActivityTerminalView(frame: .zero)
+        view = activityView
         // Capture the delegate LocalProcessTerminalView installed in its init,
         // then slot our proxy in front of it.
         delegateProxy = TerminalDelegateProxy(forward: view.terminalDelegate)
@@ -164,6 +203,11 @@ final class TerminalSession: NSObject {
         view.terminalDelegate = delegateProxy
         delegateProxy.onOpenLink = { [weak self] link in
             MainActor.assumeIsolated { self?.openLink(link) }
+        }
+        // PTY output arrived — on a background tab that's unseen activity. dataReceived
+        // runs on the main queue (LocalProcess default), so assumeIsolated is safe.
+        activityView.onData = { [weak self] in
+            MainActor.assumeIsolated { self?.noteActivity() }
         }
         // OSC 133 prompt marks. Snapshot the cursor row synchronously inside
         // the parser callback (which doesn't run on main); hop to the main
@@ -232,7 +276,8 @@ final class TerminalSession: NSObject {
         promptMarks.append(mark)
         // `D` (command finished) is the canonical "shell did something — git
         // status may have changed" signal. Drive a strong-reason refresh.
-        if case .commandDone = mark.kind {
+        if case .commandDone(let exit) = mark.kind {
+            lastExitCode = exit
             sawOsc133CommandDone = true
             if !cwd.isEmpty {
                 gitRefresh.schedule(path: cwd, reason: .commandFinished)
@@ -362,6 +407,19 @@ final class TerminalSession: NSObject {
         if !cwd.isEmpty {
             gitRefresh.schedule(path: cwd, reason: .focusReturned)
         }
+    }
+
+    /// Called by the controller when this tab becomes (or stops being) the visible
+    /// one. Activating clears the unseen-output dot — that's what "marks it read."
+    func setActive(_ active: Bool) {
+        isActive = active
+        if active { hasUnseenActivity = false }
+    }
+
+    /// Terminal content changed; a change on a background tab is unseen activity.
+    private func noteActivity() {
+        guard !isActive else { return }
+        hasUnseenActivity = true
     }
 
     /// Keeps the git badge fresh for users who have not installed Shade's OSC 133

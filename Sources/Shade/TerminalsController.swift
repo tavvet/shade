@@ -97,6 +97,7 @@ final class TerminalsController {
         // default 24-row buffer).
         containerView.layoutSubtreeIfNeeded()
         activeIndex = index
+        for (i, s) in sessions.enumerated() { s.setActive(i == index) }
         session.start()
         // Refresh cwd/branch now and let the coordinator decide whether to
         // re-run git status (cwd change → strong, unchanged cwd within

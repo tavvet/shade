@@ -1,12 +1,20 @@
 import AppKit
 import SwiftUI
 
+/// What the small status dot on a tab chip signals.
+enum TabIndicator: Equatable {
+    case none
+    case activity   // a background tab produced output you haven't seen yet
+    case failed     // the last command exited non-zero (requires OSC 133)
+}
+
 /// Lightweight reflection of TerminalsController for SwiftUI consumption.
 @MainActor
 final class TabsObservable: ObservableObject {
     struct TabInfo: Identifiable {
         let id: Int
         let label: String
+        let indicator: TabIndicator
     }
 
     @Published private(set) var tabs: [TabInfo] = []
@@ -35,7 +43,10 @@ final class TabsObservable: ObservableObject {
     private func sync() {
         guard let controller else { return }
         tabs = controller.sessions.enumerated().map { idx, session in
-            TabInfo(id: idx, label: Self.formatLabel(index: idx, title: session.displayTitle))
+            TabInfo(id: idx,
+                    label: Self.formatLabel(index: idx, title: session.displayTitle),
+                    indicator: Self.indicator(lastExitCode: session.lastExitCode,
+                                              hasUnseenActivity: session.hasUnseenActivity))
         }
         activeIndex = controller.activeIndex
         let active = controller.activeSession
@@ -58,6 +69,14 @@ final class TabsObservable: ObservableObject {
         let truncated = clean.count > maxLen ? "…" + String(clean.suffix(maxLen)) : clean
         return "\(number) · \(truncated)"
     }
+
+    /// Maps a session's command/activity state to its tab dot. A non-zero exit
+    /// (failure) takes priority over unseen activity.
+    static func indicator(lastExitCode: Int?, hasUnseenActivity: Bool) -> TabIndicator {
+        if let code = lastExitCode, code != 0 { return .failed }
+        if hasUnseenActivity { return .activity }
+        return .none
+    }
 }
 
 struct TabBarView: View {
@@ -72,6 +91,7 @@ struct TabBarView: View {
                 TabChip(
                     title: tab.label,
                     isActive: tab.id == tabs.activeIndex,
+                    indicator: tab.indicator,
                     onClick: { onSelect(tab.id) },
                     onClose: { onClose(tab.id) }
                 )
@@ -96,6 +116,7 @@ struct TabBarView: View {
 private struct TabChip: View {
     let title: String
     let isActive: Bool
+    let indicator: TabIndicator
     let onClick: () -> Void
     let onClose: () -> Void
 
@@ -103,6 +124,12 @@ private struct TabChip: View {
 
     var body: some View {
         HStack(spacing: 4) {
+            if indicator != .none {
+                Circle()
+                    .fill(indicator == .failed ? Color.red.opacity(0.9) : Color.white.opacity(0.55))
+                    .frame(width: 6, height: 6)
+                    .help(indicator == .failed ? "Last command failed" : "New output")
+            }
             Text(title)
                 .font(.system(size: 11, weight: isActive ? .semibold : .regular))
                 .foregroundStyle(.white.opacity(isActive ? 1.0 : 0.7))
