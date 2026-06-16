@@ -128,6 +128,13 @@ final class TerminalsController {
         select(at: (activeIndex - 1 + sessions.count) % sessions.count)
     }
 
+    /// Assigns (or clears, when `name` is empty/whitespace) the user title of the
+    /// tab at `index`. The session posts `titleDidChange`, refreshing the bar.
+    func renameSession(at index: Int, to name: String) {
+        guard sessions.indices.contains(index) else { return }
+        sessions[index].setUserTitle(name)
+    }
+
     func applyToAll(_ prefs: Preferences) {
         for session in sessions {
             session.apply(prefs)

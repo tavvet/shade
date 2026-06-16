@@ -19,7 +19,7 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Slides** down from the top of the active screen, fades back up.
 - **Tabs** with `⌘T` / `⌘W` / `⌘1…9` / `⌃Tab` (macOS-standard).
 - **Tab titles** track the shell's current working directory (no `.zshrc`
-  cooperation required).
+  cooperation required), or double-click a tab to pin your own name.
 - **Tab status dots** — a red dot when a tab's last command exited non-zero
   (needs the OSC 133 snippet), a neutral dot when a background tab has new
   output you haven't seen.
@@ -147,6 +147,8 @@ Press `Esc` (or `F12` again) to hide.
 The tab bar lives at the bottom of the panel. Click a chip to switch, click
 the `×` to close, click `+` for a new tab. Tab labels show the index and the
 abbreviated current working directory (e.g. `1 · ~/projects/shade`).
+Double-click a tab (or right-click → Rename) to pin a fixed name instead; an
+empty name or Reset Name restores the automatic title.
 
 Closing the last tab opens a fresh one — the panel always has at least one
 live shell.
@@ -355,8 +357,8 @@ executable directly (e.g. for debugging) rather than via the `.app` bundle.
 
 **Tab title and git badge show wrong info during an SSH session.** This is
 expected — Shade detects `ssh` / `mosh` / `tmate` in the shell's pid tree
-and hides the local-only readouts (the tab title shows `[ssh]` and the
-git badge disappears). Local cwd / git state can't describe a remote
+and hides the local-only readouts (the tab title shows `[ssh]` unless you've
+pinned a name, and the git badge disappears). Local cwd / git state can't describe a remote
 machine. To see the remote machine's path in the title, configure
 **that machine's** `~/.zshrc` (or equivalent) to emit OSC 7 — see the
 "Recommended shell setup" section. Shade picks that up automatically.

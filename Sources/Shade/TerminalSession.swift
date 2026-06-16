@@ -128,6 +128,16 @@ final class TerminalSession: NSObject {
         didSet { notifyTitleChanged() }
     }
 
+    /// A user-assigned tab name that overrides every auto-derived title — cwd,
+    /// the shell's OSC title, even the "[ssh]" remote indicator — until cleared.
+    /// Set via `setUserTitle`; not persisted across launches.
+    private(set) var userTitle: String? {
+        didSet {
+            guard oldValue != userTitle else { return }
+            notifyTitleChanged()
+        }
+    }
+
     private(set) var cwd: String = "" {
         didSet {
             // Drive git-status refreshes off cwd changes (instead of polling).
@@ -203,19 +213,53 @@ final class TerminalSession: NSObject {
 
     let shellName: String
 
-    /// What the tab bar shows: shell-provided title or abbreviated CWD or shell name.
-    /// The git branch is rendered separately as a floating badge over the terminal.
-    /// When we're inside an ssh/mosh session, local cwd/branch info is meaningless,
-    /// so we surface a "[ssh]"-style indicator instead.
+    /// What the tab bar shows: an explicit user name, else the shell-provided
+    /// title or abbreviated CWD or shell name. The git branch is rendered
+    /// separately as a floating badge over the terminal. When we're inside an
+    /// ssh/mosh session, local cwd/branch info is meaningless, so we surface a
+    /// "[ssh]"-style indicator instead (unless the user pinned a name).
     var displayTitle: String {
+        Self.resolveDisplayTitle(
+            userTitle: userTitle,
+            remoteIndicator: remoteIndicator,
+            oscTitle: title,
+            cwd: cwd.isEmpty ? nil : abbreviateHome(cwd),
+            shellName: shellName)
+    }
+
+    /// Title precedence, factored out as a pure function so it can be unit-tested
+    /// without spawning a shell: an explicit user name wins over everything, then
+    /// the "[ssh]" remote indicator, the shell's OSC title, the abbreviated cwd,
+    /// and finally the shell name.
+    nonisolated static func resolveDisplayTitle(
+        userTitle: String?,
+        remoteIndicator: String?,
+        oscTitle: String,
+        cwd: String?,
+        shellName: String
+    ) -> String {
+        if let user = userTitle, !user.isEmpty { return user }
         if let remote = remoteIndicator { return "[\(remote)]" }
-        if !title.isEmpty { return title }
-        if !cwd.isEmpty   { return abbreviateHome(cwd) }
+        if !oscTitle.isEmpty { return oscTitle }
+        if let cwd, !cwd.isEmpty { return cwd }
         return shellName
     }
 
     private func notifyTitleChanged() {
         NotificationCenter.default.post(name: Self.titleDidChange, object: self)
+    }
+
+    /// Sets or clears the user-assigned tab name. Whitespace is trimmed; an empty
+    /// result clears back to the automatic title.
+    func setUserTitle(_ raw: String) {
+        userTitle = Self.normalizedUserTitle(raw)
+    }
+
+    /// Trims a raw rename input, returning nil for an empty / whitespace-only
+    /// string (which clears the user title).
+    nonisolated static func normalizedUserTitle(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     private func abbreviateHome(_ path: String) -> String {

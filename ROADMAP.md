@@ -18,11 +18,11 @@ only a native Mac app can do well.
   match and select it with the existing `extendKeyboardSelection`. Multi-match
   highlighting may need a small vendored addition. New SwiftUI search overlay.
 
-- **Tab rename / reorder / color labels** — *M.*
-  A user-set tab title (overriding the cwd auto-title), drag-to-reorder, and an
-  optional color tag.
-  *How:* a user-title field with precedence in `displayTitle`; reorder the
-  `sessions` array from `TabBar` drags; a per-session tint. No vendored API.
+- **Tab reorder / color labels** — *M.*
+  Drag-to-reorder tabs and an optional color tag. (Tab **rename** shipped — a
+  user-set name now overrides the cwd auto-title via `userTitle`.)
+  *How:* reorder the `sessions` array from `TabBar` drags; a per-session tint.
+  No vendored API.
 
 - **Broadcast input to all tabs** — *M.*
   iTerm2-style: type once, send to every session.
