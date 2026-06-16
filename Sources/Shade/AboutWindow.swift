@@ -40,6 +40,8 @@ struct AboutView: View {
             }
             .font(.callout)
 
+            // Donate section — temporarily hidden. Uncomment to restore.
+            /*
             VStack(spacing: 6) {
                 Text("Donate (USDT) — copy and paste:")
                     .font(.caption2)
@@ -48,6 +50,7 @@ struct AboutView: View {
                 AddressRow(label: "TRC-20", address: "TT8jU9Tbw5iLrNANTnCZgFCnCp6ZhAe2xm")
                 AddressRow(label: "SPL",    address: "4sGwS8KgVanzCUeMNnWXBHwxv6voCKY7TmPkWRhdt2pR")
             }
+            */
 
             Text("MIT licensed — © 2026 Anton Rudakov")
                 .font(.caption2)
