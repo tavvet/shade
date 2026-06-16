@@ -79,6 +79,21 @@ struct Preferences {
         visualBell: false
     )
 
+    static let minFontSize: CGFloat = 8
+    static let maxFontSize: CGFloat = 32
+
+    /// Clamps a font size to the supported range (shared by `load` and zoom).
+    static func clampFontSize(_ size: CGFloat) -> CGFloat {
+        min(max(size, minFontSize), maxFontSize)
+    }
+
+    /// Next font size for a keyboard zoom step: `delta == nil` resets to the
+    /// default size, otherwise adds `delta` points and clamps to range.
+    static func zoomedFontSize(from current: CGFloat, delta: CGFloat?) -> CGFloat {
+        guard let delta else { return defaults.fontSize }
+        return clampFontSize(current + delta)
+    }
+
     static func load(from store: UserDefaults = .standard) -> Preferences {
         var prefs = defaults
         if store.object(forKey: Key.widthFraction) != nil {
@@ -96,7 +111,7 @@ struct Preferences {
             prefs.screenChoice = value
         }
         if store.object(forKey: Key.fontSize) != nil {
-            prefs.fontSize = CGFloat(min(max(store.double(forKey: Key.fontSize), 8), 32))
+            prefs.fontSize = clampFontSize(CGFloat(store.double(forKey: Key.fontSize)))
         }
         if let raw = store.string(forKey: Key.fontName) {
             prefs.fontName = raw
