@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.10] — 2026-06-16
+
 ### Added
 
 - **Rename a tab** — double-click a tab (or right-click → Rename) to pin a fixed
@@ -263,7 +265,8 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.9...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.10...HEAD
+[0.1.10]: https://github.com/tavvet/shade/releases/tag/v0.1.10
 [0.1.9]: https://github.com/tavvet/shade/releases/tag/v0.1.9
 [0.1.8]: https://github.com/tavvet/shade/releases/tag/v0.1.8
 [0.1.7]: https://github.com/tavvet/shade/releases/tag/v0.1.7
