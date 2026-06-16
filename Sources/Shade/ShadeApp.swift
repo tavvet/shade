@@ -179,12 +179,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         commandNotifier.post(exitCode: exitCode, duration: duration, cwd: cwd)
     }
 
+    /// Returns keyboard focus to the active terminal — e.g. after an inline tab
+    /// rename, whose text field stole first responder.
+    private func focusActiveTerminal() {
+        guard let view = terminals.activeSession?.view else { return }
+        terminals.containerView.window?.makeFirstResponder(view)
+    }
+
     private func installTerminals() {
         let tabBar = TabBarView(
             tabs: tabsObservable,
             onSelect: { [weak self] in self?.terminals.select(at: $0) },
             onClose: { [weak self] in self?.terminals.close(at: $0) },
-            onNew: { [weak self] in self?.terminals.newSession() }
+            onNew: { [weak self] in self?.terminals.newSession() },
+            onRename: { [weak self] index, name in self?.terminals.renameSession(at: index, to: name) },
+            onEditEnd: { [weak self] in self?.focusActiveTerminal() }
         )
         let tabBarHost = NSHostingView(rootView: tabBar)
         tabBarHost.translatesAutoresizingMaskIntoConstraints = false

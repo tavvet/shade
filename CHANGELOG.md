@@ -6,6 +6,13 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Rename a tab** — double-click a tab (or right-click → Rename) to pin a fixed
+  name that overrides the automatic cwd / title, handy for long-lived tabs like
+  `logs` or `ssh prod`. The name sticks through `cd` and even `[ssh]`; clear it
+  with an empty name or right-click → Reset Name.
+
 ## [0.1.9] — 2026-06-15
 
 ### Added
@@ -249,7 +256,8 @@ First public release.
 - Bundle is ad-hoc signed; on first launch macOS Gatekeeper requires the
   user to clear the quarantine attribute or use the right-click → Open
   flow. Real Developer ID + notarization arrives in a follow-up release.
-- No window splits, scrollback search, or session save/restore yet.
+- No window splits, scrollback search, or session save/restore yet — so custom
+  tab names don't survive a restart.
 - macOS 13 minimum.
 
 [Unreleased]: https://github.com/tavvet/shade/compare/v0.1.9...HEAD
