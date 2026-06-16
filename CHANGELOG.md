@@ -12,6 +12,9 @@ All notable changes to Shade are documented in this file. Format follows
   name that overrides the automatic cwd / title, handy for long-lived tabs like
   `logs` or `ssh prod`. The name sticks through `cd` and even `[ssh]`; clear it
   with an empty name or right-click → Reset Name.
+- **Font zoom** — `⌘+` / `⌘−` resize the terminal font live and `⌘0` resets it
+  to the default (clamped to 8–32 pt and saved to settings). Matched by physical
+  keyCode, so it works on any keyboard layout.
 
 ## [0.1.9] — 2026-06-15
 

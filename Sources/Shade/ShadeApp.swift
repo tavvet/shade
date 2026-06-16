@@ -141,6 +141,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.contentView?.layoutSubtreeIfNeeded()
     }
 
+    /// Adjusts the terminal font size by `delta` points (or resets to the
+    /// default when `delta` is nil), persists it, and re-applies live to every
+    /// session through the standard preferences-changed path.
+    private func adjustFontSize(by delta: CGFloat?) {
+        let store = UserDefaults.standard
+        let current = Preferences.load(from: store).fontSize
+        let target = Preferences.zoomedFontSize(from: current, delta: delta)
+        guard target != current else { return }
+        store.set(target, forKey: Preferences.Key.fontSize)
+        NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+    }
+
     @objc private func applyPreferences() {
         let prefs = Preferences.load()
         terminals.applyToAll(prefs)
@@ -359,6 +371,22 @@ extension AppDelegate: PanelKeyHandler {
 
         // Tab key has its own keyCode (kVK_Tab); `chars` is `\t`.
         let isTab = event.keyCode == KeyCodes.tab
+
+        // Font zoom: ⌘= / ⌘+ bigger, ⌘− smaller, ⌘0 reset. Matched by physical
+        // keyCode so it's layout-agnostic; ⌘+ arrives as ⌘⇧=, so the zoom-in
+        // key also accepts Shift.
+        if event.keyCode == KeyCodes.equal, flags == cmd || flags == [.command, .shift] {
+            adjustFontSize(by: 1)
+            return true
+        }
+        if flags == cmd, event.keyCode == KeyCodes.minus {
+            adjustFontSize(by: -1)
+            return true
+        }
+        if flags == cmd, event.keyCode == KeyCodes.zero {
+            adjustFontSize(by: nil)
+            return true
+        }
 
         if flags == cmd {
             switch letter {
