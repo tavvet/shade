@@ -499,9 +499,14 @@ final class TerminalSession: NSObject {
         if let path = ProcessCwd.read(pid: shellPid), path != cwd {
             cwd = path
         }
-        let newBranch = cwd.isEmpty ? "" : (GitInfo.branch(forCwd: cwd) ?? "")
-        if newBranch != branch {
-            branch = newBranch
+        // Only the active tab shows a branch badge, so don't resolve the branch
+        // (a findGitDir stat-walk + HEAD read) for background tabs every second.
+        // A tab refreshes its branch when it becomes active via `tabActivated`.
+        if isActive {
+            let newBranch = cwd.isEmpty ? "" : (GitInfo.branch(forCwd: cwd) ?? "")
+            if newBranch != branch {
+                branch = newBranch
+            }
         }
     }
 
