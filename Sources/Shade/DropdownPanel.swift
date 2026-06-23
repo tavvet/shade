@@ -26,6 +26,12 @@ final class DropdownPanel: NSPanel {
     /// NSApp.activate hasn't fully landed yet.
     var onBecomeKey: (() -> Void)?
 
+    /// Fired when the panel slides on-screen / off-screen. AppDelegate uses these
+    /// to resume / pause the per-second context poll, so a hidden panel does no
+    /// background cwd / git / process work.
+    var onShow: (() -> Void)?
+    var onHide: (() -> Void)?
+
     override func becomeKey() {
         super.becomeKey()
         onBecomeKey?()
@@ -188,6 +194,7 @@ final class DropdownPanel: NSPanel {
         NSApp.activate(ignoringOtherApps: true)
         makeKeyAndOrderFront(nil)
         setFrame(finalFrame, display: true, animate: true)
+        onShow?()
     }
 
     func hide() {
@@ -199,5 +206,6 @@ final class DropdownPanel: NSPanel {
                                  height: 0)
         setFrame(hiddenFrame, display: true, animate: true)
         orderOut(nil)
+        onHide?()
     }
 }

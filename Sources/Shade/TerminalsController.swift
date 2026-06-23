@@ -19,22 +19,32 @@ final class TerminalsController {
 
     init() {
         containerView.translatesAutoresizingMaskIntoConstraints = false
-        startCwdPolling()
     }
 
-    private func startCwdPolling() {
-        // Polls cwd / branch / remote indicator only — fast, in-process reads.
-        // If the shell has not installed Shade's OSC 133 integration, the active
-        // session also gets a weak git-status fallback through GitRefreshCoordinator.
+    /// One context refresh across every session: cwd / remote indicator for all
+    /// tabs (their labels show it), plus a weak git-status fallback for the active
+    /// tab when the shell hasn't installed Shade's OSC 133 integration. All fast,
+    /// in-process reads.
+    private func pollOnce() {
+        for session in sessions { session.refreshContext() }
+        activeSession?.fallbackRefreshGitStatusIfNeeded()
+    }
+
+    /// Starts the 1 Hz context poll, refreshing once immediately so the UI is
+    /// current the moment the panel shows. Idempotent.
+    func resumePolling() {
+        guard cwdTimer == nil else { return }
+        pollOnce()
         cwdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self else { return }
-                for session in self.sessions {
-                    session.refreshContext()
-                }
-                self.activeSession?.fallbackRefreshGitStatusIfNeeded()
-            }
+            Task { @MainActor in self?.pollOnce() }
         }
+    }
+
+    /// Stops the poll while the panel is hidden — nothing it updates is on-screen,
+    /// so the per-second cwd / git / process work would be pure idle drain.
+    func pausePolling() {
+        cwdTimer?.invalidate()
+        cwdTimer = nil
     }
 
     var activeSession: TerminalSession? {
