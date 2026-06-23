@@ -18,6 +18,13 @@ enum GitInfo {
     /// directory is not inside a git repository.
     static func branch(forCwd cwd: String) -> String? {
         guard let gitDir = findGitDir(from: cwd) else { return nil }
+        return branchName(inGitDir: gitDir)
+    }
+
+    /// Reads the current branch (or a 7-char SHA prefix for detached HEAD) from
+    /// `<gitDir>/HEAD`. Split out from `findGitDir` so a caller that already knows
+    /// the git directory and re-reads HEAD frequently can skip the stat-walk.
+    static func branchName(inGitDir gitDir: String) -> String? {
         let head = (gitDir as NSString).appendingPathComponent("HEAD")
         guard let content = try? String(contentsOfFile: head, encoding: .utf8) else { return nil }
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)

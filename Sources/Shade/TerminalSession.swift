@@ -146,6 +146,9 @@ final class TerminalSession: NSObject {
             // local state is masked) cancels any pending refresh and clears
             // the status badge directly.
             if cwd != oldValue {
+                // Resolve the git dir once per cwd change so the active tab's
+                // per-tick branch read is just a HEAD read, not a fresh stat-walk.
+                gitDir = cwd.isEmpty ? nil : GitInfo.findGitDir(from: cwd)
                 if cwd.isEmpty {
                     gitRefresh.cancel()
                     if gitStatus != nil { gitStatus = nil }
@@ -158,6 +161,11 @@ final class TerminalSession: NSObject {
             notifyTitleChanged()
         }
     }
+
+    /// Cached resolved git directory for the current `cwd` (nil = not in a repo),
+    /// updated only when `cwd` changes. Lets the per-tick branch read skip the
+    /// `findGitDir` stat-walk.
+    private var gitDir: String?
 
     private lazy var gitRefresh: GitRefreshCoordinator = GitRefreshCoordinator(
         apply: { [weak self] status in self?.gitStatus = status }
@@ -503,7 +511,7 @@ final class TerminalSession: NSObject {
         // (a findGitDir stat-walk + HEAD read) for background tabs every second.
         // A tab refreshes its branch when it becomes active via `tabActivated`.
         if isActive {
-            let newBranch = cwd.isEmpty ? "" : (GitInfo.branch(forCwd: cwd) ?? "")
+            let newBranch = gitDir.flatMap { GitInfo.branchName(inGitDir: $0) } ?? ""
             if newBranch != branch {
                 branch = newBranch
             }
