@@ -80,6 +80,20 @@ final class GitInfoTests: XCTestCase {
         XCTAssertEqual(GitInfo.branch(forCwd: work), "submodule-branch")
     }
 
+    // MARK: - branchName(inGitDir:) reads HEAD directly
+
+    func testBranchNameReadsHeadInGivenGitDir() throws {
+        let dir = try makeFixtureRepo(headContents: "ref: refs/heads/topic\n")
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+        let gitDir = (dir as NSString).appendingPathComponent(".git")
+        XCTAssertEqual(GitInfo.branchName(inGitDir: gitDir), "topic")
+    }
+
+    func testBranchNameNilWhenHeadMissing() {
+        let missing = NSTemporaryDirectory() + "shade-tests-missing-" + UUID().uuidString
+        XCTAssertNil(GitInfo.branchName(inGitDir: missing))
+    }
+
     // MARK: - helpers
 
     private func makeFixtureRepo(headContents: String) throws -> String {
