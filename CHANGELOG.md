@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.11] — 2026-06-23
+
 ### Changed
 
 - **Lower idle CPU / battery use** — the per-second cwd / git / process-tree
@@ -273,7 +275,8 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.10...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.11...HEAD
+[0.1.11]: https://github.com/tavvet/shade/releases/tag/v0.1.11
 [0.1.10]: https://github.com/tavvet/shade/releases/tag/v0.1.10
 [0.1.9]: https://github.com/tavvet/shade/releases/tag/v0.1.9
 [0.1.8]: https://github.com/tavvet/shade/releases/tag/v0.1.8
