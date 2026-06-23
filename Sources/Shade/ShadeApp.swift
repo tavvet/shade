@@ -38,6 +38,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // suppresses it if we just refreshed.
             active.focusReturned()
         }
+        // Pause the per-second context poll whenever the panel is off-screen; a
+        // hidden drop-down shouldn't do background cwd / git / process work.
+        p.onShow = { [weak self] in self?.terminals.resumePolling() }
+        p.onHide = { [weak self] in self?.terminals.pausePolling() }
         return p
     }()
     private let terminals = TerminalsController()

@@ -381,6 +381,12 @@ final class TerminalSession: NSObject {
         case .commandDone(let exit):
             lastExitCode = exit
             sawOsc133CommandDone = true
+            // Refresh cwd from the shell now: the context poll is paused while the
+            // panel is hidden, which is exactly when the finished-command
+            // notification fires — so it must not rely on a possibly-stale cwd.
+            if let path = ProcessCwd.read(pid: view.process.shellPid), path != cwd {
+                cwd = path
+            }
             if let started = commandStartedAt {
                 onCommandFinish?(Date().timeIntervalSince(started), exit, cwd)
                 commandStartedAt = nil
