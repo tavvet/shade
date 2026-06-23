@@ -6,6 +6,14 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Lower idle CPU / battery use** — the per-second cwd / git / process-tree
+  poll now pauses while the panel is hidden (resuming with an immediate refresh
+  on show), only the active tab resolves its git branch, and the resolved git
+  directory is cached per directory. No behaviour change — just far less
+  background work for an app that spends most of its life hidden.
+
 ## [0.1.10] — 2026-06-16
 
 ### Added
