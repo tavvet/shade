@@ -4689,7 +4689,7 @@ open class Terminal {
             last.fill (with: CharData (attribute: da), atCol: buffer.marginLeft, len: columnCount)
         }
         // this.maxRange();
-        updateRange (startLine: buffer.scrollTop, endLine: buffer.scrollBottom)
+        refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom)
     }
 
     //
@@ -4725,7 +4725,7 @@ open class Terminal {
             }
         }
         // this.maxRange();
-        updateRange (startLine: buffer.scrollTop, endLine: buffer.scrollBottom)
+        refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom)
     }
 
     //
@@ -5199,6 +5199,22 @@ open class Terminal {
     
     var blankLine: BufferLine = BufferLine(cols: 0)
     
+    /// Shade patch: flag the rows a scroll touched for repaint. A restricted scroll
+    /// region (scrollTop != 0 or scrollBottom != rows-1) or the alternate buffer
+    /// shifts rows without the viewport following into scrollback, so the rows
+    /// OUTSIDE the region keep stale pixels on the CoreGraphics renderer — a ghost
+    /// line at the bottom while paging in nano etc. Repaint the whole viewport in
+    /// that case; endLine == rows-1 also fires the renderer's bottom-edge refresh.
+    /// A full-screen normal-buffer region keeps the cheap region-only path (its
+    /// scrollback blit handles the bottom edge).
+    private func refreshScrolledRegion(top: Int, bottom: Int) {
+        if top != 0 || bottom != rows - 1 || isCurrentBufferAlternate {
+            updateRange(startLine: 0, endLine: rows - 1)
+        } else {
+            updateRange(startLine: top, endLine: bottom)
+        }
+    }
+
     public func scroll (isWrapped: Bool = false)
     {
         let buffer = self.buffer
@@ -5322,10 +5338,7 @@ open class Terminal {
         // Flag rows that need updating
         updateRange (scrollTop, scrolling: true)
         updateRange (scrollBottom, scrolling: true)
-
-        if !hasScrollback {
-            updateRange(startLine: scrollTop, endLine: scrollBottom)
-        }
+        refreshScrolledRegion(top: scrollTop, bottom: scrollBottom)
 
         if buffer.hasAnyImages {
             updateKittyRelativePlacementsForCurrentBuffer()
@@ -5782,7 +5795,7 @@ open class Terminal {
                     }
                     buffer.lines [topRow] = buffer.getBlankLine (attribute: eraseAttr ())
                 }
-                updateRange (startLine: buffer.scrollTop, endLine: buffer.scrollBottom)
+                refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom)
             }
         } else if buffer.y > 0 {
             buffer.y -= 1
