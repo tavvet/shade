@@ -166,6 +166,7 @@ live shell.
 | Font size            | `⌘+` / `⌘−` to zoom in / out, `⌘0` to reset (8–32 pt, persisted) |
 | Delete word back     | `⌥⌫` (readline `backward-kill-word`) |
 | Beginning / end of line | `Home` / `End` (translated to `⌃A` / `⌃E` so they work regardless of shell config) |
+| Page up / down       | `PageUp` / `PageDown` are sent to the running program, so full-screen apps (`nano`, `less`, …) page their own view; scrollback is on the trackpad / scroll wheel |
 | Extend selection (char) | `⇧←` / `⇧→` / `⇧↑` / `⇧↓` |
 | Extend selection (word) | `⌥⇧←` / `⌥⇧→` |
 | Extend selection (line edge) | `⌘⇧←` / `⌘⇧→` |
@@ -422,10 +423,12 @@ Key design choices:
 
 - [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) — VT100 / xterm
   terminal emulator + local PTY shell hosting. **Vendored** under
-  `Vendor/SwiftTerm/` so we can expose `linkHoverColor` (upstream hardcodes
-  the link underline to the cell's foreground color, which is unreadable
-  on a translucent background). All other behavior is unchanged from
-  upstream.
+  `Vendor/SwiftTerm/` for two local patches: `linkHoverColor` (upstream hardcodes
+  the link underline to the cell's foreground color, unreadable on a translucent
+  background) and a restricted-region scroll-repaint fix for the CoreGraphics
+  renderer — submitted upstream as
+  [SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582); drop the
+  local patch once it lands. Otherwise unchanged from upstream.
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
   global hotkey registration with a SwiftUI recorder UI.
 

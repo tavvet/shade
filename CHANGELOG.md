@@ -17,7 +17,7 @@ All notable changes to Shade are documented in this file. Format follows
   viewport on a restricted-region / alternate-buffer scroll.
 - **PageUp / PageDown** now reach the running program, so full-screen apps page
   correctly instead of the terminal scrolling its own viewport. Scrollback stays
-  on the trackpad and Shift+PageUp.
+  on the trackpad / scroll wheel.
 
 ## [0.1.11] — 2026-06-23
 
