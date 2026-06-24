@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.12] — 2026-06-24
+
 ### Fixed
 
 - **Rendering artifacts in full-screen apps** — `nano`, `vim`, `less` and other
@@ -286,7 +288,8 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.11...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.12...HEAD
+[0.1.12]: https://github.com/tavvet/shade/releases/tag/v0.1.12
 [0.1.11]: https://github.com/tavvet/shade/releases/tag/v0.1.11
 [0.1.10]: https://github.com/tavvet/shade/releases/tag/v0.1.10
 [0.1.9]: https://github.com/tavvet/shade/releases/tag/v0.1.9
