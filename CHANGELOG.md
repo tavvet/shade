@@ -6,6 +6,17 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Rendering artifacts in full-screen apps** — `nano`, `vim`, `less` and other
+  ncurses programs that keep a fixed header/footer (a restricted scroll region)
+  no longer leave stale rows when scrolling — in particular a "ghost" line at the
+  bottom of the view while paging. The vendored terminal now repaints the whole
+  viewport on a restricted-region / alternate-buffer scroll.
+- **PageUp / PageDown** now reach the running program, so full-screen apps page
+  correctly instead of the terminal scrolling its own viewport. Scrollback stays
+  on the trackpad and Shift+PageUp.
+
 ## [0.1.11] — 2026-06-23
 
 ### Changed
