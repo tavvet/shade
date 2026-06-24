@@ -20,6 +20,8 @@ enum KeyCodes {
     static let rightArrow: UInt16 = UInt16(kVK_RightArrow)
     static let upArrow: UInt16 = UInt16(kVK_UpArrow)
     static let downArrow: UInt16 = UInt16(kVK_DownArrow)
+    static let pageUp: UInt16 = UInt16(kVK_PageUp)
+    static let pageDown: UInt16 = UInt16(kVK_PageDown)
     // Number-row keys for font zoom (⌘= / ⌘− / ⌘0). Matched by physical
     // position so they work on any layout.
     static let equal: UInt16 = UInt16(kVK_ANSI_Equal)

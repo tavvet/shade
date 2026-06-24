@@ -88,6 +88,10 @@ final class DropdownPanel: NSPanel {
                 handler.panelSendToActiveTerminal(bytes)
                 return
             }
+            if let bytes = pageKeyBytes(for: event) {
+                handler.panelSendToActiveTerminal(bytes)
+                return
+            }
             if let (direction, byWord) = keyboardSelectionAction(for: event) {
                 handler.panelExtendKeyboardSelection(direction: direction, byWord: byWord)
                 return
@@ -128,6 +132,26 @@ final class DropdownPanel: NSPanel {
         case KeyCodes.home: return [0x01]   // Home → ⌃A
         case KeyCodes.end:  return [0x05]   // End  → ⌃E
         default:            return nil
+        }
+    }
+
+    /// Plain PageUp / PageDown are sent to the app as `ESC[5~` / `ESC[6~` (the
+    /// xterm convention) so full-screen programs can page. This matters most for
+    /// nano, which — unlike vim / less — never switches to the alternate screen
+    /// buffer (its text stays on screen after quit), so "is the app full-screen?"
+    /// can't be answered from the buffer. Stock SwiftTerm otherwise scrolls its
+    /// own viewport unless the app set DEC application-cursor mode, which desyncs
+    /// the screen from the app — the view pages locally while the app keeps drawing
+    /// at its own cursor, leaving stray characters behind. Scrollback stays
+    /// reachable with the trackpad / scroll wheel; modified PageUp/PageDown (Shift
+    /// etc.) keep their modifier and fall through to SwiftTerm untouched.
+    private func pageKeyBytes(for event: NSEvent) -> [UInt8]? {
+        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        guard event.modifierFlags.intersection(userKeys).isEmpty else { return nil }
+        switch event.keyCode {
+        case KeyCodes.pageUp:   return [0x1B, 0x5B, 0x35, 0x7E]   // ESC [ 5 ~
+        case KeyCodes.pageDown: return [0x1B, 0x5B, 0x36, 0x7E]   // ESC [ 6 ~
+        default:                return nil
         }
     }
 
