@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.13] — 2026-06-25
+
 ### Added
 
 - **Richer completion inside Shade (opt-in)** — a new **Settings → Shell**
