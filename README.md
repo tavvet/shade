@@ -50,6 +50,11 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   prompts with `⌘⇧↑` / `⌘⇧↓`, copy the previous command's output with
   `⌘⇧O`. Opt-in via a short shell-side snippet (see "Recommended shell
   setup"); without it Shade behaves identically to before.
+- **Richer completion inside Shade (opt-in)** — for a bare zsh, a Settings
+  toggle turns on tab-completion (`git`, `make`, `ssh`, …) plus the OSC 133
+  marks by pointing the shell at a bundled `ZDOTDIR` — without editing your
+  dotfiles and without overriding a config you've already tuned (oh-my-zsh, …).
+  zsh only; off by default (Settings → Shell). See "Recommended shell setup".
 - **Command-finished notifications** — opt-in: a command that runs past a
   threshold and finishes while the panel is hidden posts a native notification
   (needs the OSC 133 snippet). Enable in Settings → Notifications.
@@ -192,6 +197,7 @@ Open Settings from the menu-bar `▾` icon. Available sections:
 - **Size** — width and height as a fraction of the screen
 - **Position** — horizontal alignment (left/center/right) and target screen
 - **Behavior** — auto-hide on focus loss; open new tabs in the current directory; visual bell
+- **Shell** — enrich completion inside Shade for a bare zsh (off by default; zsh only)
 - **Appearance** — monospace font family, size, background opacity, background blur (+ material), cursor style
 - **Startup** — open at login
 - **Notifications** — notify when a long command finishes while the panel is hidden, with a duration threshold
@@ -228,6 +234,7 @@ defaults write dev.shade.Shade animationDuration 0.12          # 0.0 – 0.5 sec
 defaults write dev.shade.Shade hideOnFocusLoss -bool true      # hide when Shade loses focus
 defaults write dev.shade.Shade newTabInheritsCwd -bool true    # ⌘T opens in the current directory
 defaults write dev.shade.Shade visualBell -bool true           # flash on the terminal bell
+defaults write dev.shade.Shade shellEnrichment -bool true      # richer zsh completion inside Shade (zsh only)
 
 # Notifications (command finished while panel hidden; needs OSC 133)
 defaults write dev.shade.Shade notifyOnCommandFinish -bool true
@@ -252,9 +259,36 @@ See [CHANGELOG.md](./CHANGELOG.md) for release notes.
 
 ## Recommended shell setup
 
-Shade is a *terminal*, not a *shell* — features like ghost auto-completion
-and reverse history search live in your shell config, not in Shade. A
-sensible baseline for zsh:
+Shade is a *terminal*, not a *shell* — the command line itself (completion,
+ghost auto-suggestions, reverse history search, key bindings) is your shell's
+job, and Shade renders it rather than replacing it. Shade deliberately does
+**not** grow a Warp-style as-you-type completion dropdown: that would mean owning
+the input line and discarding your `zle`, vi-mode and key bindings — a different
+product. Two opt-ins make the out-of-the-box experience nicer without giving that
+up.
+
+### Richer completion inside Shade (opt-in)
+
+If your zsh is bare — no `compinit`, no framework — turn on **Settings → Shell →
+"Enrich completion inside Shade"** (or `defaults write dev.shade.Shade
+shellEnrichment -bool true`). Shade then launches zsh with `ZDOTDIR` pointed at a
+bundled shim that:
+
+- loads your real `~/.zshrc` first, so your `PATH`, aliases, prompt and key
+  bindings win;
+- runs `compinit` **only if you haven't already**, lighting up the tab-completion
+  for `git`, `make`, `ssh`, … that already ships with zsh; and
+- enables the OSC 133 prompt marks, so `⌘⇧↑` / `⌘⇧↓` / `⌘⇧O` work without the
+  manual snippet below.
+
+It never edits your dotfiles, only affects shells Shade spawns, and no-ops if you
+already set up completion (oh-my-zsh, prezto, …). zsh only — bash and fish keep
+the manual snippet. Off by default.
+
+### Shell-side extras
+
+Ghost suggestions, syntax highlighting and fuzzy history live entirely in your
+shell. A sensible baseline for zsh:
 
 ```sh
 # Ghost suggestions (greyed-out completion of past commands, right-arrow to accept)
@@ -293,7 +327,9 @@ command's output" (`⌘⇧O`). The shell emits invisible OSC 133 sequences
 around each prompt (`A` = prompt start, `C` = command output begins,
 `D;<exit>` = command finished); Shade records the positions and lets you
 jump between them. Terminals that don't understand the sequences ignore
-them, so the snippets are safe to leave on everywhere.
+them, so the snippets are safe to leave on everywhere. (The **Shell** toggle
+above already enables this for zsh — these snippets are for bash / fish, or for
+using the marks without the toggle.)
 
 Shade ships ready-to-source files for zsh, bash, and fish in
 [`integrations/`](./integrations); the build copies them into
@@ -392,6 +428,7 @@ Sources/Shade/
 ├── ProcessTree.swift        Walks the shell's descendants to spot ssh/mosh
 ├── PromptMarks.swift        OSC 133 prompt-mark parsing + jump/copy helpers
 ├── SettingsWindow.swift     SwiftUI Settings view + NSWindowController
+├── ShellIntegration.swift   Opt-in ZDOTDIR injection — richer zsh completion + OSC 133
 ├── TabBar.swift             SwiftUI TabBarView + TabsObservable
 ├── TerminalSession.swift    Wrapper around SwiftTerm.LocalProcessTerminalView
 └── TerminalsController.swift Owns multi-tab sessions, swaps view on selection
@@ -465,7 +502,7 @@ shade/
 ├── Package.swift            SwiftPM manifest
 ├── Resources/Info.plist     LSUIElement = true, bundle metadata
 ├── Makefile                 swift build → wrap into Shade.app → codesign; `make run`, `make dmg`
-├── integrations/            Opt-in OSC 133 shell snippets (zsh / bash / fish)
+├── integrations/            Opt-in shell bits: OSC 133 snippets (zsh/bash/fish) + zsh ZDOTDIR shim
 ├── Sources/Shade/           Swift sources (see Architecture)
 └── README.md                this file
 ```

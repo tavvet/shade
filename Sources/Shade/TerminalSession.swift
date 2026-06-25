@@ -329,10 +329,14 @@ final class TerminalSession: NSObject {
             didPadInitialPrompt = true
         }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        let environment = ShellIntegration.environment(
+            shellName: shellName,
+            enabled: Preferences.load().shellEnrichment
+        )
         view.startProcess(
             executable: shell,
             args: ["-l"],
-            environment: nil,
+            environment: environment,   // nil → SwiftTerm default; non-nil → ZDOTDIR-injected
             execName: "-" + shellName,  // leading dash → login shell
             currentDirectory: startupDirectory
         )

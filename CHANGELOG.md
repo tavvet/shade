@@ -6,6 +6,17 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Richer completion inside Shade (opt-in)** — a new **Settings → Shell**
+  toggle enriches a bare zsh *inside Shade* without touching your dotfiles. It
+  points the shell at a bundled `ZDOTDIR` shim that loads your real `~/.zshrc`
+  first (your `PATH` / aliases / prompt win), then runs `compinit` only if you
+  haven't — lighting up `git` / `make` / `ssh` tab-completion that ships with
+  zsh — and enables the OSC 133 prompt marks. Only affects shells Shade spawns,
+  and no-ops if your shell already configures completion (oh-my-zsh, …). zsh
+  only; off by default (`shellEnrichment`).
+
 ## [0.1.12] — 2026-06-24
 
 ### Fixed

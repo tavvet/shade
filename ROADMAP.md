@@ -58,3 +58,10 @@ only a native Mac app can do well.
 - **Window splits / panes** — set aside for now. Would need a pane-tree model and
   focus routing on top of today's single-active-view `TerminalsController`: a large
   change, and not the current priority.
+
+- **Warp-style as-you-type completion dropdown** — not planned. Rendering our own
+  completion overlay means owning the input line and discarding the user's `zle`,
+  vi-mode and key bindings — a different product, and the opposite of "your shell
+  stays your shell." The opt-in shell enrichment (richer `compinit` completion via
+  a bundled `ZDOTDIR`, see CHANGELOG) is the native, lightweight alternative we
+  ship instead.
