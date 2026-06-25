@@ -22,6 +22,7 @@ final class SettingsModel: ObservableObject {
     @Published var visualBell: Bool               { didSet { save() } }
     @Published var hideOnFocusLoss: Bool          { didSet { save() } }
     @Published var newTabInheritsCwd: Bool        { didSet { save() } }
+    @Published var shellEnrichment: Bool          { didSet { save() } }
     @Published var notifyThresholdSeconds: Double { didSet { save() } }
     @Published var notifyOnCommandFinish: Bool {
         didSet {
@@ -59,6 +60,7 @@ final class SettingsModel: ObservableObject {
         visualBell = prefs.visualBell
         hideOnFocusLoss = prefs.hideOnFocusLoss
         newTabInheritsCwd = prefs.newTabInheritsCwd
+        shellEnrichment = prefs.shellEnrichment
         notifyThresholdSeconds = prefs.notifyThresholdSeconds
         notifyOnCommandFinish = prefs.notifyOnCommandFinish
         openAtLogin = SMAppService.mainApp.status == .enabled
@@ -98,6 +100,7 @@ final class SettingsModel: ObservableObject {
         store.set(visualBell, forKey: Preferences.Key.visualBell)
         store.set(hideOnFocusLoss, forKey: Preferences.Key.hideOnFocusLoss)
         store.set(newTabInheritsCwd, forKey: Preferences.Key.newTabInheritsCwd)
+        store.set(shellEnrichment, forKey: Preferences.Key.shellEnrichment)
         store.set(notifyOnCommandFinish, forKey: Preferences.Key.notifyOnCommandFinish)
         store.set(notifyThresholdSeconds, forKey: Preferences.Key.notifyThresholdSeconds)
         scheduleApply()
@@ -171,6 +174,15 @@ struct SettingsView: View {
                 Toggle("Hide when Shade loses focus", isOn: $model.hideOnFocusLoss)
                 Toggle("New tab opens in the current directory", isOn: $model.newTabInheritsCwd)
                 Toggle("Visual bell (flash on bell)", isOn: $model.visualBell)
+            }
+
+            Section("Shell") {
+                Toggle("Enrich completion inside Shade (zsh)", isOn: $model.shellEnrichment)
+                Text("Turns on tab-completion for git, make, ssh, … in new zsh tabs "
+                     + "without modifying your shell files. No effect if your shell "
+                     + "already sets up completion (oh-my-zsh, etc.).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Appearance") {

@@ -19,6 +19,7 @@ struct Preferences {
     var hideOnFocusLoss: Bool         // auto-hide the panel when Shade stops being the active app
     var blurMaterial: BlurMaterial    // NSVisualEffectView material for the background blur
     var newTabInheritsCwd: Bool       // ⌘T opens in the active tab's directory instead of $HOME
+    var shellEnrichment: Bool         // inject ZDOTDIR so a thin zsh gets completion + OSC 133 inside Shade
     var cursorShape: CursorShape      // block / bar / underline
     var cursorBlink: Bool             // blink the cursor
     var visualBell: Bool              // flash the terminal instead of relying on the audible bell
@@ -74,6 +75,7 @@ struct Preferences {
         hideOnFocusLoss: false,
         blurMaterial: .hud,
         newTabInheritsCwd: false,
+        shellEnrichment: false,
         cursorShape: .block,
         cursorBlink: false,
         visualBell: false
@@ -145,6 +147,9 @@ struct Preferences {
         if store.object(forKey: Key.newTabInheritsCwd) != nil {
             prefs.newTabInheritsCwd = store.bool(forKey: Key.newTabInheritsCwd)
         }
+        if store.object(forKey: Key.shellEnrichment) != nil {
+            prefs.shellEnrichment = store.bool(forKey: Key.shellEnrichment)
+        }
         if let raw = store.string(forKey: Key.cursorShape),
            let value = CursorShape(rawValue: raw) {
             prefs.cursorShape = value
@@ -174,6 +179,7 @@ struct Preferences {
         static let hideOnFocusLoss = "hideOnFocusLoss"
         static let blurMaterial = "blurMaterial"
         static let newTabInheritsCwd = "newTabInheritsCwd"
+        static let shellEnrichment = "shellEnrichment"
         static let cursorShape = "cursorShape"
         static let cursorBlink = "cursorBlink"
         static let visualBell = "visualBell"
