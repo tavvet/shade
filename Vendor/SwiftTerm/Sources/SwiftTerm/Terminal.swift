@@ -5199,14 +5199,10 @@ open class Terminal {
     
     var blankLine: BufferLine = BufferLine(cols: 0)
     
-    /// Shade patch: repaint after a scroll shifted rows in the region. A restricted
-    /// scroll region (top != 0 or bottom != rows-1) — or any scroll with no
-    /// scrollback to blit into — moves rows in place, so rows outside the region
-    /// keep stale pixels on the CoreGraphics renderer (a ghost line at the bottom
-    /// while paging in nano). Repaint the whole viewport then; endLine == rows-1
-    /// also fires the renderer's bottom-edge refresh. A full-screen line-feed scroll
-    /// WITH scrollback (`canBlit`) keeps the cheap path: the renderer blits the
-    /// viewport and only the revealed row (already flagged `scrolling: true`) redraws.
+    /// Shade patch: repaint after a scroll. A restricted region (top != 0 ||
+    /// bottom != rows-1), or no scrollback to blit into, leaves stale pixels outside
+    /// the region on the CoreGraphics renderer (a bottom ghost in nano) — so repaint
+    /// the whole viewport. Full-screen + scrollback (`canBlit`) keeps the cheap blit.
     private func refreshScrolledRegion(top: Int, bottom: Int, canBlit: Bool) {
         if top != 0 || bottom != rows - 1 || !canBlit {
             updateRange(startLine: 0, endLine: rows - 1)
