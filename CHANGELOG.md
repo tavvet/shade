@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.15] — 2026-06-27
+
 ### Fixed
 
 - **Full-screen-app rendering artifacts fixed at the renderer level** — scrolling
