@@ -2473,6 +2473,11 @@ open class Terminal {
         }
         // this.maxRange();
         updateRange (startLine: buffer.y, endLine: buffer.scrollBottom)
+        // Shade patch: a restricted region leaves stale pixels / a bottom-edge ghost
+        // outside [y, scrollBottom] on the CG renderer (as in scroll()); the range
+        // above already covers full-screen, so widen to the whole viewport only when
+        // the region is restricted.
+        refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom, canBlit: true)
     }
     
     //
@@ -4802,6 +4807,11 @@ open class Terminal {
         
         // this.maxRange();
         updateRange (startLine: buffer.y, endLine: buffer.scrollBottom)
+        // Shade patch: a restricted region leaves stale pixels / a bottom-edge ghost
+        // outside [y, scrollBottom] on the CG renderer (as in scroll()); the range
+        // above already covers full-screen, so widen to the whole viewport only when
+        // the region is restricted.
+        refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom, canBlit: true)
     }
 
     //

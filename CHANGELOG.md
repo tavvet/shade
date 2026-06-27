@@ -6,6 +6,15 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **More full-screen-app rendering artifacts cleared** — the 0.1.14 restricted-
+  region scroll-repaint fix now also covers line insert / delete (CSI L / CSI M),
+  which shifted rows inside a restricted scroll region with the same too-narrow
+  dirty range. Line edits in a full-screen app with a fixed header/footer (e.g.
+  `vim`) no longer leave stale rows or a bottom-edge ghost on the CoreGraphics
+  renderer.
+
 ## [0.1.14] — 2026-06-27
 
 ### Fixed
