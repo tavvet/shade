@@ -4689,7 +4689,7 @@ open class Terminal {
             last.fill (with: CharData (attribute: da), atCol: buffer.marginLeft, len: columnCount)
         }
         // this.maxRange();
-        refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom)
+        refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom, canBlit: false)
     }
 
     //
@@ -4725,7 +4725,7 @@ open class Terminal {
             }
         }
         // this.maxRange();
-        refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom)
+        refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom, canBlit: false)
     }
 
     //
@@ -5199,19 +5199,17 @@ open class Terminal {
     
     var blankLine: BufferLine = BufferLine(cols: 0)
     
-    /// Shade patch: flag the rows a scroll touched for repaint. A restricted scroll
-    /// region (scrollTop != 0 or scrollBottom != rows-1) or the alternate buffer
-    /// shifts rows without the viewport following into scrollback, so the rows
-    /// OUTSIDE the region keep stale pixels on the CoreGraphics renderer — a ghost
-    /// line at the bottom while paging in nano etc. Repaint the whole viewport in
-    /// that case; endLine == rows-1 also fires the renderer's bottom-edge refresh.
-    /// A full-screen normal-buffer region keeps the cheap region-only path (its
-    /// scrollback blit handles the bottom edge).
-    private func refreshScrolledRegion(top: Int, bottom: Int) {
-        if top != 0 || bottom != rows - 1 || isCurrentBufferAlternate {
+    /// Shade patch: repaint after a scroll shifted rows in the region. A restricted
+    /// scroll region (top != 0 or bottom != rows-1) — or any scroll with no
+    /// scrollback to blit into — moves rows in place, so rows outside the region
+    /// keep stale pixels on the CoreGraphics renderer (a ghost line at the bottom
+    /// while paging in nano). Repaint the whole viewport then; endLine == rows-1
+    /// also fires the renderer's bottom-edge refresh. A full-screen line-feed scroll
+    /// WITH scrollback (`canBlit`) keeps the cheap path: the renderer blits the
+    /// viewport and only the revealed row (already flagged `scrolling: true`) redraws.
+    private func refreshScrolledRegion(top: Int, bottom: Int, canBlit: Bool) {
+        if top != 0 || bottom != rows - 1 || !canBlit {
             updateRange(startLine: 0, endLine: rows - 1)
-        } else {
-            updateRange(startLine: top, endLine: bottom)
         }
     }
 
@@ -5338,7 +5336,7 @@ open class Terminal {
         // Flag rows that need updating
         updateRange (scrollTop, scrolling: true)
         updateRange (scrollBottom, scrolling: true)
-        refreshScrolledRegion(top: scrollTop, bottom: scrollBottom)
+        refreshScrolledRegion(top: scrollTop, bottom: scrollBottom, canBlit: hasScrollback)
 
         if buffer.hasAnyImages {
             updateKittyRelativePlacementsForCurrentBuffer()
@@ -5795,7 +5793,7 @@ open class Terminal {
                     }
                     buffer.lines [topRow] = buffer.getBlankLine (attribute: eraseAttr ())
                 }
-                refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom)
+                refreshScrolledRegion(top: buffer.scrollTop, bottom: buffer.scrollBottom, canBlit: false)
             }
         } else if buffer.y > 0 {
             buffer.y -= 1
