@@ -462,10 +462,10 @@ Key design choices:
   terminal emulator + local PTY shell hosting. **Vendored** under
   `Vendor/SwiftTerm/` for two local patches: `linkHoverColor` (upstream hardcodes
   the link underline to the cell's foreground color, unreadable on a translucent
-  background) and a restricted-region scroll-repaint fix for the CoreGraphics
-  renderer — submitted upstream as
-  [SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582); drop the
-  local patch once it lands. Otherwise unchanged from upstream.
+  background) and a CoreGraphics-renderer fix that clears each dirtied region
+  before repainting (fixes restricted-region scroll / edit artifacts) — submitted
+  upstream as [SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582);
+  drop the local patch once it lands. Otherwise unchanged from upstream.
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
   global hotkey registration with a SwiftUI recorder UI.
 
