@@ -5213,9 +5213,13 @@ open class Terminal {
     /// bottom != rows-1), or no scrollback to blit into, leaves stale pixels outside
     /// the region on the CoreGraphics renderer (a bottom ghost in nano) — so repaint
     /// the whole viewport. Full-screen + scrollback (`canBlit`) keeps the cheap blit.
+    /// Shade patch: flag the scrolled region dirty. The CoreGraphics renderer now
+    /// clears any dirtied region before painting (see AppleTerminalView), so flagging
+    /// just [top, bottom] fixes the stale rows / bottom ghost — no whole-viewport
+    /// repaint needed. Full-screen + scrollback (canBlit) keeps the cheap path.
     private func refreshScrolledRegion(top: Int, bottom: Int, canBlit: Bool) {
         if top != 0 || bottom != rows - 1 || !canBlit {
-            updateRange(startLine: 0, endLine: rows - 1)
+            updateRange(startLine: top, endLine: bottom)
         }
     }
 

@@ -8,12 +8,14 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Fixed
 
-- **More full-screen-app rendering artifacts cleared** — the 0.1.14 restricted-
-  region scroll-repaint fix now also covers line insert / delete (CSI L / CSI M),
-  which shifted rows inside a restricted scroll region with the same too-narrow
-  dirty range. Line edits in a full-screen app with a fixed header/footer (e.g.
-  `vim`) no longer leave stale rows or a bottom-edge ghost on the CoreGraphics
-  renderer.
+- **Full-screen-app rendering artifacts fixed at the renderer level** — scrolling
+  or editing inside a restricted scroll region (apps with a fixed header/footer
+  like `nano`, `vim`, `less`, `htop`) no longer leaves stale rows or a bottom-edge
+  ghost on the CoreGraphics renderer. The vendored terminal now clears each
+  invalidated region before repainting (default-background cells previously kept
+  stale pixels on a partial redraw) and extends the invalidation past a mid-screen
+  region's bottom edge — fixing every scroll / edit primitive at the source, with
+  translucent backgrounds preserved.
 
 ## [0.1.14] — 2026-06-27
 
