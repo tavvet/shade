@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.14] — 2026-06-25
+
 ### Fixed
 
 - **Normal scrolling no longer forces a full-viewport repaint** — the 0.1.12
