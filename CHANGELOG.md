@@ -6,6 +6,16 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Normal scrolling no longer forces a full-viewport repaint** — the 0.1.12
+  restricted-region rendering fix also repainted the whole viewport on every
+  ordinary full-screen scroll, defeating the renderer's scroll-blit (heavier
+  redraws on fast output like `cat` or build logs). The vendored SwiftTerm patch
+  now keeps the cheap blit path for full-screen scrolls with scrollback and only
+  repaints everything where it's actually needed (a restricted scroll region, or
+  no scrollback to blit into). `nano` / `vim` / `less` paging stays artifact-free.
+
 ## [0.1.13] — 2026-06-25
 
 ### Added
