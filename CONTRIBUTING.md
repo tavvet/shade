@@ -27,7 +27,7 @@ A lightweight pipeline for landing a feature. Scale it to the change — small,
 obvious fixes can skip straight to the implementation step.
 
 1. **Plan (non-trivial features).** Sketch the design before coding: which files
-   change, whether it needs a new vendored SwiftTerm API, the edge cases and
+   change, whether it needs a new SwiftTerm fork API, the edge cases and
    risks. The [ROADMAP](ROADMAP.md) tags items S / M / L; M and L are worth a
    plan, S usually isn't.
 2. **Implement.** Work on a feature branch, one logical change per commit. Keep

@@ -14,15 +14,15 @@ only a native Mac app can do well.
   Find-in-buffer with next / previous and highlight. Listed under CHANGELOG
   "Known limitations".
   *Why:* core terminal feature and a natural fit for the keyboard-first ethos.
-  *How:* scan buffer text via the vendored scroll-invariant accessors; scroll to a
+  *How:* scan buffer text via the fork's scroll-invariant accessors; scroll to a
   match and select it with the existing `extendKeyboardSelection`. Multi-match
-  highlighting may need a small vendored addition. New SwiftUI search overlay.
+  highlighting may need a small fork addition. New SwiftUI search overlay.
 
 - **Tab reorder / color labels** — *M.*
   Drag-to-reorder tabs and an optional color tag. (Tab **rename** shipped — a
   user-set name now overrides the cwd auto-title via `userTitle`.)
   *How:* reorder the `sessions` array from `TabBar` drags; a per-session tint.
-  No vendored API.
+  No fork API.
 
 - **Broadcast input to all tabs** — *M.*
   iTerm2-style: type once, send to every session.

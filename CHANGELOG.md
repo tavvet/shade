@@ -6,6 +6,18 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **De-vendored SwiftTerm onto a rebase-tracked fork.** Shade no longer keeps an
+  in-place-edited copy of SwiftTerm under `Vendor/SwiftTerm/`; it now depends on a
+  [fork](https://github.com/tavvet/SwiftTerm) (`shade` branch, pinned by revision)
+  whose local patches sit as clean per-feature commits on top of `upstream/main`.
+  Upstream syncs become `git rebase upstream/main` + a revision bump instead of a
+  manual re-vendor. Two former local patches dropped out entirely — the
+  CoreGraphics renderer fix (merged upstream, #582) and wheel → xterm-button
+  forwarding (upstream implemented it natively). No user-facing behavior change.
+  See [docs/swiftterm-fork-migration.md](docs/swiftterm-fork-migration.md).
+
 ## [0.1.15] — 2026-06-27
 
 ### Fixed

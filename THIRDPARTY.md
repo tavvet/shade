@@ -9,8 +9,10 @@ permission notice.
 ## SwiftTerm
 
 - **Repository:** https://github.com/migueldeicaza/SwiftTerm
-- **Vendored:** `Vendor/SwiftTerm/` (slimmed-down: macOS sources only; tests,
-  benchmarks, fuzzer, sample app removed)
+- **Distribution:** Swift Package Manager dependency on a
+  [rebase-tracked fork](https://github.com/tavvet/SwiftTerm) (`shade` branch,
+  pinned by revision) that carries the local patches below as clean per-feature
+  commits on top of `upstream/main`.
 - **Modifications:**
   - Added a public `linkHoverColor: NSColor?` on `TerminalView` and used
     it in `Apple/AppleTerminalView.swift` to color the link underline
@@ -18,15 +20,14 @@ permission notice.
   - Added public scroll-invariant accessors on `Terminal`
     (`scrollInvariantCursorRow`, `scrollInvariantLinesTop`,
     `maxScrollbackRow`) plus public `extendKeyboardSelection` /
-    `clearKeyboardSelection` on the terminal view, used by Shade for
-    OSC 133 prompt-mark navigation and keyboard text selection.
-  - `Mac/MacTerminalView.scrollWheel` now handles the wheel in
-    full-screen TUIs (no scrollback to scroll into): if the app
-    enabled mouse reporting it gets xterm button 4 / 5 events via
-    `terminal.sendEvent`, otherwise the wheel is translated into
-    `↑` / `↓` key presses. Matches the default behavior of iTerm2 /
-    Alacritty / kitty and lets Claude CLI / micro / fzf consume the
-    wheel natively instead of treating it as navigation arrows.
+    `clearKeyboardSelection` / `shadeSelectedText` on the terminal view,
+    used by Shade for OSC 133 prompt-mark navigation, keyboard text
+    selection and `⌘X` copy on read-only buffers.
+  - A trivial unused-result warning-silence in the Metal renderer.
+
+  (Wheel → xterm-button forwarding and the CoreGraphics restricted-region
+  renderer fix were formerly local patches; both are now upstream, the latter
+  via [SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582).)
 - **License:** MIT
 - **Used for:** VT100 / xterm terminal emulation and local PTY shell hosting.
 
