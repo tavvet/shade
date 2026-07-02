@@ -460,12 +460,13 @@ Key design choices:
 
 - [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) — VT100 / xterm
   terminal emulator + local PTY shell hosting. **Vendored** under
-  `Vendor/SwiftTerm/` for two local patches: `linkHoverColor` (upstream hardcodes
-  the link underline to the cell's foreground color, unreadable on a translucent
-  background) and a CoreGraphics-renderer fix that clears each dirtied region
-  before repainting (fixes restricted-region scroll / edit artifacts), now **merged
-  upstream** as [SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582)
-  — drop this patch on the next re-sync to upstream. Otherwise unchanged from upstream.
+  `Vendor/SwiftTerm/` for a handful of local patches: a configurable
+  link-highlight color, keyboard text selection in the buffer, `⌘X` on read-only
+  buffers, wheel → xterm-button forwarding, and OSC 133 accessors. (An earlier
+  CoreGraphics-renderer fix is now **merged upstream** as
+  [SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582).) These will
+  move onto a rebase-tracked fork so Shade can de-vendor and track upstream cleanly
+  — see [docs/swiftterm-fork-migration.md](./docs/swiftterm-fork-migration.md).
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
   global hotkey registration with a SwiftUI recorder UI.
 
