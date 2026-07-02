@@ -459,14 +459,15 @@ Key design choices:
 ## Dependencies
 
 - [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) — VT100 / xterm
-  terminal emulator + local PTY shell hosting. **Vendored** under
-  `Vendor/SwiftTerm/` for a handful of local patches: a configurable
-  link-highlight color, keyboard text selection in the buffer, `⌘X` on read-only
-  buffers, wheel → xterm-button forwarding, and OSC 133 accessors. (An earlier
-  CoreGraphics-renderer fix is now **merged upstream** as
-  [SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582).) These will
-  move onto a rebase-tracked fork so Shade can de-vendor and track upstream cleanly
-  — see [docs/swiftterm-fork-migration.md](./docs/swiftterm-fork-migration.md).
+  terminal emulator + local PTY shell hosting. Shade depends on a
+  [rebase-tracked fork](https://github.com/tavvet/SwiftTerm) (`shade` branch,
+  pinned by revision) that carries a few local patches on top of upstream: a
+  configurable link-highlight color, keyboard text selection in the buffer, `⌘X`
+  on read-only buffers, OSC 133 scroll-invariant accessors, and a trivial
+  warning-silence. Two former patches are now **upstream** and dropped: the
+  CoreGraphics-renderer fix ([SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582))
+  and wheel → xterm-button forwarding. Syncing upstream = rebase the fork and
+  bump the pin — see [docs/swiftterm-fork-migration.md](./docs/swiftterm-fork-migration.md).
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
   global hotkey registration with a SwiftUI recorder UI.
 
