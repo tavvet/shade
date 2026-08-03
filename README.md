@@ -413,16 +413,19 @@ build/Shade.app`.
 
 ```
 Sources/Shade/
-├── ShadeApp.swift           @main + AppDelegate (menu bar, hotkey, panel wiring)
+├── ShadeApp.swift           @main + AppDelegate lifecycle coordination
+├── ApplicationMenuController.swift  Main menu + menu-bar status item
 ├── AboutWindow.swift        About window — version, links, donation addresses
 ├── BranchBadge.swift        Floating git branch + status pill (SwiftUI)
 ├── CommandNotifier.swift    Command-finished notifications (OSC 133 C→D timing)
+├── CommandNotificationCoordinator.swift  Completion-event notification policy/wiring
 ├── DiagnosticsWindow.swift  Read-only state snapshot, copy-paste for bug reports
 ├── DropdownPanel.swift      NSPanel: borderless, floating, slide-in animation
 ├── GitInfo.swift            Branch from .git/HEAD, status via git subprocess
 ├── GitRefreshCoordinator.swift  Event-driven, debounced git-status scheduler
 ├── Hotkeys.swift            KeyboardShortcuts.Name declarations (toggleShade)
 ├── KeyCodes.swift           Layout-agnostic keyCode → ASCII mapping
+├── PanelKeyboardController.swift  Panel shortcuts, terminal input forwarding, cut/clear
 ├── Preferences.swift        UserDefaults-backed settings struct + screen/frame resolution
 ├── ProcessCwd.swift         libproc-based CWD lookup for shell processes
 ├── ProcessTree.swift        Walks the shell's descendants to spot ssh/mosh
@@ -436,6 +439,7 @@ Sources/Shade/
 ├── TerminalPresentationState.swift  Tab titles, activity and command-status state
 ├── TerminalProcessController.swift  SwiftTerm view, shell lifecycle and callback wiring
 ├── TerminalPromptHistory.swift  OSC 133 state, command timing, prompt navigation/output
+├── TerminalPanelContentController.swift  Panel view hierarchy, tabs, badge and blur
 ├── TerminalSession.swift    Coordinator for one terminal tab
 ├── TerminalViewAdapters.swift   SwiftTerm delegate proxy + activity/drop-enabled view
 └── TerminalsController.swift Owns multi-tab sessions, swaps view on selection
@@ -454,8 +458,8 @@ Key design choices:
   Control+letter into the canonical control byte using the physical keyCode
   (works on any layout) and writes it directly into the active session's PTY.
 - **Live-apply prefs.** `SettingsModel.save()` posts
-  `.shadePreferencesChanged`; `AppDelegate` re-applies to the panel and
-  every session so font/opacity changes are instant.
+  `.shadePreferencesChanged`; the application coordinator re-applies them to
+  the panel content and every session so font/opacity changes are instant.
 - **Prime-then-start.** The panel's frame is set off-screen at launch and
   layout is resolved before the first shell starts, so SwiftTerm knows its
   rows count and `padCursorToBottom()` pins the prompt to the bottom of the

@@ -9,7 +9,8 @@ final class TerminalsController {
     private(set) var sessions: [TerminalSession] = []
     private(set) var activeIndex: Int = -1
 
-    /// Set by AppDelegate; forwarded from each session's `onCommandFinish`.
+    /// Consumed by the notification coordinator; forwarded from each session's
+    /// `onCommandFinish`.
     var commandFinishHandler: ((TimeInterval, Int?, String) -> Void)?
 
     /// Posted whenever the tab set or selection changes (the tab bar observes it via TabsObservable).
