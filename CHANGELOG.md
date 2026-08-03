@@ -338,7 +338,10 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.12...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.15...HEAD
+[0.1.15]: https://github.com/tavvet/shade/releases/tag/v0.1.15
+[0.1.14]: https://github.com/tavvet/shade/releases/tag/v0.1.14
+[0.1.13]: https://github.com/tavvet/shade/releases/tag/v0.1.13
 [0.1.12]: https://github.com/tavvet/shade/releases/tag/v0.1.12
 [0.1.11]: https://github.com/tavvet/shade/releases/tag/v0.1.11
 [0.1.10]: https://github.com/tavvet/shade/releases/tag/v0.1.10
