@@ -430,7 +430,14 @@ Sources/Shade/
 ├── SettingsWindow.swift     SwiftUI Settings view + NSWindowController
 ├── ShellIntegration.swift   Opt-in ZDOTDIR injection — richer zsh completion + OSC 133
 ├── TabBar.swift             SwiftUI TabBarView + TabsObservable
-├── TerminalSession.swift    Wrapper around SwiftTerm.LocalProcessTerminalView
+├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering
+├── TerminalContextTracker.swift  CWD, Git status/branch and remote-session masking
+├── TerminalLinkOpener.swift  Testable link/path resolution + system opening
+├── TerminalPresentationState.swift  Tab titles, activity and command-status state
+├── TerminalProcessController.swift  SwiftTerm view, shell lifecycle and callback wiring
+├── TerminalPromptHistory.swift  OSC 133 state, command timing, prompt navigation/output
+├── TerminalSession.swift    Coordinator for one terminal tab
+├── TerminalViewAdapters.swift   SwiftTerm delegate proxy + activity/drop-enabled view
 └── TerminalsController.swift Owns multi-tab sessions, swaps view on selection
 ```
 
