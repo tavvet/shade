@@ -8,6 +8,9 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Changed
 
+- Split application menus, panel layout, command notifications and keyboard
+  routing out of `ShadeApp`/`AppDelegate`, leaving application startup and
+  lifecycle coordination in the entry-point file.
 - Split SwiftTerm process/view wiring, appearance and link handling, OSC 133
   prompt-history state, CWD/Git/remote tracking, and tab presentation state out
   of `TerminalSession`, leaving it as a small coordinator without changing

@@ -17,16 +17,16 @@ protocol PanelKeyHandler: AnyObject {
 final class DropdownPanel: NSPanel {
     private var slideDuration: TimeInterval = Preferences.defaults.animationDuration
 
-    /// Set by AppDelegate to receive tab keyboard shortcuts.
+    /// Receives panel-level shortcuts and terminal input forwarding.
     weak var keyHandler: PanelKeyHandler?
 
-    /// Fired every time the panel transitions to key window. Lets AppDelegate
+    /// Fired every time the panel transitions to key window. Lets the app
     /// re-anchor first responder on the active terminal view — relying only on
     /// a one-shot makeFirstResponder right after toggle() racy when
     /// NSApp.activate hasn't fully landed yet.
     var onBecomeKey: (() -> Void)?
 
-    /// Fired when the panel slides on-screen / off-screen. AppDelegate uses these
+    /// Fired when the panel slides on-screen / off-screen. The app uses these
     /// to resume / pause the per-second context poll, so a hidden panel does no
     /// background cwd / git / process work.
     var onShow: (() -> Void)?

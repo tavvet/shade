@@ -16,7 +16,7 @@ final class TerminalSession {
     var onExit: (@MainActor () -> Void)?
 
     /// Invoked when a command completes (OSC 133 C→D): duration, exit code, cwd.
-    /// AppDelegate uses it to post a "command finished" notification while hidden.
+    /// The notification coordinator uses it to post while Shade is hidden.
     var onCommandFinish: ((TimeInterval, Int?, String) -> Void)?
 
     private let process: TerminalProcessController
