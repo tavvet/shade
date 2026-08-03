@@ -12,7 +12,8 @@ enum TabIndicator: Equatable {
 @MainActor
 final class TabsObservable: ObservableObject {
     struct TabInfo: Identifiable {
-        let id: Int
+        let id: UUID
+        let index: Int
         let label: String
         let editableName: String
         let indicator: TabIndicator
@@ -44,7 +45,8 @@ final class TabsObservable: ObservableObject {
     private func sync() {
         guard let controller else { return }
         tabs = controller.sessions.enumerated().map { idx, session in
-            TabInfo(id: idx,
+            TabInfo(id: session.id,
+                    index: idx,
                     label: Self.formatLabel(index: idx, title: session.displayTitle),
                     editableName: session.userTitle ?? "",
                     indicator: Self.indicator(lastExitCode: session.lastExitCode,
@@ -95,11 +97,11 @@ struct TabBarView: View {
                 TabChip(
                     title: tab.label,
                     editableName: tab.editableName,
-                    isActive: tab.id == tabs.activeIndex,
+                    isActive: tab.index == tabs.activeIndex,
                     indicator: tab.indicator,
-                    onClick: { onSelect(tab.id) },
-                    onClose: { onClose(tab.id) },
-                    onRename: { onRename(tab.id, $0) },
+                    onClick: { onSelect(tab.index) },
+                    onClose: { onClose(tab.index) },
+                    onRename: { onRename(tab.index, $0) },
                     onEditEnd: onEditEnd
                 )
             }

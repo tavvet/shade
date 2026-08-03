@@ -15,8 +15,9 @@ enum TerminalAppearance {
         view.feed(text: prefs.cursorDECSCUSR)
     }
 
-    static func flashBell(in view: LocalProcessTerminalView) {
-        guard Preferences.load().visualBell else { return }
+    @discardableResult
+    static func flashBell(in view: LocalProcessTerminalView) -> Bool {
+        guard Preferences.load().visualBell else { return false }
         let flash = NSView(frame: view.bounds)
         flash.autoresizingMask = [.width, .height]
         flash.wantsLayer = true
@@ -28,5 +29,6 @@ enum TerminalAppearance {
         }, completionHandler: {
             MainActor.assumeIsolated { flash.removeFromSuperview() }
         })
+        return true
     }
 }

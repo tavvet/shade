@@ -13,7 +13,7 @@ final class TerminalProcessController: NSObject {
     var onExit: (() -> Void)?
     var onOpenLink: ((String) -> Void)?
     var onActivity: (() -> Void)?
-    var onBell: (() -> Void)?
+    var onBell: (() -> Bool)?
     var onPromptMark: (([UInt8], Int) -> Void)?
     var onTitleChange: ((String) -> Void)?
     var onCwdChange: ((String) -> Void)?
@@ -36,7 +36,7 @@ final class TerminalProcessController: NSObject {
             MainActor.assumeIsolated { self?.onOpenLink?(link) }
         }
         delegateProxy.onBell = { [weak self] in
-            MainActor.assumeIsolated { self?.onBell?() }
+            MainActor.assumeIsolated { self?.onBell?() ?? false }
         }
         activityView.onData = { [weak self] in
             MainActor.assumeIsolated { self?.onActivity?() }
@@ -60,6 +60,12 @@ final class TerminalProcessController: NSObject {
 
     var isRunning: Bool { view.process.running }
     var shellPid: Int32 { view.process.shellPid }
+    var foregroundProcessGroup: Int32? {
+        let fileDescriptor = view.process.childfd
+        guard fileDescriptor >= 0 else { return nil }
+        let processGroup = tcgetpgrp(fileDescriptor)
+        return processGroup > 0 ? processGroup : nil
+    }
 
     func start() {
         guard !isRunning else { return }

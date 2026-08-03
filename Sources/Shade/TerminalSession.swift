@@ -6,6 +6,7 @@ import SwiftTerm
 @MainActor
 final class TerminalSession {
     static let titleDidChange = Notification.Name("ShadeTerminalSessionTitleDidChange")
+    let id = UUID()
 
     /// Invoked when the underlying shell process exits — whether via Ctrl-D
     /// on an empty prompt, an explicit `exit`, or a crash. The controller
@@ -85,8 +86,8 @@ final class TerminalSession {
         }
         process.onActivity = { [weak self] in self?.presentation.noteActivity() }
         process.onBell = { [weak self] in
-            guard let self else { return }
-            TerminalAppearance.flashBell(in: self.view)
+            guard let self else { return false }
+            return TerminalAppearance.flashBell(in: self.view)
         }
         process.onPromptMark = { [weak self] payload, row in
             self?.recordPromptMark(payload: payload, row: row)
@@ -164,7 +165,11 @@ final class TerminalSession {
     /// cwd changes and OSC 133 command-finished marks instead of polling.
     func refreshContext() {
         guard process.isRunning else { return }
-        if contextTracker.refresh(shellPid: process.shellPid, isActive: isActive) {
+        if contextTracker.refresh(
+            shellPid: process.shellPid,
+            foregroundProcessGroup: process.foregroundProcessGroup,
+            isActive: isActive
+        ) {
             // The remote shell typically pushes its own OSC 0 title, and after
             // `exit` the local shell may not reset it. ContextTracker masks the
             // local values; discard this separate presentation value here too.

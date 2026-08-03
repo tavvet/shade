@@ -1,6 +1,15 @@
 import AppKit
 import SwiftTerm
 
+enum PanelInputRouting {
+    /// An `NSTextField` installs an `NSTextView` field editor as the window's
+    /// first responder. While that editor is active, terminal-specific key
+    /// translations and edit commands must stay on the normal responder chain.
+    static func isEditingText(_ responder: NSResponder?) -> Bool {
+        responder is NSTextView
+    }
+}
+
 @MainActor
 protocol PanelKeyHandler: AnyObject {
     /// Return true if the event was handled and should not propagate.
@@ -61,7 +70,8 @@ final class DropdownPanel: NSPanel {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if keyHandler?.panelHandleKey(event) == true {
+        if !PanelInputRouting.isEditingText(firstResponder),
+           keyHandler?.panelHandleKey(event) == true {
             return true
         }
         return super.performKeyEquivalent(with: event)
@@ -75,7 +85,9 @@ final class DropdownPanel: NSPanel {
     ///   which Terminal.app sends by default. Other Option+key combinations are left alone
     ///   so SwiftTerm can still produce ´/©/etc.
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, let handler = keyHandler {
+        if event.type == .keyDown,
+           !PanelInputRouting.isEditingText(firstResponder),
+           let handler = keyHandler {
             if let bytes = controlBytes(for: event) {
                 handler.panelSendToActiveTerminal(bytes)
                 return

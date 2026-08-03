@@ -33,19 +33,19 @@ final class TerminalContextTrackerTests: XCTestCase {
         let tracker = makeTracker(
             scheduler: scheduler,
             readProcessCwd: { _ in "/repo" },
-            readRemoteIndicator: { _ in reportedRemote },
+            readRemoteIndicator: { _, _ in reportedRemote },
             findGitDir: { _ in "/repo/.git" },
             readBranch: { _ in "main" }
         )
 
-        XCTAssertFalse(tracker.refresh(shellPid: 42, isActive: true))
+        XCTAssertFalse(tracker.refresh(shellPid: 42, foregroundProcessGroup: 42, isActive: true))
         scheduler.apply(GitStatus(filesChanged: 1, insertions: 2, deletions: 3))
         XCTAssertEqual(tracker.cwd, "/repo")
         XCTAssertEqual(tracker.branch, "main")
         XCTAssertNotNil(tracker.gitStatus)
 
         reportedRemote = "ssh"
-        XCTAssertTrue(tracker.refresh(shellPid: 42, isActive: true))
+        XCTAssertTrue(tracker.refresh(shellPid: 42, foregroundProcessGroup: 84, isActive: true))
 
         XCTAssertEqual(tracker.remoteIndicator, "ssh")
         XCTAssertEqual(tracker.cwd, "")
@@ -62,7 +62,7 @@ final class TerminalContextTrackerTests: XCTestCase {
             findGitDir: { _ in "/repo/.git" },
             readBranch: { _ in "main" }
         )
-        tracker.refresh(shellPid: 7, isActive: true)
+        tracker.refresh(shellPid: 7, foregroundProcessGroup: 7, isActive: true)
         scheduler.calls.removeAll()
 
         tracker.fallbackRefreshGitStatusIfNeeded()
@@ -80,7 +80,7 @@ final class TerminalContextTrackerTests: XCTestCase {
     private func makeTracker(
         scheduler: RecordingGitRefresh,
         readProcessCwd: @escaping (Int32) -> String? = { _ in nil },
-        readRemoteIndicator: @escaping (Int32) -> String? = { _ in nil },
+        readRemoteIndicator: @escaping (Int32, Int32?) -> String? = { _, _ in nil },
         findGitDir: @escaping (String) -> String? = { _ in nil },
         readBranch: @escaping (String) -> String? = { _ in nil }
     ) -> TerminalContextTracker {

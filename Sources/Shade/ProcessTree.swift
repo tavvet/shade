@@ -11,17 +11,42 @@ enum ProcessTree {
         "ssh", "mosh-client", "mosh", "tmate", "et", "eternalterminal",
     ]
 
-    /// Returns the basename of the remote-session process running somewhere in
-    /// `shellPid`'s descendant tree, or nil if the shell is running locally.
+    /// Returns the basename of a remote-session process in the PTY's foreground
+    /// process group, or nil if the visible command is local. Background jobs
+    /// must not hide the shell's local cwd/git context.
     ///
     /// Walks *down* from the shell (which has only a handful of descendants)
     /// instead of scanning the whole system process table. That turns the cost
     /// from one `proc_pidpath` per process on the machine — every second, per
     /// tab — into a few syscalls over the shell's own subtree.
-    static func remoteIndicator(forShell shellPid: pid_t) -> String? {
-        guard shellPid > 0 else { return nil }
+    static func remoteIndicator(
+        forShell shellPid: pid_t,
+        foregroundProcessGroup: pid_t?
+    ) -> String? {
+        remoteIndicator(
+            forShell: shellPid,
+            foregroundProcessGroup: foregroundProcessGroup,
+            children: children(of:),
+            processName: processName,
+            processGroup: processGroup
+        )
+    }
 
-        var queue = children(of: shellPid)
+    /// Dependency-injected core used by tests so process-tree races and PID
+    /// permissions do not make foreground/background behavior flaky.
+    static func remoteIndicator(
+        forShell shellPid: pid_t,
+        foregroundProcessGroup: pid_t?,
+        children: (pid_t) -> [pid_t],
+        processName: (pid_t) -> String?,
+        processGroup: (pid_t) -> pid_t?
+    ) -> String? {
+        guard shellPid > 0,
+              let foregroundProcessGroup,
+              foregroundProcessGroup > 0,
+              foregroundProcessGroup != shellPid else { return nil }
+
+        var queue = children(shellPid)
         var visited = Set<pid_t>()
         // Bound the walk so a surprising tree (or pid reuse mid-scan) can't loop us.
         var budget = 1024
@@ -29,10 +54,12 @@ enum ProcessTree {
             budget -= 1
             let pid = queue.removeFirst()
             guard pid > 0, pid != shellPid, visited.insert(pid).inserted else { continue }
-            if let name = processName(pid), remoteProcessNames.contains(name) {
+            if processGroup(pid) == foregroundProcessGroup,
+               let name = processName(pid),
+               remoteProcessNames.contains(name) {
                 return name
             }
-            queue.append(contentsOf: children(of: pid))
+            queue.append(contentsOf: children(pid))
         }
         return nil
     }
@@ -63,5 +90,13 @@ enum ProcessTree {
         let path = String(decoding: bytes, as: UTF8.self)
         guard !path.isEmpty else { return nil }
         return (path as NSString).lastPathComponent
+    }
+
+    private static func processGroup(_ pid: pid_t) -> pid_t? {
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.stride)
+        let written = proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size)
+        guard written == size else { return nil }
+        return pid_t(info.pbi_pgid)
     }
 }
