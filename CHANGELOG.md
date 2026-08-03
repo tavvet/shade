@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.16] — 2026-08-03
+
 ### Changed
 
 - Split application menus, panel layout, command notifications and keyboard
@@ -345,7 +347,8 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.15...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.16...HEAD
+[0.1.16]: https://github.com/tavvet/shade/releases/tag/v0.1.16
 [0.1.15]: https://github.com/tavvet/shade/releases/tag/v0.1.15
 [0.1.14]: https://github.com/tavvet/shade/releases/tag/v0.1.14
 [0.1.13]: https://github.com/tavvet/shade/releases/tag/v0.1.13
