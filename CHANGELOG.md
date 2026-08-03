@@ -8,6 +8,10 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Changed
 
+- Split SwiftTerm process/view wiring, appearance and link handling, OSC 133
+  prompt-history state, CWD/Git/remote tracking, and tab presentation state out
+  of `TerminalSession`, leaving it as a small coordinator without changing
+  behavior.
 - **De-vendored SwiftTerm onto a rebase-tracked fork.** Shade no longer keeps an
   in-place-edited copy of SwiftTerm under `Vendor/SwiftTerm/`; it now depends on a
   [fork](https://github.com/tavvet/SwiftTerm) (`shade` branch, pinned by revision)

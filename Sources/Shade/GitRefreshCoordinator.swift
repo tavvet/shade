@@ -17,7 +17,7 @@ import Foundation
 ///   pass.
 @MainActor
 final class GitRefreshCoordinator {
-    enum Reason {
+    enum Reason: Equatable {
         case cwdChanged
         case commandFinished
         case tabActivated

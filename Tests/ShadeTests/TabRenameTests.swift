@@ -5,23 +5,23 @@ final class TabRenameTests: XCTestCase {
     // MARK: normalizedUserTitle
 
     func testNormalizedTrimsWhitespace() {
-        XCTAssertEqual(TerminalSession.normalizedUserTitle("  logs  "), "logs")
+        XCTAssertEqual(TerminalPresentationState.normalizedUserTitle("  logs  "), "logs")
     }
 
     func testNormalizedEmptyBecomesNil() {
-        XCTAssertNil(TerminalSession.normalizedUserTitle(""))
-        XCTAssertNil(TerminalSession.normalizedUserTitle("   \n\t "))
+        XCTAssertNil(TerminalPresentationState.normalizedUserTitle(""))
+        XCTAssertNil(TerminalPresentationState.normalizedUserTitle("   \n\t "))
     }
 
     func testNormalizedKeepsInnerSpaces() {
-        XCTAssertEqual(TerminalSession.normalizedUserTitle(" ssh prod "), "ssh prod")
+        XCTAssertEqual(TerminalPresentationState.normalizedUserTitle(" ssh prod "), "ssh prod")
     }
 
     // MARK: resolveDisplayTitle precedence
 
     func testUserTitleWinsOverEverything() {
         XCTAssertEqual(
-            TerminalSession.resolveDisplayTitle(
+            TerminalPresentationState.resolveDisplayTitle(
                 userTitle: "mine", remoteIndicator: "ssh",
                 oscTitle: "osc", cwd: "~/x", shellName: "zsh"),
             "mine")
@@ -29,7 +29,7 @@ final class TabRenameTests: XCTestCase {
 
     func testRemoteIndicatorWinsWhenNoUserTitle() {
         XCTAssertEqual(
-            TerminalSession.resolveDisplayTitle(
+            TerminalPresentationState.resolveDisplayTitle(
                 userTitle: nil, remoteIndicator: "ssh",
                 oscTitle: "osc", cwd: "~/x", shellName: "zsh"),
             "[ssh]")
@@ -37,17 +37,17 @@ final class TabRenameTests: XCTestCase {
 
     func testFallsBackOscThenCwdThenShell() {
         XCTAssertEqual(
-            TerminalSession.resolveDisplayTitle(
+            TerminalPresentationState.resolveDisplayTitle(
                 userTitle: nil, remoteIndicator: nil,
                 oscTitle: "osc", cwd: "~/x", shellName: "zsh"),
             "osc")
         XCTAssertEqual(
-            TerminalSession.resolveDisplayTitle(
+            TerminalPresentationState.resolveDisplayTitle(
                 userTitle: nil, remoteIndicator: nil,
                 oscTitle: "", cwd: "~/x", shellName: "zsh"),
             "~/x")
         XCTAssertEqual(
-            TerminalSession.resolveDisplayTitle(
+            TerminalPresentationState.resolveDisplayTitle(
                 userTitle: nil, remoteIndicator: nil,
                 oscTitle: "", cwd: nil, shellName: "zsh"),
             "zsh")
@@ -56,9 +56,49 @@ final class TabRenameTests: XCTestCase {
     func testEmptyUserTitleIsIgnored() {
         // normalizedUserTitle never yields "", but resolve stays defensive.
         XCTAssertEqual(
-            TerminalSession.resolveDisplayTitle(
+            TerminalPresentationState.resolveDisplayTitle(
                 userTitle: "", remoteIndicator: nil,
                 oscTitle: "osc", cwd: nil, shellName: "zsh"),
             "osc")
+    }
+
+    func testPresentationNormalizesRenameAndNotifiesOnlyOnChange() {
+        let state = TerminalPresentationState(shellName: "zsh")
+        var changes = 0
+        state.onChange = { changes += 1 }
+
+        state.setUserTitle("  logs  ")
+        state.setUserTitle("logs")
+
+        XCTAssertEqual(state.userTitle, "logs")
+        XCTAssertEqual(changes, 1)
+    }
+
+    func testBackgroundActivityCoalescesAndClearsOnActivation() {
+        let state = TerminalPresentationState(shellName: "zsh")
+        var changes = 0
+        state.onChange = { changes += 1 }
+
+        state.noteActivity()
+        state.noteActivity()
+        XCTAssertTrue(state.hasUnseenActivity)
+        XCTAssertEqual(changes, 1)
+
+        state.setActive(true)
+        XCTAssertFalse(state.hasUnseenActivity)
+        XCTAssertEqual(changes, 2)
+
+        state.noteActivity()
+        XCTAssertFalse(state.hasUnseenActivity)
+        XCTAssertEqual(changes, 2)
+    }
+
+    func testDisplayTitleUsesOwnedStateAndExternalContext() {
+        let state = TerminalPresentationState(shellName: "zsh")
+        state.setOscTitle("osc")
+        XCTAssertEqual(state.displayTitle(remoteIndicator: nil, cwd: "/tmp"), "osc")
+
+        state.setUserTitle("prod")
+        XCTAssertEqual(state.displayTitle(remoteIndicator: "ssh", cwd: "/tmp"), "prod")
     }
 }
