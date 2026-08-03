@@ -9,7 +9,7 @@ Yakuake / iTerm2 are very welcome.
 Requirements:
 
 - macOS 13 or later (development tested on macOS 15)
-- Xcode 15+ (Swift 6 toolchain)
+- Xcode 16+ (Swift 6 toolchain)
 
 ```sh
 git clone <fork-url>

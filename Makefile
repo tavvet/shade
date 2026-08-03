@@ -2,6 +2,7 @@
 #   make            build/Shade.app (default)
 #   make run        build + relaunch
 #   make dmg        build/Shade.dmg with drag-to-Applications shortcut
+#   make verify-bundle  verify release metadata and bundled license notices
 #   make icon       regenerate Resources/AppIcon.icns from AppIcon.png
 #   make clean      remove build/
 #
@@ -44,7 +45,7 @@ ICON_SPECS := \
     1024:icon_512x512@2x.png
 
 .DEFAULT_GOAL := build
-.PHONY: build run dmg icon clean
+.PHONY: build run dmg verify-bundle icon clean
 
 build: $(ICON_OUT)
 	@echo "→ swift build -c $(CONFIG)"
@@ -65,6 +66,7 @@ build: $(ICON_OUT)
 	if [ -f "$(ICON_OUT)" ]; then cp "$(ICON_OUT)" "$(RESOURCES_DIR)/AppIcon.icns"; fi; \
 	if [ -f Resources/MenubarIcon.png ]; then cp Resources/MenubarIcon.png "$(RESOURCES_DIR)/MenubarIcon.png"; fi; \
 	if [ -d integrations ]; then cp -R integrations "$(RESOURCES_DIR)/integrations"; fi; \
+	cp LICENSE THIRDPARTY.md "$(RESOURCES_DIR)/"; \
 	SIGN_IDENTITY="$${DEVELOPER_ID:--}"; \
 	if [ "$${SIGN_IDENTITY}" = "-" ]; then \
 	    echo "→ ad-hoc signing"; \
@@ -74,6 +76,20 @@ build: $(ICON_OUT)
 	    codesign --force --options runtime --timestamp --sign "$${SIGN_IDENTITY}" "$(APP_DIR)"; \
 	fi; \
 	echo "✓ built $(APP_DIR)"
+
+verify-bundle: build
+	@test -f "$(RESOURCES_DIR)/LICENSE"
+	@test -f "$(RESOURCES_DIR)/THIRDPARTY.md"
+	@BUNDLE_BUILD="$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$(CONTENTS)/Info.plist")"; \
+	case "$${BUNDLE_BUILD}" in ''|*[!0-9]*) \
+	    echo "error: invalid CFBundleVersion '$${BUNDLE_BUILD}'" >&2; \
+	    exit 1; \
+	esac; \
+	if [ "$${BUNDLE_BUILD}" -le 1 ]; then \
+	    echo "error: CFBundleVersion must be greater than 1" >&2; \
+	    exit 1; \
+	fi
+	@echo "✓ verified bundle metadata and license notices"
 
 $(ICON_OUT): $(ICON_SRC)
 	@echo "→ generating $@"

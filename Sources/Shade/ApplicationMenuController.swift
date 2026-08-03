@@ -123,6 +123,10 @@ final class ApplicationMenuController: NSObject {
     }
 
     @objc private func cutSelection() {
+        if PanelInputRouting.isEditingText(NSApp.keyWindow?.firstResponder) {
+            NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: self)
+            return
+        }
         actions?.applicationMenuCutSelection()
     }
 

@@ -14,7 +14,9 @@ import SwiftTerm
 final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     weak var forward: TerminalViewDelegate?
     var onOpenLink: ((String) -> Void)?
-    var onBell: (() -> Void)?
+    /// Return true when Shade handled the bell and the default audible bell
+    /// should be suppressed.
+    var onBell: (() -> Bool)?
 
     init(forward: TerminalViewDelegate?) {
         self.forward = forward
@@ -45,8 +47,9 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     }
 
     func bell(source: TerminalView) {
-        onBell?()
-        forward?.bell(source: source)
+        if onBell?() != true {
+            forward?.bell(source: source)
+        }
     }
 
     func clipboardCopy(source: TerminalView, content: Data) {

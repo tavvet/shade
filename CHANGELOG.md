@@ -6,6 +6,34 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.17] — 2026-08-03
+
+### Fixed
+
+- Include Shade's license and bundled third-party license notices in release
+  artifacts, and preserve full Git history in CI so `CFBundleVersion` remains
+  monotonic instead of resetting to `1` in every shallow build.
+- Keep the Settings window synchronized with keyboard or external preference
+  changes so editing an unrelated control cannot restore stale values.
+- Keep terminal key translations and Cut handling on the standard macOS
+  responder chain while an inline tab name is being edited.
+- Detect remote sessions only in the terminal's foreground process group, so a
+  background `ssh` job no longer masks local cwd and Git context.
+- Preserve hard line breaks while removing visual soft wraps when copying the
+  last command's output.
+- Clarify that remote OSC 7 paths are intentionally masked while an SSH-like
+  foreground session is active.
+- Suppress SwiftTerm's audible beep when the visual bell handles the event;
+  disabling the visual bell continues to use the normal audible bell.
+- Give tab views stable session identities so closing an earlier tab cannot
+  transfer SwiftUI editing/hover state to a different session.
+- Correct the documented minimum toolchain to Xcode 16 for Swift 6 packages.
+
+### Security
+
+- Pin every GitHub Action used by the build and release workflow to a reviewed
+  commit SHA, including the release action with `contents: write` access.
+
 ## [0.1.16] — 2026-08-03
 
 ### Changed
@@ -347,7 +375,8 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.16...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.17...HEAD
+[0.1.17]: https://github.com/tavvet/shade/releases/tag/v0.1.17
 [0.1.16]: https://github.com/tavvet/shade/releases/tag/v0.1.16
 [0.1.15]: https://github.com/tavvet/shade/releases/tag/v0.1.15
 [0.1.14]: https://github.com/tavvet/shade/releases/tag/v0.1.14

@@ -40,13 +40,15 @@ final class TerminalContextTracker {
     }
 
     private let readProcessCwd: (Int32) -> String?
-    private let readRemoteIndicator: (Int32) -> String?
+    private let readRemoteIndicator: (Int32, Int32?) -> String?
     private let findGitDir: (String) -> String?
     private let readBranch: (String) -> String?
 
     init(
         readProcessCwd: @escaping (Int32) -> String? = { ProcessCwd.read(pid: $0) },
-        readRemoteIndicator: @escaping (Int32) -> String? = { ProcessTree.remoteIndicator(forShell: $0) },
+        readRemoteIndicator: @escaping (Int32, Int32?) -> String? = {
+            ProcessTree.remoteIndicator(forShell: $0, foregroundProcessGroup: $1)
+        },
         findGitDir: @escaping (String) -> String? = { GitInfo.findGitDir(from: $0) },
         readBranch: @escaping (String) -> String? = { GitInfo.branchName(inGitDir: $0) },
         gitRefreshFactory: @escaping GitRefreshFactory = { apply in
@@ -79,8 +81,8 @@ final class TerminalContextTracker {
     /// Refreshes cheap process context. Returns true while a remote client is
     /// active so `TerminalSession` can also discard a stale remote OSC title.
     @discardableResult
-    func refresh(shellPid: Int32, isActive: Bool) -> Bool {
-        let remote = readRemoteIndicator(shellPid)
+    func refresh(shellPid: Int32, foregroundProcessGroup: Int32?, isActive: Bool) -> Bool {
+        let remote = readRemoteIndicator(shellPid, foregroundProcessGroup)
         setRemoteIndicator(remote)
 
         if remote != nil {

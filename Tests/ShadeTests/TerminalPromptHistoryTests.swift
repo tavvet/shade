@@ -57,8 +57,18 @@ final class TerminalPromptHistoryTests: XCTestCase {
         XCTAssertEqual(history.lastCommandOutput(in: terminal), "first\nsecond")
     }
 
-    private func makeTerminal() -> Terminal {
-        Terminal(delegate: HistoryTerminalDelegate(), options: TerminalOptions(cols: 80, rows: 24))
+    func testLastCommandOutputRemovesVisualSoftWraps() {
+        let terminal = makeTerminal(cols: 5)
+        var history = TerminalPromptHistory()
+        _ = history.record(payload: Array("C".utf8), row: 0, in: terminal)
+        terminal.feed(text: "abcdefgh\r\n")
+        _ = history.record(payload: Array("D;0".utf8), row: 2, in: terminal)
+
+        XCTAssertEqual(history.lastCommandOutput(in: terminal), "abcdefgh")
+    }
+
+    private func makeTerminal(cols: Int = 80) -> Terminal {
+        Terminal(delegate: HistoryTerminalDelegate(), options: TerminalOptions(cols: cols, rows: 24))
     }
 }
 

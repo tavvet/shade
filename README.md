@@ -110,7 +110,7 @@ make run        # build + launch
 swift test      # unit tests
 ```
 
-Requirements: macOS 13+ and Xcode 15+ (Swift 6 toolchain). The build
+Requirements: macOS 13+ and Xcode 16+ (Swift 6 toolchain). The build
 ad-hoc codesigns the bundle so the OS can prompt cleanly for any future
 entitlements / permissions. To sign with a real Developer ID for
 distribution: `DEVELOPER_ID="Developer ID Application: Name (TEAMID)"
@@ -394,12 +394,12 @@ spawned shells inherit it — if you still see `/`, you launched the
 executable directly (e.g. for debugging) rather than via the `.app` bundle.
 
 **Tab title and git badge show wrong info during an SSH session.** This is
-expected — Shade detects `ssh` / `mosh` / `tmate` in the shell's pid tree
+expected — Shade detects `ssh` / `mosh` / `tmate` in the terminal's foreground
+process group
 and hides the local-only readouts (the tab title shows `[ssh]` unless you've
 pinned a name, and the git badge disappears). Local cwd / git state can't describe a remote
-machine. To see the remote machine's path in the title, configure
-**that machine's** `~/.zshrc` (or equivalent) to emit OSC 7 — see the
-"Recommended shell setup" section. Shade picks that up automatically.
+machine. Remote OSC 7 updates are intentionally masked as well; pin a custom
+tab name if you want a host-specific label while the remote session is active.
 
 **Settings won't open / "About Shade" crashes / color picker doesn't
 appear.** Make sure you're running the bundled `.app` and not the raw
@@ -428,7 +428,7 @@ Sources/Shade/
 ├── PanelKeyboardController.swift  Panel shortcuts, terminal input forwarding, cut/clear
 ├── Preferences.swift        UserDefaults-backed settings struct + screen/frame resolution
 ├── ProcessCwd.swift         libproc-based CWD lookup for shell processes
-├── ProcessTree.swift        Walks the shell's descendants to spot ssh/mosh
+├── ProcessTree.swift        Finds foreground ssh/mosh clients in the shell's process tree
 ├── PromptMarks.swift        OSC 133 prompt-mark parsing + jump/copy helpers
 ├── SettingsWindow.swift     SwiftUI Settings view + NSWindowController
 ├── ShellIntegration.swift   Opt-in ZDOTDIR injection — richer zsh completion + OSC 133

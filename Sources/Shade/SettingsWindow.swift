@@ -5,7 +5,7 @@ import SwiftUI
 import UserNotifications
 
 @MainActor
-final class SettingsModel: ObservableObject {
+final class SettingsModel: NSObject, ObservableObject {
     @Published var widthFraction: Double          { didSet { save() } }
     @Published var heightFraction: Double         { didSet { save() } }
     @Published var horizontalAlignment: Preferences.HorizontalAlignment { didSet { save() } }
@@ -26,6 +26,7 @@ final class SettingsModel: ObservableObject {
     @Published var notifyThresholdSeconds: Double { didSet { save() } }
     @Published var notifyOnCommandFinish: Bool {
         didSet {
+            guard !suppressPreferenceWrites else { return }
             save()
             if notifyOnCommandFinish, !oldValue {
                 UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
@@ -39,11 +40,14 @@ final class SettingsModel: ObservableObject {
         }
     }
 
+    private let store: UserDefaults
+    private var suppressPreferenceWrites = false
     private var suppressOpenAtLoginWrite = false
     private var applyDebounce: Task<Void, Never>?
 
-    init() {
-        let prefs = Preferences.load()
+    init(store: UserDefaults = .standard, openAtLogin: Bool? = nil) {
+        self.store = store
+        let prefs = Preferences.load(from: store)
         widthFraction = Double(prefs.widthFraction)
         heightFraction = Double(prefs.heightFraction)
         horizontalAlignment = prefs.horizontalAlignment
@@ -63,7 +67,18 @@ final class SettingsModel: ObservableObject {
         shellEnrichment = prefs.shellEnrichment
         notifyThresholdSeconds = prefs.notifyThresholdSeconds
         notifyOnCommandFinish = prefs.notifyOnCommandFinish
-        openAtLogin = SMAppService.mainApp.status == .enabled
+        self.openAtLogin = openAtLogin ?? (SMAppService.mainApp.status == .enabled)
+        super.init()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(preferencesChanged),
+            name: .shadePreferencesChanged,
+            object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     private func applyOpenAtLogin() {
@@ -83,7 +98,7 @@ final class SettingsModel: ObservableObject {
     }
 
     private func save() {
-        let store = UserDefaults.standard
+        guard !suppressPreferenceWrites else { return }
         store.set(widthFraction, forKey: Preferences.Key.widthFraction)
         store.set(heightFraction, forKey: Preferences.Key.heightFraction)
         store.set(horizontalAlignment.rawValue, forKey: Preferences.Key.horizontalAlignment)
@@ -106,6 +121,38 @@ final class SettingsModel: ObservableObject {
         scheduleApply()
     }
 
+    /// Re-read values changed outside this model, such as keyboard font zoom or
+    /// `defaults write`, without echoing every assignment back to UserDefaults.
+    func reloadPreferences() {
+        let prefs = Preferences.load(from: store)
+        suppressPreferenceWrites = true
+        defer { suppressPreferenceWrites = false }
+        widthFraction = Double(prefs.widthFraction)
+        heightFraction = Double(prefs.heightFraction)
+        horizontalAlignment = prefs.horizontalAlignment
+        screenChoice = prefs.screenChoice
+        fontSize = Double(prefs.fontSize)
+        fontName = prefs.fontName
+        backgroundOpacity = prefs.backgroundOpacity
+        animationDuration = prefs.animationDuration
+        linkHighlightColor = Color(nsColor: prefs.linkHighlightColor())
+        backgroundBlur = prefs.backgroundBlur
+        blurMaterial = prefs.blurMaterial
+        cursorShape = prefs.cursorShape
+        cursorBlink = prefs.cursorBlink
+        visualBell = prefs.visualBell
+        hideOnFocusLoss = prefs.hideOnFocusLoss
+        newTabInheritsCwd = prefs.newTabInheritsCwd
+        shellEnrichment = prefs.shellEnrichment
+        notifyThresholdSeconds = prefs.notifyThresholdSeconds
+        notifyOnCommandFinish = prefs.notifyOnCommandFinish
+    }
+
+    @objc private func preferencesChanged(_ notification: Notification) {
+        if let source = notification.object as AnyObject?, source === self { return }
+        reloadPreferences()
+    }
+
     /// Coalesce the live re-apply. A slider / color-picker drag fires `save()`
     /// on every tick, and re-applying font/opacity to every terminal session is
     /// the expensive part (SwiftTerm relayouts on each font change). The writes
@@ -116,7 +163,7 @@ final class SettingsModel: ObservableObject {
         applyDebounce = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(120))
             guard !Task.isCancelled else { return }
-            NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+            NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
         }
     }
 
@@ -348,6 +395,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     required init?(coder: NSCoder) { fatalError("SettingsWindowController is not Storyboard-loadable") }
 
     func present() {
+        model.reloadPreferences()
         // Switch from .accessory to .regular while the Settings window is open so that
         // system panels (notably NSColorPanel used by SwiftUI's ColorPicker) actually
         // open — they refuse to show for LSUIElement / .accessory apps.

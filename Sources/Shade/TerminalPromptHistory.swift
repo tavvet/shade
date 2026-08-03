@@ -68,11 +68,19 @@ struct TerminalPromptHistory {
     /// history state to AppKit's pasteboard.
     mutating func lastCommandOutput(in terminal: Terminal) -> String? {
         pruneStaleMarks(in: terminal)
-        guard let range = PromptMark.lastCommandOutputRange(in: marks) else { return nil }
-        let lines = range.compactMap { row in
-            terminal.getScrollInvariantLine(row: row)?.translateToString(trimRight: true)
-        }
-        let text = lines.joined(separator: "\n")
+        guard let range = PromptMark.lastCommandOutputRange(in: marks),
+              let firstRow = range.first,
+              let lastRow = range.last,
+              let lastLine = terminal.getScrollInvariantLine(row: lastRow) else { return nil }
+
+        // SwiftTerm's range extraction understands BufferLine.isWrapped: it
+        // joins visual soft wraps but retains real line feeds. Prompt marks use
+        // scroll-invariant rows, so translate them back into buffer indices.
+        let linesTop = terminal.scrollInvariantLinesTop
+        let text = terminal.getText(
+            start: Position(col: 0, row: firstRow - linesTop),
+            end: Position(col: lastLine.count, row: lastRow - linesTop)
+        )
         return text.isEmpty ? nil : text
     }
 
