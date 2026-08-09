@@ -6,6 +6,11 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Redesign Settings as a compact sidebar interface with focused pages for
+  general behavior, appearance, terminal options, notifications and shortcuts.
+
 ## [0.1.17] — 2026-08-03
 
 ### Fixed

@@ -178,6 +178,47 @@ final class SettingsModel: NSObject, ObservableObject {
 
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
+    @State private var selection: SettingsPage? = .general
+
+    private enum SettingsPage: String, CaseIterable, Identifiable {
+        case general
+        case appearance
+        case terminal
+        case notifications
+        case shortcuts
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .general:       return "General"
+            case .appearance:    return "Appearance"
+            case .terminal:      return "Terminal"
+            case .notifications: return "Notifications"
+            case .shortcuts:     return "Shortcuts"
+            }
+        }
+
+        var subtitle: String {
+            switch self {
+            case .general:       return "Window layout, startup and tab behavior"
+            case .appearance:    return "Typography, color and background"
+            case .terminal:      return "Shell integration and terminal behavior"
+            case .notifications: return "Command completion alerts"
+            case .shortcuts:     return "Global hotkey and keyboard reference"
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .general:       return "gearshape"
+            case .appearance:    return "paintbrush"
+            case .terminal:      return "terminal"
+            case .notifications: return "bell"
+            case .shortcuts:     return "keyboard"
+            }
+        }
+    }
 
     private let fontChoices: [(label: String, value: String)] = [
         ("System Monospace", ""),
@@ -187,141 +228,213 @@ struct SettingsView: View {
         ("Courier New", "Courier New"),
     ]
 
+    private var selectedPage: SettingsPage {
+        selection ?? .general
+    }
+
     var body: some View {
-        Form {
-            Section("Hotkey") {
-                KeyboardShortcuts.Recorder("Toggle Shade", name: .toggleShade)
+        NavigationSplitView {
+            List(SettingsPage.allCases, selection: $selection) { page in
+                Label(page.title, systemImage: page.systemImage)
+                    .tag(page)
+                    .padding(.vertical, 3)
             }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 168, ideal: 184, max: 220)
+        } detail: {
+            VStack(spacing: 0) {
+                pageHeader(selectedPage)
+                Divider()
 
-            Section("Keyboard Shortcuts") {
-                ShortcutsList()
-            }
+                Form {
+                    if selectedPage == .shortcuts {
+                        Section("Global Hotkey") {
+                            KeyboardShortcuts.Recorder("Toggle Shade", name: .toggleShade)
+                        }
 
-            Section("Size") {
-                fractionRow(title: "Width", value: $model.widthFraction)
-                fractionRow(title: "Height", value: $model.heightFraction)
-            }
+                        Section("Keyboard Reference") {
+                            ShortcutsList()
+                        }
+                    }
 
-            Section("Position") {
-                Picker("Horizontal", selection: $model.horizontalAlignment) {
-                    Text("Left").tag(Preferences.HorizontalAlignment.left)
-                    Text("Center").tag(Preferences.HorizontalAlignment.center)
-                    Text("Right").tag(Preferences.HorizontalAlignment.right)
-                }
-                .pickerStyle(.segmented)
+                    if selectedPage == .general {
+                        Section("Panel Size") {
+                            fractionRow(title: "Width", value: $model.widthFraction)
+                            fractionRow(title: "Height", value: $model.heightFraction)
+                        }
 
-                Picker("Screen", selection: $model.screenChoice) {
-                    Text("Main").tag(Preferences.ScreenChoice.main)
-                    Text("Under mouse").tag(Preferences.ScreenChoice.mouseLocation)
-                }
-                .pickerStyle(.segmented)
-            }
+                        Section("Position") {
+                            Picker("Horizontal", selection: $model.horizontalAlignment) {
+                                Text("Left").tag(Preferences.HorizontalAlignment.left)
+                                Text("Center").tag(Preferences.HorizontalAlignment.center)
+                                Text("Right").tag(Preferences.HorizontalAlignment.right)
+                            }
+                            .pickerStyle(.segmented)
 
-            Section("Behavior") {
-                Toggle("Hide when Shade loses focus", isOn: $model.hideOnFocusLoss)
-                Toggle("New tab opens in the current directory", isOn: $model.newTabInheritsCwd)
-                Toggle("Visual bell (flash on bell)", isOn: $model.visualBell)
-            }
+                            Picker("Display", selection: $model.screenChoice) {
+                                Text("Main").tag(Preferences.ScreenChoice.main)
+                                Text("Under pointer").tag(Preferences.ScreenChoice.mouseLocation)
+                            }
+                            .pickerStyle(.segmented)
+                        }
 
-            Section("Shell") {
-                Toggle("Enrich completion inside Shade (zsh)", isOn: $model.shellEnrichment)
-                Text("Turns on tab-completion for git, make, ssh, … in new zsh tabs "
-                     + "without modifying your shell files. No effect if your shell "
-                     + "already sets up completion (oh-my-zsh, etc.).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+                        Section("Behavior") {
+                            Toggle("Hide when Shade loses focus", isOn: $model.hideOnFocusLoss)
+                            Toggle("New tab uses the current directory", isOn: $model.newTabInheritsCwd)
+                        }
 
-            Section("Appearance") {
-                Picker("Font", selection: $model.fontName) {
-                    ForEach(fontChoices, id: \.value) { choice in
-                        Text(choice.label).tag(choice.value)
+                        Section("Startup") {
+                            Toggle("Open at Login", isOn: $model.openAtLogin)
+                        }
+
+                        Section("Animation") {
+                            HStack {
+                                Text("Slide")
+                                    .frame(width: 76, alignment: .leading)
+                                Slider(value: $model.animationDuration, in: 0.0...0.5, step: 0.02)
+                                Text("\(Int((model.animationDuration * 1000).rounded())) ms")
+                                    .monospacedDigit()
+                                    .frame(width: 56, alignment: .trailing)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+
+                    if selectedPage == .terminal {
+                        Section("Shell Integration") {
+                            Toggle("Enrich completion inside Shade (zsh)", isOn: $model.shellEnrichment)
+                            Text("Turns on tab-completion for git, make, ssh, … in new zsh tabs "
+                                 + "without modifying your shell files. No effect if your shell "
+                                 + "already sets up completion (oh-my-zsh, etc.).")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Section("Cursor") {
+                            Picker("Shape", selection: $model.cursorShape) {
+                                Text("Block").tag(Preferences.CursorShape.block)
+                                Text("Bar").tag(Preferences.CursorShape.bar)
+                                Text("Underline").tag(Preferences.CursorShape.underline)
+                            }
+                            .pickerStyle(.segmented)
+                            Toggle("Blink cursor", isOn: $model.cursorBlink)
+                        }
+
+                        Section("Feedback") {
+                            Toggle("Visual bell (flash on bell)", isOn: $model.visualBell)
+                        }
+                    }
+
+                    if selectedPage == .appearance {
+                        Section("Typography") {
+                            Picker("Font", selection: $model.fontName) {
+                                ForEach(fontChoices, id: \.value) { choice in
+                                    Text(choice.label).tag(choice.value)
+                                }
+                            }
+
+                            HStack {
+                                Text("Size")
+                                    .frame(width: 76, alignment: .leading)
+                                Slider(value: $model.fontSize, in: 9...22, step: 1)
+                                Text("\(Int(model.fontSize)) pt")
+                                    .monospacedDigit()
+                                    .frame(width: 44, alignment: .trailing)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        Section("Color & Background") {
+                            HStack {
+                                Text("Opacity")
+                                    .frame(width: 76, alignment: .leading)
+                                Slider(value: $model.backgroundOpacity, in: 0.3...1.0, step: 0.05)
+                                Text("\(Int((model.backgroundOpacity * 100).rounded()))%")
+                                    .monospacedDigit()
+                                    .frame(width: 44, alignment: .trailing)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            ColorPicker(
+                                "Link highlight",
+                                selection: $model.linkHighlightColor,
+                                supportsOpacity: false
+                            )
+
+                            Toggle("Background blur", isOn: $model.backgroundBlur)
+                            if model.backgroundBlur {
+                                Picker("Blur material", selection: $model.blurMaterial) {
+                                    Text("HUD").tag(Preferences.BlurMaterial.hud)
+                                    Text("Under window").tag(Preferences.BlurMaterial.underWindow)
+                                    Text("Sidebar").tag(Preferences.BlurMaterial.sidebar)
+                                    Text("Full screen").tag(Preferences.BlurMaterial.fullScreen)
+                                }
+                            }
+                        }
+                    }
+
+                    if selectedPage == .notifications {
+                        Section("Command Completion") {
+                            Toggle(
+                                "Notify when a command finishes while hidden",
+                                isOn: $model.notifyOnCommandFinish
+                            )
+                            if model.notifyOnCommandFinish {
+                                HStack {
+                                    Text("After")
+                                        .frame(width: 76, alignment: .leading)
+                                    Slider(value: $model.notifyThresholdSeconds, in: 5...300, step: 5)
+                                    Text("\(Int(model.notifyThresholdSeconds)) s")
+                                        .monospacedDigit()
+                                        .frame(width: 44, alignment: .trailing)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Label(
+                                    "Requires OSC 133 shell integration; see the README for setup.",
+                                    systemImage: "info.circle"
+                                )
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
-
-                HStack {
-                    Text("Size")
-                        .frame(width: 76, alignment: .leading)
-                    Slider(value: $model.fontSize, in: 9...22, step: 1)
-                    Text("\(Int(model.fontSize)) pt")
-                        .monospacedDigit()
-                        .frame(width: 44, alignment: .trailing)
-                        .foregroundStyle(.secondary)
-                }
-
-                HStack {
-                    Text("Opacity")
-                        .frame(width: 76, alignment: .leading)
-                    Slider(value: $model.backgroundOpacity, in: 0.3...1.0, step: 0.05)
-                    Text("\(Int((model.backgroundOpacity * 100).rounded()))%")
-                        .monospacedDigit()
-                        .frame(width: 44, alignment: .trailing)
-                        .foregroundStyle(.secondary)
-                }
-
-                ColorPicker("Link highlight", selection: $model.linkHighlightColor, supportsOpacity: false)
-
-                Toggle("Background blur", isOn: $model.backgroundBlur)
-                if model.backgroundBlur {
-                    Picker("Blur material", selection: $model.blurMaterial) {
-                        Text("HUD").tag(Preferences.BlurMaterial.hud)
-                        Text("Under window").tag(Preferences.BlurMaterial.underWindow)
-                        Text("Sidebar").tag(Preferences.BlurMaterial.sidebar)
-                        Text("Full screen").tag(Preferences.BlurMaterial.fullScreen)
-                    }
-                }
-
-                Picker("Cursor", selection: $model.cursorShape) {
-                    Text("Block").tag(Preferences.CursorShape.block)
-                    Text("Bar").tag(Preferences.CursorShape.bar)
-                    Text("Underline").tag(Preferences.CursorShape.underline)
-                }
-                Toggle("Blink cursor", isOn: $model.cursorBlink)
-            }
-
-            Section("Startup") {
-                Toggle("Open at Login", isOn: $model.openAtLogin)
-            }
-
-            Section("Notifications") {
-                Toggle("Notify when a command finishes while hidden", isOn: $model.notifyOnCommandFinish)
-                if model.notifyOnCommandFinish {
-                    HStack {
-                        Text("After")
-                            .frame(width: 76, alignment: .leading)
-                        Slider(value: $model.notifyThresholdSeconds, in: 5...300, step: 5)
-                        Text("\(Int(model.notifyThresholdSeconds)) s")
-                            .monospacedDigit()
-                            .frame(width: 44, alignment: .trailing)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("Requires the OSC 133 shell snippet (see README).")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Section("Animation") {
-                HStack {
-                    Text("Slide")
-                        .frame(width: 76, alignment: .leading)
-                    Slider(value: $model.animationDuration, in: 0.0...0.5, step: 0.02)
-                    Text("\(Int((model.animationDuration * 1000).rounded())) ms")
-                        .monospacedDigit()
-                        .frame(width: 56, alignment: .trailing)
-                        .foregroundStyle(.secondary)
-                }
+                .id(selectedPage)
+                .formStyle(.grouped)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .formStyle(.grouped)
-        .frame(minWidth: 540, minHeight: 540)
+        .navigationSplitViewStyle(.balanced)
+        .frame(minWidth: 720, minHeight: 500)
+    }
+
+    private func pageHeader(_ page: SettingsPage) -> some View {
+        HStack(spacing: 13) {
+            Image(systemName: page.systemImage)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.tint)
+                .frame(width: 38, height: 38)
+                .background(.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(page.title)
+                    .font(.title2.weight(.semibold))
+                Text(page.subtitle)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 18)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private struct ShortcutsList: View {
         private struct Row: Identifiable {
-            let id = UUID()
             let action: String
             let keys: String
+            var id: String { action }
         }
 
         private let rows: [Row] = [
@@ -347,14 +460,19 @@ struct SettingsView: View {
         ]
 
         var body: some View {
-            VStack(spacing: 4) {
-                ForEach(rows) { row in
-                    HStack {
+            VStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    HStack(spacing: 16) {
                         Text(row.action)
                         Spacer()
                         Text(row.keys)
                             .foregroundStyle(.secondary)
                             .monospaced()
+                            .multilineTextAlignment(.trailing)
+                    }
+                    .padding(.vertical, 6)
+                    if index < rows.count - 1 {
+                        Divider()
                     }
                 }
             }
@@ -381,12 +499,13 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     init() {
         let hosting = NSHostingController(rootView: SettingsView(model: model))
-        hosting.preferredContentSize = NSSize(width: 580, height: 580)
+        hosting.preferredContentSize = NSSize(width: 800, height: 580)
         let window = NSWindow(contentViewController: hosting)
         window.styleMask = [.titled, .closable, .resizable]
         window.title = "Shade Settings"
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 580, height: 580))
+        window.contentMinSize = NSSize(width: 720, height: 500)
+        window.setContentSize(NSSize(width: 800, height: 580))
         super.init(window: window)
         window.delegate = self
     }
