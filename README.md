@@ -54,16 +54,17 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   toggle turns on tab-completion (`git`, `make`, `ssh`, …) plus the OSC 133
   marks by pointing the shell at a bundled `ZDOTDIR` — without editing your
   dotfiles and without overriding a config you've already tuned (oh-my-zsh, …).
-  zsh only; off by default (Settings → Shell). See "Recommended shell setup".
+  zsh only; off by default (Settings → Terminal → Shell Integration). See
+  "Recommended shell setup".
 - **Command-finished notifications** — opt-in: a command that runs past a
   threshold and finishes while the panel is hidden posts a native notification
   (needs the OSC 133 snippet). Enable in Settings → Notifications.
 - **Hide on focus loss** — optional: the panel slides away when you switch to
-  another app (Settings → Behavior). Off by default.
+  another app (Settings → General → Behavior). Off by default.
 - **New tab in the current directory** — optional: `⌘T` opens in the active
-  tab's directory instead of `~` (Settings → Behavior). Off by default.
+  tab's directory instead of `~` (Settings → General → Behavior). Off by default.
 - **Cursor & bell** — choose the cursor shape (block / bar / underline) and
-  blink, plus an optional visual bell (screen flash), in Settings.
+  blink, plus an optional visual bell (screen flash), in Settings → Terminal.
 - **Open at Login** toggle.
 
 ---
@@ -191,17 +192,16 @@ unchanged — they work even when your keyboard layout is non-Latin
 
 ### Via the Settings window
 
-Open Settings from the menu-bar `▾` icon. Available sections:
+Open Settings from the menu-bar `▾` icon. The sidebar groups preferences into
+five focused pages:
 
-- **Hotkey** — recorder for the toggle hotkey
-- **Size** — width and height as a fraction of the screen
-- **Position** — horizontal alignment (left/center/right) and target screen
-- **Behavior** — auto-hide on focus loss; open new tabs in the current directory; visual bell
-- **Shell** — enrich completion inside Shade for a bare zsh (off by default; zsh only)
-- **Appearance** — monospace font family, size, background opacity, background blur (+ material), cursor style
-- **Startup** — open at login
-- **Notifications** — notify when a long command finishes while the panel is hidden, with a duration threshold
-- **Animation** — slide duration
+- **General** — panel size and position, focus behavior, new-tab directory,
+  Open at Login and slide animation
+- **Appearance** — monospace font family and size, background opacity, link
+  highlight color, blur and material
+- **Terminal** — zsh completion enrichment, cursor shape and blink, visual bell
+- **Notifications** — command-finished alerts and their duration threshold
+- **Shortcuts** — global-hotkey recorder and keyboard reference
 
 Changes that affect the visible panel apply immediately; size/position changes
 apply on the next toggle.
@@ -269,8 +269,9 @@ up.
 
 ### Richer completion inside Shade (opt-in)
 
-If your zsh is bare — no `compinit`, no framework — turn on **Settings → Shell →
-"Enrich completion inside Shade"** (or `defaults write dev.shade.Shade
+If your zsh is bare — no `compinit`, no framework — turn on **Settings →
+Terminal → Shell Integration → "Enrich completion inside Shade"** (or
+`defaults write dev.shade.Shade
 shellEnrichment -bool true`). Shade then launches zsh with `ZDOTDIR` pointed at a
 bundled shim that:
 
