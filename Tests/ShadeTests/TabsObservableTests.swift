@@ -3,6 +3,20 @@ import XCTest
 
 @MainActor
 final class TabsObservableTests: XCTestCase {
+    func testObserversAreRemovedWhenObservableIsReleased() {
+        let center = TrackingNotificationCenter()
+        weak var observable: TabsObservable?
+
+        do {
+            let controller = TerminalsController()
+            let value = TabsObservable(controller: controller, notificationCenter: center)
+            observable = value
+        }
+
+        XCTAssertNil(observable)
+        XCTAssertEqual(center.removedObserverCount, 2)
+    }
+
     func testTabBarScrollingStaysDisabledUntilViewportIsMeasured() {
         XCTAssertFalse(TabBarLayout.needsHorizontalScrolling(
             contentWidth: 200,
@@ -61,5 +75,14 @@ final class TabsObservableTests: XCTestCase {
 
     func testIndicatorFailureWinsOverActivity() {
         XCTAssertEqual(TabsObservable.indicator(lastExitCode: 127, hasUnseenActivity: true), .failed)
+    }
+}
+
+private final class TrackingNotificationCenter: NotificationCenter, @unchecked Sendable {
+    private(set) var removedObserverCount = 0
+
+    override func removeObserver(_ observer: Any) {
+        removedObserverCount += 1
+        super.removeObserver(observer)
     }
 }
