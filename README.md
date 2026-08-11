@@ -453,7 +453,9 @@ Sources/Shade/
 ├── ShortcutsSettingsView.swift  Global hotkey and keyboard reference form
 ├── TerminalSettingsView.swift  Shell, cursor and feedback settings form
 ├── ShellIntegration.swift   Opt-in ZDOTDIR injection — richer zsh completion + OSC 133
-├── TabBar.swift             SwiftUI TabBarView + TabsObservable
+├── TabBar.swift             Tab-strip layout, scrolling and new-tab action
+├── TabChip.swift            Individual tab rendering and inline rename state
+├── TabsObservable.swift     Observable tab/session projection for SwiftUI
 ├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering
 ├── TerminalContextPoller.swift  Visibility-scoped repeating context refresh
 ├── TerminalContextTracker.swift  CWD, Git status/branch and remote-session masking
