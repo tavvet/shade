@@ -34,7 +34,7 @@ final class GitRefreshCoordinator {
         }
     }
 
-    typealias Fetcher = @Sendable (String) async -> GitStatus?
+    typealias Fetcher = @Sendable (String) async -> GitStatusRefreshResult
     typealias Apply = @MainActor (GitStatus?) -> Void
 
     private let fetch: Fetcher
@@ -79,9 +79,20 @@ final class GitRefreshCoordinator {
             try? await Task.sleep(for: debounce)
             guard !Task.isCancelled else { return }
 
-            let status = await fetch(path)
+            let result = await fetch(path)
 
             guard !Task.isCancelled else { return }
+            let status: GitStatus?
+            switch result {
+            case let .status(value): status = value
+            case .notRepository: status = nil
+            case .failed:
+                // Do not let an earlier successful refresh suppress the next
+                // weak retry after a transient command failure.
+                self?.lastRefreshAt = nil
+                self?.lastRoot = nil
+                return
+            }
             self?.lastRefreshAt = self?.clock() ?? Date()
             self?.lastRoot = path
             apply(status)

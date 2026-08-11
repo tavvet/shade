@@ -1,6 +1,6 @@
 import Foundation
 
-struct GitStatus: Equatable {
+struct GitStatus: Equatable, Sendable {
     var filesChanged: Int
     var insertions: Int
     var deletions: Int
@@ -9,11 +9,22 @@ struct GitStatus: Equatable {
     var isClean: Bool { filesChanged == 0 && insertions == 0 && deletions == 0 }
 }
 
+/// Distinguishes an authoritative Git result from a transient command failure.
+/// A failed refresh must not make the UI replace its last good status with a
+/// clean or missing state.
+enum GitStatusRefreshResult: Equatable, Sendable {
+    case status(GitStatus)
+    case notRepository
+    case failed
+}
+
 /// Git introspection helpers for a working directory.
 /// Branch is read directly from `.git/HEAD` (no subprocess, fast). Working-tree status
 /// uses the real `git` binary because reproducing porcelain output ourselves would mean
 /// re-implementing index/diff logic.
 enum GitInfo {
+    typealias CommandRunner = @Sendable ([String]) async -> String?
+
     /// Returns the branch name, or a 7-char SHA prefix for detached HEAD, or nil if the
     /// directory is not inside a git repository.
     static func branch(forCwd cwd: String) -> String? {
@@ -41,21 +52,46 @@ enum GitInfo {
 
     /// Async variant used by the UI refresh coordinator. Cancellation terminates
     /// any in-flight `git` subprocess so rapid tab/cwd changes do not pile up work.
-    static func statusCancellable(forCwd cwd: String) async -> GitStatus? {
-        guard findGitDir(from: cwd) != nil else { return nil }
-        let porcelain = await runGitCancellable(["-C", cwd, "status", "--porcelain"]) ?? ""
-        guard !Task.isCancelled else { return nil }
+    static func statusCancellable(forCwd cwd: String) async -> GitStatusRefreshResult {
+        await statusCancellable(forCwd: cwd, runGit: runGitCancellable)
+    }
+
+    /// Runner-injected variant keeps command-failure classification directly
+    /// testable without depending on mutable global Git configuration.
+    static func statusCancellable(
+        forCwd cwd: String,
+        runGit: CommandRunner
+    ) async -> GitStatusRefreshResult {
+        guard findGitDir(from: cwd) != nil else { return .notRepository }
+        guard let porcelain = await runGit(["-C", cwd, "status", "--porcelain"])
+        else { return .failed }
+        guard !Task.isCancelled else { return .failed }
         let filesChanged = porcelain
             .split(whereSeparator: { $0 == "\n" || $0 == "\r" })
             .filter { !$0.isEmpty }
             .count
 
-        let shortstat = await runGitCancellable(["-C", cwd, "diff", "--shortstat", "HEAD"]) ?? ""
-        guard !Task.isCancelled else { return nil }
+        let shortstat: String
+        if let output = await runGit(["-C", cwd, "diff", "--shortstat", "HEAD"]) {
+            shortstat = output
+        } else {
+            guard !Task.isCancelled else { return .failed }
+            guard findGitDir(from: cwd) != nil else { return .notRepository }
+
+            // `git diff HEAD` legitimately fails before the first commit. Only
+            // that case may degrade line counts to zero; if HEAD resolves, the
+            // diff command itself failed and the last good snapshot must win.
+            let head = await runGit(["-C", cwd, "rev-parse", "--verify", "HEAD"])
+            guard !Task.isCancelled else { return .failed }
+            guard head == nil else { return .failed }
+            shortstat = ""
+        }
         let insertions = firstNumber(in: shortstat, before: "insertion") ?? 0
         let deletions = firstNumber(in: shortstat, before: "deletion") ?? 0
 
-        return GitStatus(filesChanged: filesChanged, insertions: insertions, deletions: deletions)
+        return .status(
+            GitStatus(filesChanged: filesChanged, insertions: insertions, deletions: deletions)
+        )
     }
 
     private static func runGitCancellable(_ args: [String]) async -> String? {

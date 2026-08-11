@@ -15,7 +15,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             weakReasonCooldown: 0,
             fetch: { _ in
                 await fetchCount.increment()
-                return GitStatus(filesChanged: 3, insertions: 5, deletions: 2)
+                return .status(GitStatus(filesChanged: 3, insertions: 5, deletions: 2))
             },
             apply: { applied.set($0) }
         )
@@ -32,7 +32,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             weakReasonCooldown: 0,
             fetch: { _ in
                 await fetchCount.increment()
-                return nil
+                return .status(.empty)
             },
             apply: { _ in }
         )
@@ -55,7 +55,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
-                return nil
+                return .status(.empty)
             },
             apply: { _ in }
         )
@@ -80,7 +80,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
-                return nil
+                return .status(.empty)
             },
             apply: { _ in }
         )
@@ -104,7 +104,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
-                return nil
+                return .status(.empty)
             },
             apply: { _ in }
         )
@@ -126,7 +126,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
-                return nil
+                return .status(.empty)
             },
             apply: { _ in }
         )
@@ -148,7 +148,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
-                return nil
+                return .status(.empty)
             },
             apply: { _ in }
         )
@@ -168,7 +168,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             weakReasonCooldown: 0,
             fetch: { _ in
                 await fetchCount.increment()
-                return nil
+                return .status(.empty)
             },
             apply: { _ in }
         )
@@ -191,7 +191,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             fetch: { _ in
                 await fetchCount.increment()
                 try? await Task.sleep(for: .milliseconds(500))
-                return GitStatus(filesChanged: 1, insertions: 0, deletions: 0)
+                return .status(GitStatus(filesChanged: 1, insertions: 0, deletions: 0))
             },
             apply: { _ in applyCount.increment() }
         )
@@ -213,7 +213,7 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             clock: clock.read,
             fetch: { _ in
                 await fetchCount.increment()
-                return nil
+                return .status(.empty)
             },
             apply: { _ in }
         )
@@ -224,6 +224,56 @@ final class GitRefreshCoordinatorTests: XCTestCase {
         // After cancel, a weak reason should fire again because state is cleared.
         coord.schedule(path: "/repo", reason: .tabActivated)
         await waitForCount(fetchCount, equals: 2)
+    }
+
+    func testFailedRefreshPreservesLastStatusAndDoesNotStartCooldown() async {
+        let fetchCount = Counter()
+        let clock = TestClock()
+        let applied = StatusApplyRecorder()
+        let dirty = GitStatus(filesChanged: 2, insertions: 4, deletions: 1)
+        let coord = GitRefreshCoordinator(
+            debounce: fastDebounce,
+            weakReasonCooldown: 5,
+            clock: clock.read,
+            fetch: { _ in
+                switch await fetchCount.increment() {
+                case 1: return .status(dirty)
+                case 2: return .failed
+                default: return .status(.empty)
+                }
+            },
+            apply: { applied.append($0) }
+        )
+
+        coord.schedule(path: "/repo", reason: .cwdChanged)
+        await waitForApplyCount(applied, equals: 1)
+        clock.advance(by: 1)
+
+        coord.schedule(path: "/repo", reason: .commandFinished)
+        await waitForCount(fetchCount, equals: 2)
+        try? await Task.sleep(for: .milliseconds(400))
+        XCTAssertEqual(applied.values, [dirty])
+
+        // A failed strong refresh must not rate-limit this immediate weak retry.
+        coord.schedule(path: "/repo", reason: .focusReturned)
+        await waitForApplyCount(applied, equals: 2)
+        XCTAssertEqual(applied.values, [dirty, .empty])
+    }
+
+    func testConfirmedNonRepositoryClearsStatus() async {
+        let applied = StatusApplyRecorder()
+        let coord = GitRefreshCoordinator(
+            debounce: fastDebounce,
+            weakReasonCooldown: 0,
+            fetch: { _ in .notRepository },
+            apply: { applied.append($0) }
+        )
+
+        coord.schedule(path: "/outside-repo", reason: .cwdChanged)
+        await waitForApplyCount(applied, equals: 1)
+
+        XCTAssertEqual(applied.values.count, 1)
+        XCTAssertNil(applied.values[0])
     }
 
     // MARK: - Helpers
@@ -248,6 +298,23 @@ final class GitRefreshCoordinatorTests: XCTestCase {
             "Expected fetch count \(expected) within \(timeout)s, got \(final)",
             file: file, line: line)
     }
+
+    private func waitForApplyCount(
+        _ recorder: StatusApplyRecorder,
+        equals expected: Int,
+        timeout: TimeInterval = 3.0,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if recorder.values.count == expected { return }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        XCTFail(
+            "Expected apply count \(expected) within \(timeout)s, got \(recorder.values.count)",
+            file: file, line: line)
+    }
 }
 
 // MARK: - Test fixtures
@@ -256,7 +323,11 @@ final class GitRefreshCoordinatorTests: XCTestCase {
 /// from off-main detached tasks.
 private actor Counter {
     private(set) var value: Int = 0
-    func increment() { value += 1 }
+    @discardableResult
+    func increment() -> Int {
+        value += 1
+        return value
+    }
 }
 
 /// Captures the last applied value from a `@MainActor` apply closure.
@@ -271,6 +342,12 @@ private final class ResultBox<T> {
 private final class ApplyCounter {
     private(set) var value = 0
     func increment() { value += 1 }
+}
+
+@MainActor
+private final class StatusApplyRecorder {
+    private(set) var values: [GitStatus?] = []
+    func append(_ status: GitStatus?) { values.append(status) }
 }
 
 /// Class-based virtual clock — passes a method reference into the
