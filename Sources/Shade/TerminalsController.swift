@@ -16,7 +16,9 @@ final class TerminalsController {
     /// Posted whenever the tab set or selection changes (the tab bar observes it via TabsObservable).
     static let tabsChanged = Notification.Name("ShadeTerminalsTabsChanged")
 
-    private var cwdTimer: Timer?
+    private lazy var contextPoller = TerminalContextPoller { [weak self] in
+        self?.pollOnce()
+    }
     private var automaticRespawnLimiter = AutomaticSessionRespawnLimiter()
 
     init() {
@@ -35,18 +37,13 @@ final class TerminalsController {
     /// Starts the 1 Hz context poll, refreshing once immediately so the UI is
     /// current the moment the panel shows. Idempotent.
     func resumePolling() {
-        guard cwdTimer == nil else { return }
-        pollOnce()
-        cwdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.pollOnce() }
-        }
+        contextPoller.resume()
     }
 
     /// Stops the poll while the panel is hidden — nothing it updates is on-screen,
     /// so the per-second cwd / git / process work would be pure idle drain.
     func pausePolling() {
-        cwdTimer?.invalidate()
-        cwdTimer = nil
+        contextPoller.pause()
     }
 
     var activeSession: TerminalSession? {
