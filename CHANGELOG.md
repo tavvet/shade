@@ -17,6 +17,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Fixed
 
+- Keep the new-tab button reachable, reveal the active tab automatically and
+  show horizontal tab scrolling only when the strip actually overflows.
 - Preserve custom and unset `ZDOTDIR` semantics across every zsh startup stage
   when shell enrichment is enabled.
 - Preserve the last successful Git working-tree status when a refresh command
