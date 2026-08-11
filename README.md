@@ -436,7 +436,8 @@ Sources/Shade/
 ├── PanelInputRouting.swift  Responder-chain guard + panel input contract
 ├── PanelKeyboardController.swift  Panel shortcuts, terminal input forwarding, cut/clear
 ├── PanelTerminalInputResolver.swift  Pure physical-key → terminal input translation
-├── Preferences.swift        Load/save settings snapshot + screen/frame resolution
+├── Preferences.swift        Settings value model + appearance/layout projections
+├── PreferencesStore.swift   UserDefaults keys, validation, loading and persistence
 ├── ProcessCwd.swift         libproc-based CWD lookup for shell processes
 ├── ProcessTree.swift        Finds foreground ssh/mosh clients in the shell's process tree
 ├── PromptMarks.swift        OSC 133 prompt-mark parsing + jump/copy helpers
@@ -452,6 +453,7 @@ Sources/Shade/
 ├── ShellIntegration.swift   Opt-in ZDOTDIR injection — richer zsh completion + OSC 133
 ├── TabBar.swift             SwiftUI TabBarView + TabsObservable
 ├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering
+├── TerminalContextPoller.swift  Visibility-scoped repeating context refresh
 ├── TerminalContextTracker.swift  CWD, Git status/branch and remote-session masking
 ├── TerminalLinkOpener.swift  Testable link/path resolution + system opening
 ├── TerminalPresentationState.swift  Tab titles, activity and command-status state
@@ -459,8 +461,10 @@ Sources/Shade/
 ├── TerminalPromptHistory.swift  OSC 133 state, command timing, prompt navigation/output
 ├── TerminalPanelContentController.swift  Panel view hierarchy, tabs, badge and blur
 ├── TerminalSession.swift    Coordinator for one terminal tab
+├── TerminalTabStore.swift   Pure multi-tab collection and selection state
 ├── TerminalViewAdapters.swift   SwiftTerm delegate proxy + activity/drop-enabled view
-└── TerminalsController.swift Owns multi-tab sessions, swaps view on selection
+├── TerminalViewHost.swift   Active terminal view hosting, constraints and focus
+└── TerminalsController.swift Coordinates multi-tab session lifecycle and side effects
 ```
 
 Key design choices:

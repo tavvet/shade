@@ -44,7 +44,7 @@ final class DropdownPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         hidesOnDeactivate = false
         animationBehavior = .none
-        apply(Preferences.load())
+        apply(PreferencesStore.standard.load())
     }
 
     override var canBecomeKey: Bool { true }
@@ -96,7 +96,7 @@ final class DropdownPanel: NSPanel {
     }
 
     func show() {
-        let prefs = Preferences.load()
+        let prefs = PreferencesStore.standard.load()
         apply(prefs)
         onWillShow?(prefs)
         guard let screen = prefs.resolvedScreen() else { return }

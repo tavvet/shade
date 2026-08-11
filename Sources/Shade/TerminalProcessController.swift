@@ -82,7 +82,7 @@ final class TerminalProcessController: NSObject {
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let environment = ShellIntegration.environment(
             shellName: shellName,
-            enabled: Preferences.load().shellEnrichment
+            enabled: PreferencesStore.standard.load().shellEnrichment
         )
         view.startProcess(
             executable: shell,

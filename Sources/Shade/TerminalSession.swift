@@ -99,7 +99,7 @@ final class TerminalSession {
         process.onTitleChange = { [weak self] in self?.presentation.setOscTitle($0) }
         process.onCwdChange = { [weak self] in self?.contextTracker.updateCwd($0) }
         process.onUserInput = { [weak self] in self?.onUserInput?() }
-        apply(Preferences.load())
+        apply(PreferencesStore.standard.load())
     }
 
     func start() {

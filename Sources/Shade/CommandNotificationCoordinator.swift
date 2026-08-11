@@ -39,7 +39,7 @@ final class CommandNotificationCoordinator {
 
     private func handleCommandFinish(duration: TimeInterval, exitCode: Int?, cwd: String) {
         guard !panel.isVisible else { return }
-        let prefs = Preferences.load()
+        let prefs = PreferencesStore.standard.load()
         guard prefs.notifyOnCommandFinish, duration >= prefs.notifyThresholdSeconds else { return }
         notifier.post(exitCode: exitCode, duration: duration, cwd: cwd)
     }

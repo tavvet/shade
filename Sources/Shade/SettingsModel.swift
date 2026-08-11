@@ -25,7 +25,7 @@ final class SettingsModel: NSObject, ObservableObject {
         )
     }
 
-    private let store: UserDefaults
+    private let preferencesStore: PreferencesStore
     private let loginItemManager: any LoginItemManaging
     private let notificationAuthorizationRequester: any NotificationAuthorizationRequesting
     private var suppressPreferenceWrites = false
@@ -39,10 +39,11 @@ final class SettingsModel: NSObject, ObservableObject {
         notificationAuthorizationRequester: any NotificationAuthorizationRequesting =
             SystemNotificationAuthorizationRequester()
     ) {
-        self.store = store
+        let preferencesStore = PreferencesStore(userDefaults: store)
+        self.preferencesStore = preferencesStore
         self.loginItemManager = loginItemManager
         self.notificationAuthorizationRequester = notificationAuthorizationRequester
-        preferences = Preferences.load(from: store)
+        preferences = preferencesStore.load()
         self.openAtLogin = openAtLogin ?? loginItemManager.isEnabled
         super.init()
         NotificationCenter.default.addObserver(
@@ -71,12 +72,12 @@ final class SettingsModel: NSObject, ObservableObject {
     private func reloadPreferences() {
         suppressPreferenceWrites = true
         defer { suppressPreferenceWrites = false }
-        preferences = Preferences.load(from: store)
+        preferences = preferencesStore.load()
     }
 
     private func preferencesDidChange(from oldValue: Preferences) {
         guard !suppressPreferenceWrites else { return }
-        preferences.save(to: store)
+        preferencesStore.save(preferences)
         if preferences.notifyOnCommandFinish, !oldValue.notifyOnCommandFinish {
             notificationAuthorizationRequester.requestAuthorizationIfNeeded()
         }
