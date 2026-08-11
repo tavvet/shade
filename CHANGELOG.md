@@ -6,6 +6,24 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.19] — 2026-08-11
+
+### Changed
+
+- Split terminal tab polling, active-view hosting and collection state out of
+  `TerminalsController` into focused, independently tested components.
+- Separate the preferences value model from UserDefaults loading and
+  persistence while preserving live updates and external `defaults` edits.
+- Separate Git repository discovery and cancellable subprocess execution from
+  working-tree status aggregation.
+- Split the tab strip's observable state, layout and individual tab UI into
+  focused components.
+
+### Fixed
+
+- Remove tab notification observers when their observable model is released
+  instead of leaving block-observer tokens registered for the process lifetime.
+
 ## [0.1.18] — 2026-08-11
 
 ### Changed
@@ -404,7 +422,8 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.18...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.19...HEAD
+[0.1.19]: https://github.com/tavvet/shade/releases/tag/v0.1.19
 [0.1.18]: https://github.com/tavvet/shade/releases/tag/v0.1.18
 [0.1.17]: https://github.com/tavvet/shade/releases/tag/v0.1.17
 [0.1.16]: https://github.com/tavvet/shade/releases/tag/v0.1.16
