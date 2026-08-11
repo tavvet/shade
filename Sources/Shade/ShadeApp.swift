@@ -31,6 +31,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.panelContent.focusActiveTerminal()
             self.terminals.activeSession?.focusReturned()
         }
+        panel.onWillShow = { [weak self] preferences in
+            guard let self else { return }
+            self.applyPreferences(preferences)
+            self.notifications.panelWillShow(preferences: preferences)
+        }
         panel.onShow = { [weak self] in self?.terminals.resumePolling() }
         panel.onHide = { [weak self] in self?.terminals.pausePolling() }
         return panel
@@ -55,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(applyPreferences),
+            selector: #selector(preferencesDidChange),
             name: .shadePreferencesChanged,
             object: nil
         )
@@ -79,11 +84,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.contentView?.layoutSubtreeIfNeeded()
     }
 
-    @objc private func applyPreferences() {
-        let prefs = Preferences.load()
-        terminals.applyToAll(prefs)
-        panel.apply(prefs)
-        panelContent.apply(prefs)
+    @objc private func preferencesDidChange() {
+        applyPreferences(Preferences.load())
+    }
+
+    private func applyPreferences(_ preferences: Preferences) {
+        terminals.applyToAll(preferences)
+        panel.apply(preferences)
+        panelContent.apply(preferences)
     }
 
     /// Hide on a real app switch, but not during the transient resign-active

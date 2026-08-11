@@ -17,6 +17,10 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Fixed
 
+- Apply preferences changed via `defaults` to existing terminals, blur and all
+  other live UI when the panel is next shown.
+- Request macOS notification permission on the next panel show when command
+  notifications are enabled outside the Settings window.
 - Stop automatically respawning the last terminal after repeated startup exits
   without user input, preventing a broken `$SHELL` or startup file from causing
   an unbounded process-launch loop.

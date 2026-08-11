@@ -69,7 +69,7 @@ final class SettingsModel: NSObject, ObservableObject {
         guard !suppressPreferenceWrites else { return }
         preferences.save(to: store)
         if preferences.notifyOnCommandFinish, !oldValue.notifyOnCommandFinish {
-            notificationAuthorizationRequester.requestAuthorization()
+            notificationAuthorizationRequester.requestAuthorizationIfNeeded()
         }
         scheduleApply()
     }

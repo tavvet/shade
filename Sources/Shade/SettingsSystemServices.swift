@@ -24,12 +24,16 @@ struct SystemLoginItemManager: LoginItemManaging {
 
 @MainActor
 protocol NotificationAuthorizationRequesting {
-    func requestAuthorization()
+    func requestAuthorizationIfNeeded()
 }
 
 @MainActor
 struct SystemNotificationAuthorizationRequester: NotificationAuthorizationRequesting {
-    func requestAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    func requestAuthorizationIfNeeded() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            guard settings.authorizationStatus == .notDetermined else { return }
+            UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        }
     }
 }
