@@ -17,6 +17,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Fixed
 
+- Preserve the last successful Git working-tree status when a refresh command
+  fails instead of temporarily presenting the repository as clean.
 - Apply preferences changed via `defaults` to existing terminals, blur and all
   other live UI when the panel is next shown.
 - Request macOS notification permission on the next panel show when command
