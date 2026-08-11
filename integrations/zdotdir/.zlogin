@@ -9,7 +9,13 @@ if [[ -n $SHADE_LOGIN_INITIALIZED ]]; then
 fi
 SHADE_LOGIN_INITIALIZED=1
 
-ZDOTDIR=$SHADE_USER_ZDOTDIR
-if [[ $options[norcs] == off && -o login && -f $ZDOTDIR/.zlogin ]]; then
-	. $ZDOTDIR/.zlogin
+SHADE_USER_ZDOTFILE=$SHADE_USER_ZDOTDIR/.zlogin
+if [[ $SHADE_USER_ZDOTDIR_SET == 1 ]]; then
+	ZDOTDIR=$SHADE_USER_ZDOTDIR
+else
+	unset ZDOTDIR
 fi
+if [[ $options[norcs] == off && -o login && -f $SHADE_USER_ZDOTFILE ]]; then
+	. "$SHADE_USER_ZDOTFILE"
+fi
+unset SHADE_USER_ZDOTFILE

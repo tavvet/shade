@@ -8,9 +8,9 @@ import Foundation
 /// never override). See `integrations/zdotdir/` for the shell side.
 ///
 /// Mechanism mirrors VS Code's terminal ZDOTDIR injection: we point `ZDOTDIR`
-/// at our shim dir and remember the user's original in `SHADE_USER_ZDOTDIR`;
-/// each shim chains the user's matching file then restores `ZDOTDIR` so the
-/// next startup file still loads from ours.
+/// at our shim dir and remember the user's original path and set/unset state;
+/// each shim chains the user's matching file, captures any `ZDOTDIR` change,
+/// then points it back at our directory so zsh loads the next shim stage.
 enum ShellIntegration {
 
     /// zsh is the only shell we inject into. Shade spawns a *login* shell, where
@@ -70,8 +70,11 @@ enum ShellIntegration {
         }
 
         let home = processEnv["HOME"] ?? NSHomeDirectory()
+        let userZdotdir = processEnv["ZDOTDIR"]
         env["ZDOTDIR"] = shimPath
-        env["SHADE_USER_ZDOTDIR"] = processEnv["ZDOTDIR"] ?? home
+        env["SHADE_SHIM_ZDOTDIR"] = shimPath
+        env["SHADE_USER_ZDOTDIR"] = userZdotdir ?? home
+        env["SHADE_USER_ZDOTDIR_SET"] = userZdotdir == nil ? "0" : "1"
         env["SHADE_INTEGRATION_DIR"] = integrationPath
         env["SHADE_INJECTION"] = "1"
 

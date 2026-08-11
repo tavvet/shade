@@ -31,6 +31,8 @@ final class ShellIntegrationTests: XCTestCase {
             processEnv: ["HOME": "/Users/jane"]))
         XCTAssertEqual(env["ZDOTDIR"], "/shim")
         XCTAssertEqual(env["SHADE_USER_ZDOTDIR"], "/Users/jane")  // no user ZDOTDIR → HOME
+        XCTAssertEqual(env["SHADE_USER_ZDOTDIR_SET"], "0")
+        XCTAssertEqual(env["SHADE_SHIM_ZDOTDIR"], "/shim")
         XCTAssertEqual(env["SHADE_INTEGRATION_DIR"], "/integ")
         XCTAssertEqual(env["SHADE_INJECTION"], "1")
     }
@@ -40,6 +42,15 @@ final class ShellIntegrationTests: XCTestCase {
             shimPath: "/shim", integrationPath: "/integ",
             processEnv: ["HOME": "/Users/jane", "ZDOTDIR": "/Users/jane/.config/zsh"]))
         XCTAssertEqual(env["SHADE_USER_ZDOTDIR"], "/Users/jane/.config/zsh")
+        XCTAssertEqual(env["SHADE_USER_ZDOTDIR_SET"], "1")
+    }
+
+    func testEmptyUserZdotdirRemainsSet() {
+        let env = parse(ShellIntegration.makeEnvironment(
+            shimPath: "/shim", integrationPath: "/integ",
+            processEnv: ["HOME": "/Users/jane", "ZDOTDIR": ""]))
+        XCTAssertEqual(env["SHADE_USER_ZDOTDIR"], "")
+        XCTAssertEqual(env["SHADE_USER_ZDOTDIR_SET"], "1")
     }
 
     func testReplicatesTerminalDefaultsAndPreservesIdentity() {

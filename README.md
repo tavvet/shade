@@ -280,7 +280,8 @@ shellEnrichment -bool true`). Shade then launches zsh with `ZDOTDIR` pointed at 
 bundled shim that:
 
 - loads your real `~/.zshrc` first, so your `PATH`, aliases, prompt and key
-  bindings win;
+  bindings win, while respecting a custom `ZDOTDIR` and changes made by earlier
+  zsh startup files;
 - runs `compinit` **only if you haven't already**, lighting up the tab-completion
   for `git`, `make`, `ssh`, … that already ships with zsh; and
 - enables the OSC 133 prompt marks, so `⌘⇧↑` / `⌘⇧↓` / `⌘⇧O` work without the
