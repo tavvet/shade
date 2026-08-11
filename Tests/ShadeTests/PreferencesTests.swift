@@ -42,6 +42,34 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.fontSize, 14)
     }
 
+    func testSaveRoundTripsEveryPreference() {
+        let store = freshStore()
+        var prefs = Preferences.defaults
+        prefs.widthFraction = 0.35
+        prefs.heightFraction = 0.65
+        prefs.horizontalAlignment = .right
+        prefs.screenChoice = .main
+        prefs.fontSize = 17
+        prefs.fontName = "Menlo"
+        prefs.backgroundOpacity = 0.75
+        prefs.animationDuration = 0.3
+        prefs.linkHighlightHex = "123ABC"
+        prefs.backgroundBlur = false
+        prefs.notifyOnCommandFinish = true
+        prefs.notifyThresholdSeconds = 90
+        prefs.hideOnFocusLoss = true
+        prefs.blurMaterial = .sidebar
+        prefs.newTabInheritsCwd = true
+        prefs.shellEnrichment = true
+        prefs.cursorShape = .underline
+        prefs.cursorBlink = true
+        prefs.visualBell = true
+
+        prefs.save(to: store)
+
+        XCTAssertEqual(Preferences.load(from: store), prefs)
+    }
+
     func testBackgroundBlurReadsStoredValue() {
         let store = freshStore()
         store.set(false, forKey: Preferences.Key.backgroundBlur)
@@ -188,6 +216,14 @@ final class PreferencesTests: XCTestCase {
         var prefs = Preferences.defaults
         prefs.linkHighlightHex = "not-a-color"
         XCTAssertEqual(prefs.linkHighlightColor(), NSColor.systemYellow)
+    }
+
+    func testSetLinkHighlightColorStoresRGBHex() {
+        var prefs = Preferences.defaults
+
+        prefs.setLinkHighlightColor(NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.5))
+
+        XCTAssertEqual(prefs.linkHighlightHex, "336699")
     }
 }
 

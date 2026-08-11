@@ -14,7 +14,7 @@ struct AppearanceSettingsView: View {
     var body: some View {
         Form {
             Section("Typography") {
-                Picker("Font", selection: $model.fontName) {
+                Picker("Font", selection: $model.preferences.fontName) {
                     ForEach(fontChoices, id: \.value) { choice in
                         Text(choice.label).tag(choice.value)
                     }
@@ -23,8 +23,8 @@ struct AppearanceSettingsView: View {
                 HStack {
                     Text("Size")
                         .frame(width: 76, alignment: .leading)
-                    Slider(value: $model.fontSize, in: 9...22, step: 1)
-                    Text("\(Int(model.fontSize)) pt")
+                    Slider(value: $model.preferences.fontSize, in: 9...22, step: 1)
+                    Text("\(Int(model.preferences.fontSize)) pt")
                         .monospacedDigit()
                         .frame(width: 44, alignment: .trailing)
                         .foregroundStyle(.secondary)
@@ -35,8 +35,8 @@ struct AppearanceSettingsView: View {
                 HStack {
                     Text("Opacity")
                         .frame(width: 76, alignment: .leading)
-                    Slider(value: $model.backgroundOpacity, in: 0.3...1.0, step: 0.05)
-                    Text("\(Int((model.backgroundOpacity * 100).rounded()))%")
+                    Slider(value: $model.preferences.backgroundOpacity, in: 0.3...1.0, step: 0.05)
+                    Text("\(Int((model.preferences.backgroundOpacity * 100).rounded()))%")
                         .monospacedDigit()
                         .frame(width: 44, alignment: .trailing)
                         .foregroundStyle(.secondary)
@@ -44,13 +44,13 @@ struct AppearanceSettingsView: View {
 
                 ColorPicker(
                     "Link highlight",
-                    selection: $model.linkHighlightColor,
+                    selection: model.linkHighlightColor,
                     supportsOpacity: false
                 )
 
-                Toggle("Background blur", isOn: $model.backgroundBlur)
-                if model.backgroundBlur {
-                    Picker("Blur material", selection: $model.blurMaterial) {
+                Toggle("Background blur", isOn: $model.preferences.backgroundBlur)
+                if model.preferences.backgroundBlur {
+                    Picker("Blur material", selection: $model.preferences.blurMaterial) {
                         Text("HUD").tag(Preferences.BlurMaterial.hud)
                         Text("Under window").tag(Preferences.BlurMaterial.underWindow)
                         Text("Sidebar").tag(Preferences.BlurMaterial.sidebar)

@@ -2,7 +2,7 @@ import AppKit
 
 /// User-tunable layout and appearance for the dropdown panel.
 /// Persisted via standard `defaults`; reloaded on every show()/notification so CLI edits apply instantly.
-struct Preferences {
+struct Preferences: Equatable {
     var widthFraction: CGFloat
     var heightFraction: CGFloat
     var horizontalAlignment: HorizontalAlignment
@@ -163,6 +163,28 @@ struct Preferences {
         return prefs
     }
 
+    func save(to store: UserDefaults = .standard) {
+        store.set(widthFraction, forKey: Key.widthFraction)
+        store.set(heightFraction, forKey: Key.heightFraction)
+        store.set(horizontalAlignment.rawValue, forKey: Key.horizontalAlignment)
+        store.set(screenChoice.rawValue, forKey: Key.screenChoice)
+        store.set(fontSize, forKey: Key.fontSize)
+        store.set(fontName, forKey: Key.fontName)
+        store.set(backgroundOpacity, forKey: Key.backgroundOpacity)
+        store.set(animationDuration, forKey: Key.animationDuration)
+        store.set(linkHighlightHex, forKey: Key.linkHighlightHex)
+        store.set(backgroundBlur, forKey: Key.backgroundBlur)
+        store.set(notifyOnCommandFinish, forKey: Key.notifyOnCommandFinish)
+        store.set(notifyThresholdSeconds, forKey: Key.notifyThresholdSeconds)
+        store.set(hideOnFocusLoss, forKey: Key.hideOnFocusLoss)
+        store.set(blurMaterial.rawValue, forKey: Key.blurMaterial)
+        store.set(newTabInheritsCwd, forKey: Key.newTabInheritsCwd)
+        store.set(shellEnrichment, forKey: Key.shellEnrichment)
+        store.set(cursorShape.rawValue, forKey: Key.cursorShape)
+        store.set(cursorBlink, forKey: Key.cursorBlink)
+        store.set(visualBell, forKey: Key.visualBell)
+    }
+
     enum Key {
         static let widthFraction = "widthFraction"
         static let heightFraction = "heightFraction"
@@ -244,6 +266,14 @@ extension Preferences {
 
     func linkHighlightColor() -> NSColor {
         Self.parseHex(linkHighlightHex) ?? .systemYellow
+    }
+
+    mutating func setLinkHighlightColor(_ color: NSColor) {
+        let srgb = color.usingColorSpace(.sRGB) ?? color
+        let red = Int(round(srgb.redComponent * 255))
+        let green = Int(round(srgb.greenComponent * 255))
+        let blue = Int(round(srgb.blueComponent * 255))
+        linkHighlightHex = String(format: "%02X%02X%02X", red, green, blue)
     }
 
     /// DECSCUSR escape (CSI Ps SP q) that sets the configured cursor shape + blink.

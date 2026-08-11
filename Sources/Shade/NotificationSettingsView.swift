@@ -8,14 +8,14 @@ struct NotificationSettingsView: View {
             Section("Command Completion") {
                 Toggle(
                     "Notify when a command finishes while hidden",
-                    isOn: $model.notifyOnCommandFinish
+                    isOn: $model.preferences.notifyOnCommandFinish
                 )
-                if model.notifyOnCommandFinish {
+                if model.preferences.notifyOnCommandFinish {
                     HStack {
                         Text("After")
                             .frame(width: 76, alignment: .leading)
-                        Slider(value: $model.notifyThresholdSeconds, in: 5...300, step: 5)
-                        Text("\(Int(model.notifyThresholdSeconds)) s")
+                        Slider(value: $model.preferences.notifyThresholdSeconds, in: 5...300, step: 5)
+                        Text("\(Int(model.preferences.notifyThresholdSeconds)) s")
                             .monospacedDigit()
                             .frame(width: 44, alignment: .trailing)
                             .foregroundStyle(.secondary)
