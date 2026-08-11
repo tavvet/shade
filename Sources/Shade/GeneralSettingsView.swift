@@ -6,19 +6,19 @@ struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section("Panel Size") {
-                fractionRow(title: "Width", value: $model.widthFraction)
-                fractionRow(title: "Height", value: $model.heightFraction)
+                fractionRow(title: "Width", value: $model.preferences.widthFraction)
+                fractionRow(title: "Height", value: $model.preferences.heightFraction)
             }
 
             Section("Position") {
-                Picker("Horizontal", selection: $model.horizontalAlignment) {
+                Picker("Horizontal", selection: $model.preferences.horizontalAlignment) {
                     Text("Left").tag(Preferences.HorizontalAlignment.left)
                     Text("Center").tag(Preferences.HorizontalAlignment.center)
                     Text("Right").tag(Preferences.HorizontalAlignment.right)
                 }
                 .pickerStyle(.segmented)
 
-                Picker("Display", selection: $model.screenChoice) {
+                Picker("Display", selection: $model.preferences.screenChoice) {
                     Text("Main").tag(Preferences.ScreenChoice.main)
                     Text("Under pointer").tag(Preferences.ScreenChoice.mouseLocation)
                 }
@@ -26,8 +26,8 @@ struct GeneralSettingsView: View {
             }
 
             Section("Behavior") {
-                Toggle("Hide when Shade loses focus", isOn: $model.hideOnFocusLoss)
-                Toggle("New tab uses the current directory", isOn: $model.newTabInheritsCwd)
+                Toggle("Hide when Shade loses focus", isOn: $model.preferences.hideOnFocusLoss)
+                Toggle("New tab uses the current directory", isOn: $model.preferences.newTabInheritsCwd)
             }
 
             Section("Startup") {
@@ -38,8 +38,8 @@ struct GeneralSettingsView: View {
                 HStack {
                     Text("Slide")
                         .frame(width: 76, alignment: .leading)
-                    Slider(value: $model.animationDuration, in: 0.0...0.5, step: 0.02)
-                    Text("\(Int((model.animationDuration * 1000).rounded())) ms")
+                    Slider(value: $model.preferences.animationDuration, in: 0.0...0.5, step: 0.02)
+                    Text("\(Int((model.preferences.animationDuration * 1000).rounded())) ms")
                         .monospacedDigit()
                         .frame(width: 56, alignment: .trailing)
                         .foregroundStyle(.secondary)
@@ -49,7 +49,7 @@ struct GeneralSettingsView: View {
         .formStyle(.grouped)
     }
 
-    private func fractionRow(title: String, value: Binding<Double>) -> some View {
+    private func fractionRow(title: String, value: Binding<CGFloat>) -> some View {
         HStack {
             Text(title)
                 .frame(width: 76, alignment: .leading)
