@@ -4,7 +4,8 @@ import AppKit
 /// Knows the active tab and is the single entry point for tab operations.
 @MainActor
 final class TerminalsController {
-    let containerView = NSView()
+    private let viewHost: TerminalViewHost
+    var containerView: NSView { viewHost.containerView }
 
     private(set) var sessions: [TerminalSession] = []
     private(set) var activeIndex: Int = -1
@@ -21,8 +22,8 @@ final class TerminalsController {
     }
     private var automaticRespawnLimiter = AutomaticSessionRespawnLimiter()
 
-    init() {
-        containerView.translatesAutoresizingMaskIntoConstraints = false
+    init(viewHost: TerminalViewHost = TerminalViewHost()) {
+        self.viewHost = viewHost
     }
 
     /// One context refresh across every session: cwd / remote indicator for all
@@ -130,19 +131,8 @@ final class TerminalsController {
     func select(at index: Int) {
         guard sessions.indices.contains(index) else { return }
         let session = sessions[index]
-        containerView.subviews.forEach { $0.removeFromSuperview() }
         let v = session.view
-        containerView.addSubview(v)
-        NSLayoutConstraint.activate([
-            v.topAnchor.constraint(equalTo: containerView.topAnchor),
-            v.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            v.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            v.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-        ])
-        // Resolve constraints now so SwiftTerm knows its rows before we start the shell
-        // (otherwise the first prompt lands at the top because the terminal still has its
-        // default 24-row buffer).
-        containerView.layoutSubtreeIfNeeded()
+        viewHost.show(v)
         activeIndex = index
         for (i, s) in sessions.enumerated() { s.setActive(i == index) }
         session.start()
@@ -150,8 +140,13 @@ final class TerminalsController {
         // re-run git status (cwd change → strong, unchanged cwd within
         // cooldown → skip).
         session.tabActivated()
-        containerView.window?.makeFirstResponder(v)
+        viewHost.focus(v)
         NotificationCenter.default.post(name: Self.tabsChanged, object: self)
+    }
+
+    func focusActiveSession() {
+        guard let view = activeSession?.view else { return }
+        viewHost.focus(view)
     }
 
     func selectNext() {
