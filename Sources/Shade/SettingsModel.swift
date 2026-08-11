@@ -57,9 +57,18 @@ final class SettingsModel: NSObject, ObservableObject {
         NotificationCenter.default.removeObserver(self)
     }
 
+    /// Refresh both persisted preferences and macOS-owned state before the
+    /// Settings window is presented again.
+    func reloadForPresentation() {
+        reloadPreferences()
+        suppressOpenAtLoginWrite = true
+        defer { suppressOpenAtLoginWrite = false }
+        openAtLogin = loginItemManager.isEnabled
+    }
+
     /// Re-read values changed outside this model, such as keyboard font zoom or
     /// `defaults write`, without echoing the assignment back to UserDefaults.
-    func reloadPreferences() {
+    private func reloadPreferences() {
         suppressPreferenceWrites = true
         defer { suppressPreferenceWrites = false }
         preferences = Preferences.load(from: store)
