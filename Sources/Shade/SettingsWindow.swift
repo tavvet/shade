@@ -22,7 +22,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     required init?(coder: NSCoder) { fatalError("SettingsWindowController is not Storyboard-loadable") }
 
     func present() {
-        model.reloadPreferences()
+        model.reloadForPresentation()
         // Switch from .accessory to .regular while the Settings window is open so that
         // system panels (notably NSColorPanel used by SwiftUI's ColorPicker) actually
         // open — they refuse to show for LSUIElement / .accessory apps.

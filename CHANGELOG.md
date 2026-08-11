@@ -17,6 +17,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Fixed
 
+- Refresh Open at Login from macOS whenever Settings opens so external changes
+  do not leave the toggle showing stale state.
 - Keep the new-tab button reachable, reveal the active tab automatically and
   show horizontal tab scrolling only when the strip actually overflows.
 - Preserve custom and unset `ZDOTDIR` semantics across every zsh startup stage

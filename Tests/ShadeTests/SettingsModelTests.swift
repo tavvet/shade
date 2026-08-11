@@ -83,6 +83,22 @@ final class SettingsModelTests: XCTestCase {
             XCTAssertEqual(manager.requestedValues, [true])
         }
     }
+
+    func testPresentationReloadRefreshesExternalLoginItemStateWithoutWriting() async {
+        await MainActor.run {
+            let manager = LoginItemManagerStub(isEnabled: false)
+            let model = SettingsModel(
+                openAtLogin: false,
+                loginItemManager: manager
+            )
+
+            manager.isEnabled = true
+            model.reloadForPresentation()
+
+            XCTAssertTrue(model.openAtLogin)
+            XCTAssertEqual(manager.requestedValues, [])
+        }
+    }
 }
 
 private enum StubError: Error {
