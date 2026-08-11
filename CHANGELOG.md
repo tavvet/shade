@@ -10,6 +10,10 @@ All notable changes to Shade are documented in this file. Format follows
 
 - Redesign Settings as a compact sidebar interface with focused pages for
   general behavior, appearance, terminal options, notifications and shortcuts.
+- Split Settings state, persistence and system integrations into focused,
+  testable components backed by a single preferences snapshot.
+- Move terminal key translation out of `DropdownPanel` into a pure, tested
+  resolver while leaving panel behavior unchanged.
 
 ## [0.1.17] — 2026-08-03
 

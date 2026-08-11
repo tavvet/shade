@@ -421,17 +421,27 @@ Sources/Shade/
 ├── CommandNotifier.swift    Command-finished notifications (OSC 133 C→D timing)
 ├── CommandNotificationCoordinator.swift  Completion-event notification policy/wiring
 ├── DiagnosticsWindow.swift  Read-only state snapshot, copy-paste for bug reports
-├── DropdownPanel.swift      NSPanel: borderless, floating, slide-in animation
+├── DropdownPanel.swift      NSPanel lifecycle, slide animation and event dispatch
 ├── GitInfo.swift            Branch from .git/HEAD, status via git subprocess
 ├── GitRefreshCoordinator.swift  Event-driven, debounced git-status scheduler
 ├── Hotkeys.swift            KeyboardShortcuts.Name declarations (toggleShade)
 ├── KeyCodes.swift           Layout-agnostic keyCode → ASCII mapping
+├── PanelInputRouting.swift  Responder-chain guard + panel input contract
 ├── PanelKeyboardController.swift  Panel shortcuts, terminal input forwarding, cut/clear
-├── Preferences.swift        UserDefaults-backed settings struct + screen/frame resolution
+├── PanelTerminalInputResolver.swift  Pure physical-key → terminal input translation
+├── Preferences.swift        Load/save settings snapshot + screen/frame resolution
 ├── ProcessCwd.swift         libproc-based CWD lookup for shell processes
 ├── ProcessTree.swift        Finds foreground ssh/mosh clients in the shell's process tree
 ├── PromptMarks.swift        OSC 133 prompt-mark parsing + jump/copy helpers
-├── SettingsWindow.swift     SwiftUI Settings view + NSWindowController
+├── AppearanceSettingsView.swift  Appearance settings form
+├── GeneralSettingsView.swift  Window, startup and behavior settings form
+├── NotificationSettingsView.swift  Command-notification settings form
+├── SettingsModel.swift      Observable settings snapshot + live-apply coordination
+├── SettingsSystemServices.swift  Login-item and notification authorization adapters
+├── SettingsView.swift       Settings sidebar navigation and page switching
+├── SettingsWindow.swift     Settings NSWindowController
+├── ShortcutsSettingsView.swift  Global hotkey and keyboard reference form
+├── TerminalSettingsView.swift  Shell, cursor and feedback settings form
 ├── ShellIntegration.swift   Opt-in ZDOTDIR injection — richer zsh completion + OSC 133
 ├── TabBar.swift             SwiftUI TabBarView + TabsObservable
 ├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering
@@ -455,12 +465,13 @@ Key design choices:
   when the panel is shown so that `⌘`-shortcuts route to us instead of
   leaking to whichever browser was last focused.
 - **`performKeyEquivalent` + `sendEvent` override** in `DropdownPanel`.
-  `performKeyEquivalent` catches `⌘`-tab-shortcuts; `sendEvent` translates
-  Control+letter into the canonical control byte using the physical keyCode
-  (works on any layout) and writes it directly into the active session's PTY.
-- **Live-apply prefs.** `SettingsModel.save()` posts
-  `.shadePreferencesChanged`; the application coordinator re-applies them to
-  the panel content and every session so font/opacity changes are instant.
+  `performKeyEquivalent` catches `⌘`-tab-shortcuts; `sendEvent` delegates raw
+  terminal key translation to `PanelTerminalInputResolver`. The resolver uses
+  physical key codes, so Control combinations work independently of input layout.
+- **Live-apply prefs.** `SettingsModel` publishes one `Preferences` snapshot.
+  Edits are persisted immediately and `.shadePreferencesChanged` is posted after
+  a short debounce; the application coordinator then updates panel content and
+  every session so font/opacity changes remain instant.
 - **Prime-then-start.** The panel's frame is set off-screen at launch and
   layout is resolved before the first shell starts, so SwiftTerm knows its
   rows count and `padCursorToBottom()` pins the prompt to the bottom of the
