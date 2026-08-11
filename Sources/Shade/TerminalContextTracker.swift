@@ -49,8 +49,8 @@ final class TerminalContextTracker {
         readRemoteIndicator: @escaping (Int32, Int32?) -> String? = {
             ProcessTree.remoteIndicator(forShell: $0, foregroundProcessGroup: $1)
         },
-        findGitDir: @escaping (String) -> String? = { GitInfo.findGitDir(from: $0) },
-        readBranch: @escaping (String) -> String? = { GitInfo.branchName(inGitDir: $0) },
+        findGitDir: @escaping (String) -> String? = { GitRepository.findGitDir(from: $0) },
+        readBranch: @escaping (String) -> String? = { GitRepository.branchName(inGitDir: $0) },
         gitRefreshFactory: @escaping GitRefreshFactory = { apply in
             GitRefreshCoordinator(apply: apply)
         }

@@ -21,19 +21,19 @@ final class GitInfoTests: XCTestCase {
         XCTAssertNil(GitInfo.firstNumber(in: "no numbers here", before: "insertion"))
     }
 
-    // MARK: - branch() and findGitDir() against a fixture repo
+    // MARK: - repository metadata against a fixture repo
 
     func testBranchFromDotGitHeadRefLine() throws {
         let dir = try makeFixtureRepo(headContents: "ref: refs/heads/main\n")
         defer { try? FileManager.default.removeItem(atPath: dir) }
-        XCTAssertEqual(GitInfo.branch(forCwd: dir), "main")
+        XCTAssertEqual(GitRepository.branch(forCwd: dir), "main")
     }
 
     func testBranchFromDetachedHeadSha() throws {
         let sha = "0123456789abcdef0123456789abcdef01234567"
         let dir = try makeFixtureRepo(headContents: "\(sha)\n")
         defer { try? FileManager.default.removeItem(atPath: dir) }
-        XCTAssertEqual(GitInfo.branch(forCwd: dir), "0123456")
+        XCTAssertEqual(GitRepository.branch(forCwd: dir), "0123456")
     }
 
     func testBranchInNestedSubdirectoryWalksUp() throws {
@@ -41,14 +41,18 @@ final class GitInfoTests: XCTestCase {
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let deep = (dir as NSString).appendingPathComponent("a/b/c")
         try FileManager.default.createDirectory(atPath: deep, withIntermediateDirectories: true)
-        XCTAssertEqual(GitInfo.branch(forCwd: deep), "feature/x")
+        XCTAssertEqual(
+            GitRepository.findGitDir(from: deep),
+            (dir as NSString).appendingPathComponent(".git")
+        )
+        XCTAssertEqual(GitRepository.branch(forCwd: deep), "feature/x")
     }
 
     func testBranchNilWhenNoRepo() throws {
         let dir = NSTemporaryDirectory() + "shade-tests-" + UUID().uuidString
         try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(atPath: dir) }
-        XCTAssertNil(GitInfo.branch(forCwd: dir))
+        XCTAssertNil(GitRepository.branch(forCwd: dir))
     }
 
     func testStatusDistinguishesMissingRepository() async throws {
@@ -121,7 +125,8 @@ final class GitInfoTests: XCTestCase {
             try? FileManager.default.removeItem(atPath: real)
             try? FileManager.default.removeItem(atPath: work)
         }
-        XCTAssertEqual(GitInfo.branch(forCwd: work), "dev")
+        XCTAssertEqual(GitRepository.findGitDir(from: work), real)
+        XCTAssertEqual(GitRepository.branch(forCwd: work), "dev")
     }
 
     func testFindGitDirResolvesRelativePointerFile() throws {
@@ -135,21 +140,22 @@ final class GitInfoTests: XCTestCase {
         try "gitdir: ../real-git\n".write(toFile: work + "/.git", atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(atPath: root) }
 
-        XCTAssertEqual(GitInfo.branch(forCwd: work), "submodule-branch")
+        XCTAssertEqual(GitRepository.findGitDir(from: work), real)
+        XCTAssertEqual(GitRepository.branch(forCwd: work), "submodule-branch")
     }
 
-    // MARK: - branchName(inGitDir:) reads HEAD directly
+    // MARK: - repository branch reads HEAD directly
 
     func testBranchNameReadsHeadInGivenGitDir() throws {
         let dir = try makeFixtureRepo(headContents: "ref: refs/heads/topic\n")
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let gitDir = (dir as NSString).appendingPathComponent(".git")
-        XCTAssertEqual(GitInfo.branchName(inGitDir: gitDir), "topic")
+        XCTAssertEqual(GitRepository.branchName(inGitDir: gitDir), "topic")
     }
 
     func testBranchNameNilWhenHeadMissing() {
         let missing = NSTemporaryDirectory() + "shade-tests-missing-" + UUID().uuidString
-        XCTAssertNil(GitInfo.branchName(inGitDir: missing))
+        XCTAssertNil(GitRepository.branchName(inGitDir: missing))
     }
 
     // MARK: - helpers
