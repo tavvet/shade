@@ -15,6 +15,12 @@ All notable changes to Shade are documented in this file. Format follows
 - Move terminal key translation out of `DropdownPanel` into a pure, tested
   resolver while leaving panel behavior unchanged.
 
+### Fixed
+
+- Stop automatically respawning the last terminal after repeated startup exits
+  without user input, preventing a broken `$SHELL` or startup file from causing
+  an unbounded process-launch loop.
+
 ## [0.1.17] — 2026-08-03
 
 ### Fixed

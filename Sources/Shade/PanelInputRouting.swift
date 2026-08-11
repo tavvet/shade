@@ -11,6 +11,10 @@ enum PanelInputRouting {
 
 @MainActor
 protocol PanelKeyHandler: AnyObject {
+    /// Records an explicit key event before it is routed to a panel shortcut
+    /// or the active terminal.
+    func panelDidReceiveUserInput()
+
     /// Return true if the event was handled and should not propagate.
     func panelHandleKey(_ event: NSEvent) -> Bool
 

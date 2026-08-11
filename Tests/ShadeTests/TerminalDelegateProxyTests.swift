@@ -4,6 +4,17 @@ import XCTest
 
 final class TerminalDelegateProxyTests: XCTestCase {
     @MainActor
+    func testExplicitShadeInputNotifiesRespawnPolicy() {
+        let view = ActivityTerminalView(frame: .zero)
+        var inputCount = 0
+        view.onUserInput = { inputCount += 1 }
+
+        view.sendUserInput([0x03])
+
+        XCTAssertEqual(inputCount, 1)
+    }
+
+    @MainActor
     func testHandledVisualBellSuppressesForwardedAudibleBell() {
         let forward = BellRecordingDelegate()
         let proxy = TerminalDelegateProxy(forward: forward)

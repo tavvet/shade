@@ -17,8 +17,10 @@ final class TerminalProcessController: NSObject {
     var onPromptMark: (([UInt8], Int) -> Void)?
     var onTitleChange: ((String) -> Void)?
     var onCwdChange: ((String) -> Void)?
+    var onUserInput: (() -> Void)?
 
     private let delegateProxy: TerminalDelegateProxy
+    private let activityView: ActivityTerminalView
     private var didPadInitialPrompt = false
 
     override init() {
@@ -26,6 +28,7 @@ final class TerminalProcessController: NSObject {
         shellName = (shellPath as NSString).lastPathComponent
 
         let activityView = ActivityTerminalView(frame: .zero)
+        self.activityView = activityView
         view = activityView
         delegateProxy = TerminalDelegateProxy(forward: activityView.terminalDelegate)
         super.init()
@@ -40,6 +43,9 @@ final class TerminalProcessController: NSObject {
         }
         activityView.onData = { [weak self] in
             MainActor.assumeIsolated { self?.onActivity?() }
+        }
+        activityView.onUserInput = { [weak self] in
+            MainActor.assumeIsolated { self?.onUserInput?() }
         }
 
         let terminal = view.getTerminal()
@@ -91,6 +97,17 @@ final class TerminalProcessController: NSObject {
         if isRunning {
             kill(shellPid, SIGTERM)
         }
+    }
+
+    func sendUserInput(_ bytes: [UInt8]) {
+        activityView.sendUserInput(bytes)
+    }
+
+    func showRespawnStoppedNotice() {
+        view.feed(
+            text: "\r\n[Shade] Shell exited repeatedly; automatic restart stopped. "
+                + "Press ⌘W to retry.\r\n"
+        )
     }
 
     private func padCursorToBottom() {

@@ -20,6 +20,10 @@ final class TerminalSession {
     /// The notification coordinator uses it to post while Shade is hidden.
     var onCommandFinish: ((TimeInterval, Int?, String) -> Void)?
 
+    /// Invoked before locally generated terminal input is sent to the shell.
+    /// The tab controller uses it to re-arm its one-shot automatic respawn.
+    var onUserInput: (() -> Void)?
+
     private let process: TerminalProcessController
     private let presentation: TerminalPresentationState
     private var promptHistory = TerminalPromptHistory()
@@ -94,6 +98,7 @@ final class TerminalSession {
         }
         process.onTitleChange = { [weak self] in self?.presentation.setOscTitle($0) }
         process.onCwdChange = { [weak self] in self?.contextTracker.updateCwd($0) }
+        process.onUserInput = { [weak self] in self?.onUserInput?() }
         apply(Preferences.load())
     }
 
@@ -107,6 +112,18 @@ final class TerminalSession {
 
     func terminate() {
         process.terminate()
+    }
+
+    func sendUserInput(_ bytes: [UInt8]) {
+        process.sendUserInput(bytes)
+    }
+
+    /// Keep the final, terminated tab visible when its automatic replacement
+    /// exits before receiving user input. The notice gives the user a recovery
+    /// path while avoiding another automatic process launch.
+    func showRespawnStoppedNotice() {
+        presentation.setOscTitle("shell exited")
+        process.showRespawnStoppedNotice()
     }
 
     private func recordPromptMark(payload: [UInt8], row: Int) {
