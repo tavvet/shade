@@ -90,7 +90,6 @@ final class TerminalPanelContentController {
 
     /// Returns keyboard focus after an inline tab rename or app activation.
     func focusActiveTerminal() {
-        guard let view = terminals.activeSession?.view else { return }
-        terminals.containerView.window?.makeFirstResponder(view)
+        terminals.focusActiveSession()
     }
 }
