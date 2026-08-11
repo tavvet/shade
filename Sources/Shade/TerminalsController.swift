@@ -7,8 +7,9 @@ final class TerminalsController {
     private let viewHost: TerminalViewHost
     var containerView: NSView { viewHost.containerView }
 
-    private(set) var sessions: [TerminalSession] = []
-    private(set) var activeIndex: Int = -1
+    private var tabs = TerminalTabStore<TerminalSession>()
+    var sessions: [TerminalSession] { tabs.sessions }
+    var activeIndex: Int { tabs.activeIndex }
 
     /// Consumed by the notification coordinator; forwarded from each session's
     /// `onCommandFinish`.
@@ -31,7 +32,7 @@ final class TerminalsController {
     /// tab when the shell hasn't installed Shade's OSC 133 integration. All fast,
     /// in-process reads.
     private func pollOnce() {
-        for session in sessions { session.refreshContext() }
+        for session in tabs.sessions { session.refreshContext() }
         activeSession?.fallbackRefreshGitStatusIfNeeded()
     }
 
@@ -48,12 +49,11 @@ final class TerminalsController {
     }
 
     var activeSession: TerminalSession? {
-        guard sessions.indices.contains(activeIndex) else { return nil }
-        return sessions[activeIndex]
+        tabs.activeSession
     }
 
     func ensureAtLeastOneSession() {
-        if sessions.isEmpty { newSession() }
+        if tabs.isEmpty { newSession() }
     }
 
     @discardableResult
@@ -79,8 +79,8 @@ final class TerminalsController {
         session.onUserInput = { [weak self] in
             self?.automaticRespawnLimiter.reset()
         }
-        sessions.append(session)
-        select(at: sessions.count - 1)
+        let index = tabs.append(session)
+        select(at: index)
         return session
     }
 
@@ -97,8 +97,8 @@ final class TerminalsController {
     }
 
     private func sessionDidExit(_ session: TerminalSession) {
-        guard let index = sessions.firstIndex(where: { $0 === session }) else { return }
-        if sessions.count == 1,
+        guard let index = tabs.index(of: session) else { return }
+        if tabs.sessions.count == 1,
            !automaticRespawnLimiter.shouldAllowRespawn() {
             session.showRespawnStoppedNotice()
             return
@@ -107,19 +107,15 @@ final class TerminalsController {
     }
 
     private func close(at index: Int, origin: CloseOrigin) {
-        guard sessions.indices.contains(index) else { return }
+        guard let closing = tabs.remove(at: index) else { return }
         if origin == .userAction {
             automaticRespawnLimiter.reset()
         }
-        let closing = sessions.remove(at: index)
         closing.terminate()
-        if sessions.isEmpty {
-            activeIndex = -1
+        if tabs.isEmpty {
             newSession()       // always keep at least one
         } else {
-            let newActive = min(activeIndex >= index ? activeIndex - 1 : activeIndex, sessions.count - 1)
-            activeIndex = max(0, newActive)
-            select(at: activeIndex)
+            select(at: tabs.activeIndex)
         }
     }
 
@@ -129,12 +125,11 @@ final class TerminalsController {
     }
 
     func select(at index: Int) {
-        guard sessions.indices.contains(index) else { return }
-        let session = sessions[index]
+        guard let session = tabs.session(at: index) else { return }
         let v = session.view
         viewHost.show(v)
-        activeIndex = index
-        for (i, s) in sessions.enumerated() { s.setActive(i == index) }
+        tabs.select(at: index)
+        for (i, s) in tabs.sessions.enumerated() { s.setActive(i == index) }
         session.start()
         // Refresh cwd/branch now and let the coordinator decide whether to
         // re-run git status (cwd change → strong, unchanged cwd within
@@ -150,24 +145,23 @@ final class TerminalsController {
     }
 
     func selectNext() {
-        guard !sessions.isEmpty else { return }
-        select(at: (activeIndex + 1) % sessions.count)
+        guard let index = tabs.nextIndex else { return }
+        select(at: index)
     }
 
     func selectPrev() {
-        guard !sessions.isEmpty else { return }
-        select(at: (activeIndex - 1 + sessions.count) % sessions.count)
+        guard let index = tabs.previousIndex else { return }
+        select(at: index)
     }
 
     /// Assigns (or clears, when `name` is empty/whitespace) the user title of the
     /// tab at `index`. The session posts `titleDidChange`, refreshing the bar.
     func renameSession(at index: Int, to name: String) {
-        guard sessions.indices.contains(index) else { return }
-        sessions[index].setUserTitle(name)
+        tabs.session(at: index)?.setUserTitle(name)
     }
 
     func applyToAll(_ prefs: Preferences) {
-        for session in sessions {
+        for session in tabs.sessions {
             session.apply(prefs)
         }
     }
