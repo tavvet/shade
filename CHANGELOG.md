@@ -17,6 +17,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Fixed
 
+- Preserve custom and unset `ZDOTDIR` semantics across every zsh startup stage
+  when shell enrichment is enabled.
 - Preserve the last successful Git working-tree status when a refresh command
   fails instead of temporarily presenting the repository as clean.
 - Apply preferences changed via `defaults` to existing terminals, blur and all
