@@ -156,8 +156,10 @@ abbreviated current working directory (e.g. `1 · ~/projects/shade`).
 Double-click a tab (or right-click → Rename) to pin a fixed name instead; an
 empty name or Reset Name restores the automatic title.
 
-Closing the last tab opens a fresh one — the panel always has at least one
-live shell.
+Closing the last tab opens a fresh one. If that replacement shell exits before
+receiving user input (for example because `$SHELL` is invalid or a startup file
+calls `exit`), Shade stops the automatic restart loop and leaves recovery
+instructions in the terminal.
 
 ### Other shortcuts
 

@@ -60,13 +60,15 @@ final class DropdownPanel: NSPanel {
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown,
            !PanelInputRouting.isEditingText(firstResponder),
-           let input = PanelTerminalInputResolver.resolve(
-               keyCode: event.keyCode,
-               modifierFlags: event.modifierFlags
-           ),
            let handler = keyHandler {
-            handler.panelHandleTerminalInput(input)
-            return
+            handler.panelDidReceiveUserInput()
+            if let input = PanelTerminalInputResolver.resolve(
+                keyCode: event.keyCode,
+                modifierFlags: event.modifierFlags
+            ) {
+                handler.panelHandleTerminalInput(input)
+                return
+            }
         }
         super.sendEvent(event)
     }

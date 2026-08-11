@@ -17,6 +17,7 @@ final class TerminalsController {
     static let tabsChanged = Notification.Name("ShadeTerminalsTabsChanged")
 
     private var cwdTimer: Timer?
+    private var automaticRespawnLimiter = AutomaticSessionRespawnLimiter()
 
     init() {
         containerView.translatesAutoresizingMaskIntoConstraints = false
@@ -72,12 +73,13 @@ final class TerminalsController {
         // the controller alive on its own.
         session.onExit = { [weak self, weak session] in
             guard let self, let session else { return }
-            if let index = self.sessions.firstIndex(where: { $0 === session }) {
-                self.close(at: index)
-            }
+            self.sessionDidExit(session)
         }
         session.onCommandFinish = { [weak self] duration, exitCode, cwd in
             self?.commandFinishHandler?(duration, exitCode, cwd)
+        }
+        session.onUserInput = { [weak self] in
+            self?.automaticRespawnLimiter.reset()
         }
         sessions.append(session)
         select(at: sessions.count - 1)
@@ -88,8 +90,29 @@ final class TerminalsController {
         close(at: activeIndex)
     }
 
+    func noteUserInput() {
+        automaticRespawnLimiter.reset()
+    }
+
     func close(at index: Int) {
+        close(at: index, origin: .userAction)
+    }
+
+    private func sessionDidExit(_ session: TerminalSession) {
+        guard let index = sessions.firstIndex(where: { $0 === session }) else { return }
+        if sessions.count == 1,
+           !automaticRespawnLimiter.shouldAllowRespawn() {
+            session.showRespawnStoppedNotice()
+            return
+        }
+        close(at: index, origin: .processExit)
+    }
+
+    private func close(at index: Int, origin: CloseOrigin) {
         guard sessions.indices.contains(index) else { return }
+        if origin == .userAction {
+            automaticRespawnLimiter.reset()
+        }
         let closing = sessions.remove(at: index)
         closing.terminate()
         if sessions.isEmpty {
@@ -100,6 +123,11 @@ final class TerminalsController {
             activeIndex = max(0, newActive)
             select(at: activeIndex)
         }
+    }
+
+    private enum CloseOrigin: Equatable {
+        case userAction
+        case processExit
     }
 
     func select(at index: Int) {
@@ -150,5 +178,23 @@ final class TerminalsController {
         for session in sessions {
             session.apply(prefs)
         }
+    }
+}
+
+/// Allows one automatic replacement of the last session. Another automatic
+/// respawn is permitted only after explicit user input, so a shell that exits
+/// during startup can never create an unbounded fork/exit loop regardless of
+/// how long its startup files take.
+struct AutomaticSessionRespawnLimiter {
+    private var hasAutomaticRespawned = false
+
+    mutating func shouldAllowRespawn() -> Bool {
+        guard !hasAutomaticRespawned else { return false }
+        hasAutomaticRespawned = true
+        return true
+    }
+
+    mutating func reset() {
+        hasAutomaticRespawned = false
     }
 }

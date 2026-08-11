@@ -70,10 +70,21 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
 /// runs for hidden sessions too, unlike display-driven delegate callbacks.
 final class ActivityTerminalView: LocalProcessTerminalView {
     var onData: (() -> Void)?
+    var onUserInput: (() -> Void)?
 
     override func dataReceived(slice: ArraySlice<UInt8>) {
         onData?()
         super.dataReceived(slice: slice)
+    }
+
+    override func paste(_ sender: Any) {
+        onUserInput?()
+        super.paste(sender)
+    }
+
+    func sendUserInput(_ bytes: [UInt8]) {
+        onUserInput?()
+        send(bytes)
     }
 
     override func viewDidMoveToWindow() {
@@ -89,7 +100,7 @@ final class ActivityTerminalView: LocalProcessTerminalView {
         guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
               !urls.isEmpty else { return false }
         let text = urls.map { Self.shellQuoted($0.path) }.joined(separator: " ") + " "
-        send(Array(text.utf8))
+        sendUserInput(Array(text.utf8))
         return true
     }
 

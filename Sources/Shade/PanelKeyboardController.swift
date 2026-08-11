@@ -84,6 +84,10 @@ final class PanelKeyboardController: PanelKeyHandler {
         self.terminals = terminals
     }
 
+    func panelDidReceiveUserInput() {
+        terminals.noteUserInput()
+    }
+
     func panelHandleKey(_ event: NSEvent) -> Bool {
         guard let shortcut = PanelShortcutResolver.resolve(
             keyCode: event.keyCode,
@@ -97,24 +101,25 @@ final class PanelKeyboardController: PanelKeyHandler {
     }
 
     func panelHandleTerminalInput(_ input: PanelTerminalInput) {
-        guard let view = terminals.activeSession?.view else { return }
+        guard let session = terminals.activeSession else { return }
         switch input {
         case .bytes(let bytes):
-            view.send(bytes)
+            session.sendUserInput(bytes)
         case .selection(let direction, let byWord):
-            view.extendKeyboardSelection(direction: direction.swiftTermDirection, byWord: byWord)
+            session.view.extendKeyboardSelection(direction: direction.swiftTermDirection, byWord: byWord)
         }
     }
 
     /// Copies the terminal selection and removes the corresponding number of
     /// characters to the left of the shell cursor using DEL bytes.
     func cutSelection() {
-        guard let view = terminals.activeSession?.view,
-              let text = view.shadeSelectedText() else { return }
+        guard let session = terminals.activeSession,
+              let text = session.view.shadeSelectedText() else { return }
+        let view = session.view
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
-        view.send([UInt8](repeating: 0x7F, count: text.count))
+        session.sendUserInput([UInt8](repeating: 0x7F, count: text.count))
         view.clearKeyboardSelection()
     }
 
@@ -163,7 +168,7 @@ final class PanelKeyboardController: PanelKeyHandler {
         let rows = session.view.getTerminal().rows
         let lastRow = max(1, rows)
         session.view.feed(text: "\u{1B}[2J\u{1B}[\(lastRow);1H")
-        session.view.send([0x0D])
+        session.sendUserInput([0x0D])
     }
 }
 
