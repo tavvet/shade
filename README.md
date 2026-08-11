@@ -429,8 +429,10 @@ Sources/Shade/
 ├── CommandNotificationCoordinator.swift  Completion-event notification policy/wiring
 ├── DiagnosticsWindow.swift  Read-only state snapshot, copy-paste for bug reports
 ├── DropdownPanel.swift      NSPanel lifecycle, slide animation and event dispatch
-├── GitInfo.swift            Branch from .git/HEAD, status via git subprocess
+├── GitInfo.swift            Git working-tree status aggregation and parsing
+├── GitProcessRunner.swift   Cancellation-aware asynchronous Git subprocesses
 ├── GitRefreshCoordinator.swift  Event-driven, debounced git-status scheduler
+├── GitRepository.swift      Filesystem-only repository discovery and HEAD reading
 ├── Hotkeys.swift            KeyboardShortcuts.Name declarations (toggleShade)
 ├── KeyCodes.swift           Layout-agnostic keyCode → ASCII mapping
 ├── PanelInputRouting.swift  Responder-chain guard + panel input contract
