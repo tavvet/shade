@@ -110,7 +110,7 @@ private final class LoginItemManagerStub: LoginItemManaging {
 private final class NotificationAuthorizationRequesterSpy: NotificationAuthorizationRequesting {
     private(set) var requestCount = 0
 
-    func requestAuthorization() {
+    func requestAuthorizationIfNeeded() {
         requestCount += 1
     }
 }

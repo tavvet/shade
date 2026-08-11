@@ -211,7 +211,9 @@ apply on the next toggle.
 ### Via `defaults` (CLI)
 
 The Settings window is the easy path; for headless / dotfiles use the same
-keys via `defaults`. Restart Shade or toggle the panel to apply.
+keys via `defaults`. Toggle the panel to apply the full updated configuration to
+the existing tabs. Enabling command notifications this way asks for macOS
+permission the next time the panel is shown.
 
 ```sh
 # Layout

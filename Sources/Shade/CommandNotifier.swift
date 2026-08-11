@@ -15,12 +15,6 @@ final class CommandNotifier: NSObject {
         UNUserNotificationCenter.current().delegate = self
     }
 
-    /// Ask for permission — call when the user turns the feature on, the standard
-    /// "request in response to a user action" pattern. Granted permission persists.
-    func requestAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
-    }
-
     func post(exitCode: Int?, duration: TimeInterval, cwd: String) {
         let content = UNMutableNotificationContent()
         let ok = (exitCode ?? 0) == 0

@@ -15,6 +15,11 @@ final class DropdownPanel: NSPanel {
     /// NSApp.activate hasn't fully landed yet.
     var onBecomeKey: (() -> Void)?
 
+    /// Passes the freshly loaded preferences to the app before the panel is
+    /// laid out and shown, so external `defaults write` changes reach every
+    /// feature rather than only the panel frame and animation.
+    var onWillShow: ((Preferences) -> Void)?
+
     /// Fired when the panel slides on-screen / off-screen. The app uses these
     /// to resume / pause the per-second context poll, so a hidden panel does no
     /// background cwd / git / process work.
@@ -93,6 +98,7 @@ final class DropdownPanel: NSPanel {
     func show() {
         let prefs = Preferences.load()
         apply(prefs)
+        onWillShow?(prefs)
         guard let screen = prefs.resolvedScreen() else { return }
         let finalFrame = prefs.dropdownFrame(on: screen)
         let hiddenFrame = NSRect(x: finalFrame.minX,
