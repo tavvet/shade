@@ -96,12 +96,14 @@ final class PanelKeyboardController: PanelKeyHandler {
         return true
     }
 
-    func panelSendToActiveTerminal(_ bytes: [UInt8]) {
-        terminals.activeSession?.view.send(bytes)
-    }
-
-    func panelExtendKeyboardSelection(direction: TerminalView.ShadeKeyboardDirection, byWord: Bool) {
-        terminals.activeSession?.view.extendKeyboardSelection(direction: direction, byWord: byWord)
+    func panelHandleTerminalInput(_ input: PanelTerminalInput) {
+        guard let view = terminals.activeSession?.view else { return }
+        switch input {
+        case .bytes(let bytes):
+            view.send(bytes)
+        case .selection(let direction, let byWord):
+            view.extendKeyboardSelection(direction: direction.swiftTermDirection, byWord: byWord)
+        }
     }
 
     /// Copies the terminal selection and removes the corresponding number of
@@ -162,5 +164,18 @@ final class PanelKeyboardController: PanelKeyHandler {
         let lastRow = max(1, rows)
         session.view.feed(text: "\u{1B}[2J\u{1B}[\(lastRow);1H")
         session.view.send([0x0D])
+    }
+}
+
+private extension PanelSelectionDirection {
+    var swiftTermDirection: TerminalView.ShadeKeyboardDirection {
+        switch self {
+        case .left:      return .left
+        case .right:     return .right
+        case .up:        return .up
+        case .down:      return .down
+        case .lineStart: return .lineStart
+        case .lineEnd:   return .lineEnd
+        }
     }
 }

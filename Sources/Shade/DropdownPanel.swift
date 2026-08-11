@@ -1,24 +1,4 @@
 import AppKit
-import SwiftTerm
-
-enum PanelInputRouting {
-    /// An `NSTextField` installs an `NSTextView` field editor as the window's
-    /// first responder. While that editor is active, terminal-specific key
-    /// translations and edit commands must stay on the normal responder chain.
-    static func isEditingText(_ responder: NSResponder?) -> Bool {
-        responder is NSTextView
-    }
-}
-
-@MainActor
-protocol PanelKeyHandler: AnyObject {
-    /// Return true if the event was handled and should not propagate.
-    func panelHandleKey(_ event: NSEvent) -> Bool
-    /// Forward raw bytes to the currently active terminal session (PTY input).
-    func panelSendToActiveTerminal(_ bytes: [UInt8])
-    /// Extend the keyboard selection of the active session in `direction`.
-    func panelExtendKeyboardSelection(direction: TerminalView.ShadeKeyboardDirection, byWord: Bool)
-}
 
 /// Borderless panel that slides down from the top of the screen.
 /// Becomes the key window when shown so keyboard shortcuts route to us.
@@ -77,123 +57,18 @@ final class DropdownPanel: NSPanel {
         return super.performKeyEquivalent(with: event)
     }
 
-    /// Intercept keyDown so we can:
-    /// * Translate Control+letter into the canonical control byte regardless of the
-    ///   current keyboard layout (otherwise SwiftTerm applies the control mask to whatever
-    ///   Cyrillic/Greek/etc character is produced, which the shell can't parse).
-    /// * Translate Option+Delete into the readline backward-kill-word escape (`ESC DEL`),
-    ///   which Terminal.app sends by default. Other Option+key combinations are left alone
-    ///   so SwiftTerm can still produce ´/©/etc.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown,
            !PanelInputRouting.isEditingText(firstResponder),
+           let input = PanelTerminalInputResolver.resolve(
+               keyCode: event.keyCode,
+               modifierFlags: event.modifierFlags
+           ),
            let handler = keyHandler {
-            if let bytes = controlBytes(for: event) {
-                handler.panelSendToActiveTerminal(bytes)
-                return
-            }
-            if let bytes = optionDeleteBytes(for: event) {
-                handler.panelSendToActiveTerminal(bytes)
-                return
-            }
-            if let bytes = homeEndBytes(for: event) {
-                handler.panelSendToActiveTerminal(bytes)
-                return
-            }
-            if let bytes = pageKeyBytes(for: event) {
-                handler.panelSendToActiveTerminal(bytes)
-                return
-            }
-            if let (direction, byWord) = keyboardSelectionAction(for: event) {
-                handler.panelExtendKeyboardSelection(direction: direction, byWord: byWord)
-                return
-            }
+            handler.panelHandleTerminalInput(input)
+            return
         }
         super.sendEvent(event)
-    }
-
-    private func controlBytes(for event: NSEvent) -> [UInt8]? {
-        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
-        let flags = event.modifierFlags.intersection(userKeys)
-        let control: NSEvent.ModifierFlags = [.control]
-        let controlShift: NSEvent.ModifierFlags = [.control, .shift]
-        guard flags == control || flags == controlShift else { return nil }
-        guard let byte = KeyCodes.controlByte(forKeyCode: event.keyCode) else { return nil }
-        return [byte]
-    }
-
-    /// Option+Delete → ESC DEL (readline backward-kill-word).
-    private func optionDeleteBytes(for event: NSEvent) -> [UInt8]? {
-        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
-        let flags = event.modifierFlags.intersection(userKeys)
-        guard flags == [.option] else { return nil }
-        // kVK_Delete is the Backspace key on Mac keyboards.
-        guard event.keyCode == KeyCodes.delete else { return nil }
-        return [0x1B, 0x7F]
-    }
-
-    /// Home / End → readline ⌃A / ⌃E. Stock SwiftTerm would send the function-key
-    /// escape (\e[H, \e[F, or \e[1~/4~ depending on mode), which only works if
-    /// the user's shell happens to bind that sequence to beginning-of-line. The
-    /// raw control byte works everywhere readline (and zle, fish, etc) is alive.
-    private func homeEndBytes(for event: NSEvent) -> [UInt8]? {
-        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
-        let flags = event.modifierFlags.intersection(userKeys)
-        guard flags.isEmpty else { return nil }    // shift+Home/End → selection (TODO)
-        switch event.keyCode {
-        case KeyCodes.home: return [0x01]   // Home → ⌃A
-        case KeyCodes.end:  return [0x05]   // End  → ⌃E
-        default:            return nil
-        }
-    }
-
-    /// Plain PageUp / PageDown are sent to the app as `ESC[5~` / `ESC[6~` (the
-    /// xterm convention) so full-screen programs can page. This matters most for
-    /// nano, which — unlike vim / less — never switches to the alternate screen
-    /// buffer (its text stays on screen after quit), so "is the app full-screen?"
-    /// can't be answered from the buffer. Stock SwiftTerm otherwise scrolls its
-    /// own viewport unless the app set DEC application-cursor mode, which desyncs
-    /// the screen from the app — the view pages locally while the app keeps drawing
-    /// at its own cursor, leaving stray characters behind. Scrollback stays
-    /// reachable with the trackpad / scroll wheel; modified PageUp/PageDown (Shift
-    /// etc.) keep their modifier and fall through to SwiftTerm untouched.
-    private func pageKeyBytes(for event: NSEvent) -> [UInt8]? {
-        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
-        guard event.modifierFlags.intersection(userKeys).isEmpty else { return nil }
-        switch event.keyCode {
-        case KeyCodes.pageUp:   return [0x1B, 0x5B, 0x35, 0x7E]   // ESC [ 5 ~
-        case KeyCodes.pageDown: return [0x1B, 0x5B, 0x36, 0x7E]   // ESC [ 6 ~
-        default:                return nil
-        }
-    }
-
-    /// Shift+arrow (and ⌥⇧+arrow for word jumps) drive in-buffer keyboard selection.
-    /// Plain arrow keys (no modifier) are NOT intercepted here — they flow through to
-    /// SwiftTerm so the shell still gets its history / cursor navigation, and the
-    /// existing `selection.active = false` at the top of SwiftTerm's `keyDown` clears
-    /// the selection automatically.
-    private func keyboardSelectionAction(for event: NSEvent) -> (TerminalView.ShadeKeyboardDirection, Bool)? {
-        // Arrow keys carry .function and .numericPad in their modifier flags on macOS;
-        // mask those off so we only compare the explicit user-held modifier keys.
-        let userKeys: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
-        let flags = event.modifierFlags.intersection(userKeys)
-        let shift: NSEvent.ModifierFlags = [.shift]
-        let optShift: NSEvent.ModifierFlags = [.option, .shift]
-        let cmdShift: NSEvent.ModifierFlags = [.command, .shift]
-        guard flags == shift || flags == optShift || flags == cmdShift else { return nil }
-
-        let direction: TerminalView.ShadeKeyboardDirection
-        switch (event.keyCode, flags == cmdShift) {
-        case (KeyCodes.leftArrow,  false): direction = .left
-        case (KeyCodes.rightArrow, false): direction = .right
-        case (KeyCodes.upArrow,    false): direction = .up
-        case (KeyCodes.downArrow,  false): direction = .down
-        case (KeyCodes.leftArrow,  true):  direction = .lineStart   // ⌘⇧← → select to beginning of line
-        case (KeyCodes.rightArrow, true):  direction = .lineEnd     // ⌘⇧→ → select to end of line
-        default: return nil
-        }
-        let byWord = flags == optShift
-        return (direction, byWord)
     }
 
     override func animationResizeTime(_ newWindow: NSRect) -> TimeInterval {
