@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.18] — 2026-08-11
+
 ### Changed
 
 - Redesign Settings as a compact sidebar interface with focused pages for
@@ -402,7 +404,8 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.17...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.18...HEAD
+[0.1.18]: https://github.com/tavvet/shade/releases/tag/v0.1.18
 [0.1.17]: https://github.com/tavvet/shade/releases/tag/v0.1.17
 [0.1.16]: https://github.com/tavvet/shade/releases/tag/v0.1.16
 [0.1.15]: https://github.com/tavvet/shade/releases/tag/v0.1.15
