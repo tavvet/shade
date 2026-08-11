@@ -1,7 +1,6 @@
 import AppKit
 
-/// User-tunable layout and appearance for the dropdown panel.
-/// Persisted via standard `defaults`; reloaded on every show()/notification so CLI edits apply instantly.
+/// Value snapshot of user-tunable layout, behavior and terminal appearance.
 struct Preferences: Equatable {
     var widthFraction: CGFloat
     var heightFraction: CGFloat
@@ -96,117 +95,6 @@ struct Preferences: Equatable {
         return clampFontSize(current + delta)
     }
 
-    static func load(from store: UserDefaults = .standard) -> Preferences {
-        var prefs = defaults
-        if store.object(forKey: Key.widthFraction) != nil {
-            prefs.widthFraction = clampFraction(store.double(forKey: Key.widthFraction))
-        }
-        if store.object(forKey: Key.heightFraction) != nil {
-            prefs.heightFraction = clampFraction(store.double(forKey: Key.heightFraction))
-        }
-        if let raw = store.string(forKey: Key.horizontalAlignment),
-           let value = HorizontalAlignment(rawValue: raw) {
-            prefs.horizontalAlignment = value
-        }
-        if let raw = store.string(forKey: Key.screenChoice),
-           let value = ScreenChoice(rawValue: raw) {
-            prefs.screenChoice = value
-        }
-        if store.object(forKey: Key.fontSize) != nil {
-            prefs.fontSize = clampFontSize(CGFloat(store.double(forKey: Key.fontSize)))
-        }
-        if let raw = store.string(forKey: Key.fontName) {
-            prefs.fontName = raw
-        }
-        if store.object(forKey: Key.backgroundOpacity) != nil {
-            prefs.backgroundOpacity = min(max(store.double(forKey: Key.backgroundOpacity), 0.3), 1.0)
-        }
-        if store.object(forKey: Key.animationDuration) != nil {
-            prefs.animationDuration = min(max(store.double(forKey: Key.animationDuration), 0.0), 0.5)
-        }
-        if let raw = store.string(forKey: Key.linkHighlightHex),
-           Self.parseHex(raw) != nil {
-            prefs.linkHighlightHex = Self.normalize(hex: raw)
-        }
-        if store.object(forKey: Key.backgroundBlur) != nil {
-            prefs.backgroundBlur = store.bool(forKey: Key.backgroundBlur)
-        }
-        if store.object(forKey: Key.notifyOnCommandFinish) != nil {
-            prefs.notifyOnCommandFinish = store.bool(forKey: Key.notifyOnCommandFinish)
-        }
-        if store.object(forKey: Key.notifyThresholdSeconds) != nil {
-            prefs.notifyThresholdSeconds = min(max(store.double(forKey: Key.notifyThresholdSeconds), 1), 600)
-        }
-        if store.object(forKey: Key.hideOnFocusLoss) != nil {
-            prefs.hideOnFocusLoss = store.bool(forKey: Key.hideOnFocusLoss)
-        }
-        if let raw = store.string(forKey: Key.blurMaterial),
-           let value = BlurMaterial(rawValue: raw) {
-            prefs.blurMaterial = value
-        }
-        if store.object(forKey: Key.newTabInheritsCwd) != nil {
-            prefs.newTabInheritsCwd = store.bool(forKey: Key.newTabInheritsCwd)
-        }
-        if store.object(forKey: Key.shellEnrichment) != nil {
-            prefs.shellEnrichment = store.bool(forKey: Key.shellEnrichment)
-        }
-        if let raw = store.string(forKey: Key.cursorShape),
-           let value = CursorShape(rawValue: raw) {
-            prefs.cursorShape = value
-        }
-        if store.object(forKey: Key.cursorBlink) != nil {
-            prefs.cursorBlink = store.bool(forKey: Key.cursorBlink)
-        }
-        if store.object(forKey: Key.visualBell) != nil {
-            prefs.visualBell = store.bool(forKey: Key.visualBell)
-        }
-        return prefs
-    }
-
-    func save(to store: UserDefaults = .standard) {
-        store.set(widthFraction, forKey: Key.widthFraction)
-        store.set(heightFraction, forKey: Key.heightFraction)
-        store.set(horizontalAlignment.rawValue, forKey: Key.horizontalAlignment)
-        store.set(screenChoice.rawValue, forKey: Key.screenChoice)
-        store.set(fontSize, forKey: Key.fontSize)
-        store.set(fontName, forKey: Key.fontName)
-        store.set(backgroundOpacity, forKey: Key.backgroundOpacity)
-        store.set(animationDuration, forKey: Key.animationDuration)
-        store.set(linkHighlightHex, forKey: Key.linkHighlightHex)
-        store.set(backgroundBlur, forKey: Key.backgroundBlur)
-        store.set(notifyOnCommandFinish, forKey: Key.notifyOnCommandFinish)
-        store.set(notifyThresholdSeconds, forKey: Key.notifyThresholdSeconds)
-        store.set(hideOnFocusLoss, forKey: Key.hideOnFocusLoss)
-        store.set(blurMaterial.rawValue, forKey: Key.blurMaterial)
-        store.set(newTabInheritsCwd, forKey: Key.newTabInheritsCwd)
-        store.set(shellEnrichment, forKey: Key.shellEnrichment)
-        store.set(cursorShape.rawValue, forKey: Key.cursorShape)
-        store.set(cursorBlink, forKey: Key.cursorBlink)
-        store.set(visualBell, forKey: Key.visualBell)
-    }
-
-    enum Key {
-        static let widthFraction = "widthFraction"
-        static let heightFraction = "heightFraction"
-        static let horizontalAlignment = "horizontalAlignment"
-        static let screenChoice = "screenChoice"
-        static let fontSize = "fontSize"
-        static let fontName = "fontName"
-        static let backgroundOpacity = "backgroundOpacity"
-        static let animationDuration = "animationDuration"
-        static let linkHighlightHex = "linkHighlightHex"
-        static let backgroundBlur = "backgroundBlur"
-        static let notifyOnCommandFinish = "notifyOnCommandFinish"
-        static let notifyThresholdSeconds = "notifyThresholdSeconds"
-        static let hideOnFocusLoss = "hideOnFocusLoss"
-        static let blurMaterial = "blurMaterial"
-        static let newTabInheritsCwd = "newTabInheritsCwd"
-        static let shellEnrichment = "shellEnrichment"
-        static let cursorShape = "cursorShape"
-        static let cursorBlink = "cursorBlink"
-        static let visualBell = "visualBell"
-    }
-
     /// Parses a 6-char `RRGGBB` (with or without leading `#`) into an NSColor.
     /// Returns nil for any other shape — caller should fall back to a default.
     static func parseHex(_ raw: String) -> NSColor? {
@@ -221,15 +109,6 @@ struct Preferences: Equatable {
         )
     }
 
-    private static func normalize(hex: String) -> String {
-        var s = hex.uppercased()
-        if s.hasPrefix("#") { s.removeFirst() }
-        return s
-    }
-
-    private static func clampFraction(_ value: Double) -> CGFloat {
-        CGFloat(min(max(value, 0.1), 1.0))
-    }
 }
 
 extension Preferences {

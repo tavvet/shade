@@ -9,7 +9,7 @@ final class PreferencesTests: XCTestCase {
     }
 
     func testLoadReturnsDefaultsWhenStoreIsEmpty() {
-        let prefs = Preferences.load(from: freshStore())
+        let prefs = PreferencesStore(userDefaults: freshStore()).load()
         XCTAssertEqual(prefs.widthFraction, Preferences.defaults.widthFraction)
         XCTAssertEqual(prefs.heightFraction, Preferences.defaults.heightFraction)
         XCTAssertEqual(prefs.horizontalAlignment, .center)
@@ -28,13 +28,13 @@ final class PreferencesTests: XCTestCase {
 
     func testLoadReadsOverriddenValues() {
         let store = freshStore()
-        store.set(0.5, forKey: Preferences.Key.widthFraction)
-        store.set("left", forKey: Preferences.Key.horizontalAlignment)
-        store.set("main", forKey: Preferences.Key.screenChoice)
-        store.set("Menlo", forKey: Preferences.Key.fontName)
-        store.set(14, forKey: Preferences.Key.fontSize)
+        store.set(0.5, forKey: PreferencesStore.Key.widthFraction)
+        store.set("left", forKey: PreferencesStore.Key.horizontalAlignment)
+        store.set("main", forKey: PreferencesStore.Key.screenChoice)
+        store.set("Menlo", forKey: PreferencesStore.Key.fontName)
+        store.set(14, forKey: PreferencesStore.Key.fontSize)
 
-        let prefs = Preferences.load(from: store)
+        let prefs = PreferencesStore(userDefaults: store).load()
         XCTAssertEqual(prefs.widthFraction, 0.5)
         XCTAssertEqual(prefs.horizontalAlignment, .left)
         XCTAssertEqual(prefs.screenChoice, .main)
@@ -65,44 +65,65 @@ final class PreferencesTests: XCTestCase {
         prefs.cursorBlink = true
         prefs.visualBell = true
 
-        prefs.save(to: store)
+        PreferencesStore(userDefaults: store).save(prefs)
 
-        XCTAssertEqual(Preferences.load(from: store), prefs)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load(), prefs)
+    }
+
+    func testSavingFontSizeDoesNotRewriteUnrelatedRawValues() {
+        let userDefaults = freshStore()
+        let store = PreferencesStore(userDefaults: userDefaults)
+        userDefaults.set("future-material", forKey: PreferencesStore.Key.blurMaterial)
+
+        store.saveFontSize(18)
+
+        XCTAssertEqual(userDefaults.double(forKey: PreferencesStore.Key.fontSize), 18)
+        XCTAssertEqual(
+            userDefaults.string(forKey: PreferencesStore.Key.blurMaterial),
+            "future-material"
+        )
     }
 
     func testBackgroundBlurReadsStoredValue() {
         let store = freshStore()
-        store.set(false, forKey: Preferences.Key.backgroundBlur)
-        XCTAssertFalse(Preferences.load(from: store).backgroundBlur)
+        store.set(false, forKey: PreferencesStore.Key.backgroundBlur)
+        XCTAssertFalse(PreferencesStore(userDefaults: store).load().backgroundBlur)
 
-        store.set(true, forKey: Preferences.Key.backgroundBlur)
-        XCTAssertTrue(Preferences.load(from: store).backgroundBlur)
+        store.set(true, forKey: PreferencesStore.Key.backgroundBlur)
+        XCTAssertTrue(PreferencesStore(userDefaults: store).load().backgroundBlur)
     }
 
     func testHideOnFocusLossReadsStoredValue() {
         let store = freshStore()
-        store.set(true, forKey: Preferences.Key.hideOnFocusLoss)
-        XCTAssertTrue(Preferences.load(from: store).hideOnFocusLoss)
+        store.set(true, forKey: PreferencesStore.Key.hideOnFocusLoss)
+        XCTAssertTrue(PreferencesStore(userDefaults: store).load().hideOnFocusLoss)
     }
 
     func testBlurMaterialReadsStoredValueAndFallsBack() {
         let store = freshStore()
-        store.set("sidebar", forKey: Preferences.Key.blurMaterial)
-        XCTAssertEqual(Preferences.load(from: store).blurMaterial, .sidebar)
-        store.set("bogus", forKey: Preferences.Key.blurMaterial)
-        XCTAssertEqual(Preferences.load(from: store).blurMaterial, Preferences.defaults.blurMaterial)
+        store.set("sidebar", forKey: PreferencesStore.Key.blurMaterial)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().blurMaterial, .sidebar)
+        store.set("bogus", forKey: PreferencesStore.Key.blurMaterial)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().blurMaterial, Preferences.defaults.blurMaterial)
     }
 
     func testNewTabInheritsCwdReadsStoredValue() {
         let store = freshStore()
-        store.set(true, forKey: Preferences.Key.newTabInheritsCwd)
-        XCTAssertTrue(Preferences.load(from: store).newTabInheritsCwd)
+        store.set(true, forKey: PreferencesStore.Key.newTabInheritsCwd)
+        XCTAssertTrue(PreferencesStore(userDefaults: store).load().newTabInheritsCwd)
     }
 
     func testCursorShapeReadsStoredValue() {
         let store = freshStore()
-        store.set("bar", forKey: Preferences.Key.cursorShape)
-        XCTAssertEqual(Preferences.load(from: store).cursorShape, .bar)
+        store.set("bar", forKey: PreferencesStore.Key.cursorShape)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().cursorShape, .bar)
+    }
+
+    func testLoadNormalizesValidLinkHighlightHex() {
+        let store = freshStore()
+        store.set("#ffcc00", forKey: PreferencesStore.Key.linkHighlightHex)
+
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().linkHighlightHex, "FFCC00")
     }
 
     func testCursorDECSCUSR() {
@@ -119,29 +140,29 @@ final class PreferencesTests: XCTestCase {
 
     func testFractionsAreClampedToValidRange() {
         let store = freshStore()
-        store.set(5.0, forKey: Preferences.Key.widthFraction)      // > 1.0
-        store.set(-0.5, forKey: Preferences.Key.heightFraction)    // < 0.1
-        let prefs = Preferences.load(from: store)
+        store.set(5.0, forKey: PreferencesStore.Key.widthFraction)      // > 1.0
+        store.set(-0.5, forKey: PreferencesStore.Key.heightFraction)    // < 0.1
+        let prefs = PreferencesStore(userDefaults: store).load()
         XCTAssertEqual(prefs.widthFraction, 1.0)
         XCTAssertEqual(prefs.heightFraction, 0.1)
     }
 
     func testOpacityIsClampedToValidRange() {
         let store = freshStore()
-        store.set(2.5, forKey: Preferences.Key.backgroundOpacity)
-        store.set(0.1, forKey: Preferences.Key.backgroundOpacity)  // < 0.3
-        var prefs = Preferences.load(from: store)
+        store.set(2.5, forKey: PreferencesStore.Key.backgroundOpacity)
+        store.set(0.1, forKey: PreferencesStore.Key.backgroundOpacity)  // < 0.3
+        var prefs = PreferencesStore(userDefaults: store).load()
         XCTAssertEqual(prefs.backgroundOpacity, 0.3)
 
-        store.set(2.5, forKey: Preferences.Key.backgroundOpacity)
-        prefs = Preferences.load(from: store)
+        store.set(2.5, forKey: PreferencesStore.Key.backgroundOpacity)
+        prefs = PreferencesStore(userDefaults: store).load()
         XCTAssertEqual(prefs.backgroundOpacity, 1.0)
     }
 
     func testUnknownEnumValueFallsBackToDefault() {
         let store = freshStore()
-        store.set("upside-down", forKey: Preferences.Key.horizontalAlignment)
-        let prefs = Preferences.load(from: store)
+        store.set("upside-down", forKey: PreferencesStore.Key.horizontalAlignment)
+        let prefs = PreferencesStore(userDefaults: store).load()
         XCTAssertEqual(prefs.horizontalAlignment, Preferences.defaults.horizontalAlignment)
     }
 

@@ -56,7 +56,7 @@ final class TerminalPanelContentController {
             terminalOverlay.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
         ])
 
-        let prefs = Preferences.load()
+        let prefs = PreferencesStore.standard.load()
         let blur = NSVisualEffectView()
         blur.material = prefs.blurMaterial.nsMaterial
         blur.blendingMode = .behindWindow

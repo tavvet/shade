@@ -78,14 +78,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Lays out the panel before the first shell starts so SwiftTerm computes
     /// its real row and column count instead of using its default buffer size.
     private func primePanelFrame() {
-        let prefs = Preferences.load()
+        let prefs = PreferencesStore.standard.load()
         guard let screen = prefs.resolvedScreen() else { return }
         panel.setFrame(prefs.dropdownFrame(on: screen), display: false)
         panel.contentView?.layoutSubtreeIfNeeded()
     }
 
     @objc private func preferencesDidChange() {
-        applyPreferences(Preferences.load())
+        applyPreferences(PreferencesStore.standard.load())
     }
 
     private func applyPreferences(_ preferences: Preferences) {
@@ -97,7 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Hide on a real app switch, but not during the transient resign-active
     /// event caused by opening one of Shade's own windows.
     @objc private func appDidResignActive() {
-        guard Preferences.load().hideOnFocusLoss, panel.isVisible else { return }
+        guard PreferencesStore.standard.load().hideOnFocusLoss, panel.isVisible else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self, !NSApp.isActive, self.panel.isVisible else { return }
             self.panel.hide()

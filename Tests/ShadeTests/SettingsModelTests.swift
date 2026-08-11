@@ -8,15 +8,15 @@ final class SettingsModelTests: XCTestCase {
             let store = UserDefaults(suiteName: suite)!
             defer { store.removePersistentDomain(forName: suite) }
 
-            store.set(13, forKey: Preferences.Key.fontSize)
+            store.set(13, forKey: PreferencesStore.Key.fontSize)
             let model = SettingsModel(store: store, openAtLogin: false)
 
-            store.set(14, forKey: Preferences.Key.fontSize)
+            store.set(14, forKey: PreferencesStore.Key.fontSize)
             NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
             XCTAssertEqual(model.preferences.fontSize, 14)
 
             model.preferences.visualBell.toggle()
-            XCTAssertEqual(store.double(forKey: Preferences.Key.fontSize), 14)
+            XCTAssertEqual(store.double(forKey: PreferencesStore.Key.fontSize), 14)
         }
     }
 
@@ -34,7 +34,7 @@ final class SettingsModelTests: XCTestCase {
             )
 
             model.preferences.notifyOnCommandFinish = true
-            XCTAssertTrue(store.bool(forKey: Preferences.Key.notifyOnCommandFinish))
+            XCTAssertTrue(store.bool(forKey: PreferencesStore.Key.notifyOnCommandFinish))
             XCTAssertEqual(requester.requestCount, 1)
 
             model.preferences.notifyThresholdSeconds = 45
@@ -60,7 +60,7 @@ final class SettingsModelTests: XCTestCase {
                 notificationAuthorizationRequester: requester
             )
 
-            store.set(true, forKey: Preferences.Key.notifyOnCommandFinish)
+            store.set(true, forKey: PreferencesStore.Key.notifyOnCommandFinish)
             NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
 
             XCTAssertTrue(model.preferences.notifyOnCommandFinish)

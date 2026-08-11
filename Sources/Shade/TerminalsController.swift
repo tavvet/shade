@@ -58,11 +58,13 @@ final class TerminalsController {
 
     @discardableResult
     func newSession() -> TerminalSession {
-        // TerminalSession.init already calls apply(Preferences.load()).
+        // TerminalSession.init already applies the persisted preferences.
         let session = TerminalSession()
         // ⌘T can open in the active tab's directory instead of $HOME. The first tab
         // and the last-tab respawn have no active session, so they keep $HOME.
-        if Preferences.load().newTabInheritsCwd, let cwd = activeSession?.cwd, !cwd.isEmpty {
+        if PreferencesStore.standard.load().newTabInheritsCwd,
+           let cwd = activeSession?.cwd,
+           !cwd.isEmpty {
             session.startupDirectory = cwd
         }
         // Close this tab when the shell exits (Ctrl-D / `exit` / crash).

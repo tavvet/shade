@@ -65,8 +65,8 @@ obvious fixes can skip straight to the implementation step.
   (a hidden constraint, an Apple-API quirk, a workaround for a specific bug).
 - `@MainActor` everywhere AppKit / SwiftUI is touched. Concurrency boundaries
   use `nonisolated` + `MainActor.assumeIsolated` (see existing examples).
-- New user-facing settings go through `Preferences` (UserDefaults) and get a
-  control in `SettingsWindow.swift`.
+- New user-facing settings extend the `Preferences` value model, persist through
+  `PreferencesStore`, and get a control on the appropriate settings page.
 - Pure logic (parsers, models, layout math) belongs in a module that's already
   covered by `Tests/ShadeTests/` — add a test alongside the change.
 

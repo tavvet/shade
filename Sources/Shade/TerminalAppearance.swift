@@ -17,7 +17,7 @@ enum TerminalAppearance {
 
     @discardableResult
     static func flashBell(in view: LocalProcessTerminalView) -> Bool {
-        guard Preferences.load().visualBell else { return false }
+        guard PreferencesStore.standard.load().visualBell else { return false }
         let flash = NSView(frame: view.bounds)
         flash.autoresizingMask = [.width, .height]
         flash.wantsLayer = true

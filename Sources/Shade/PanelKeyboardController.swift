@@ -153,11 +153,11 @@ final class PanelKeyboardController: PanelKeyHandler {
     }
 
     private func adjustFontSize(by delta: CGFloat?) {
-        let store = UserDefaults.standard
-        let current = Preferences.load(from: store).fontSize
+        let store = PreferencesStore.standard
+        let current = store.load().fontSize
         let target = Preferences.zoomedFontSize(from: current, delta: delta)
         guard target != current else { return }
-        store.set(target, forKey: Preferences.Key.fontSize)
+        store.saveFontSize(target)
         NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
     }
 
