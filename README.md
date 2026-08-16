@@ -18,6 +18,9 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Global hotkey** to toggle the panel (default `F12`, rebind in Settings).
 - **Slides** down from the top of the active screen, fades back up.
 - **Tabs** with `⌘T` / `⌘W` / `⌘1…9` / `⌃Tab` (macOS-standard).
+- **Saved SSH connections** — keep named servers or `~/.ssh/config` aliases in
+  Settings, open the searchable picker with `⌘⇧P`, or connect directly to
+  the first nine profiles with `⌘⇧1…9`.
 - **Tab titles** track the shell's current working directory (no `.zshrc`
   cooperation required), or double-click a tab to pin your own name.
 - **Tab status dots** — a red dot when a tab's last command exited non-zero
@@ -259,6 +262,28 @@ the Settings window.
 
 ---
 
+## Saved SSH connections
+
+Open **Settings → Connections** to add a server. A profile has a display name
+and host (or an alias from `~/.ssh/config`), plus optional username, port and
+identity-file overrides. Shade uses the system `/usr/bin/ssh` client, so
+ProxyJump, forwarding, keepalive and other advanced behavior stays in your
+normal SSH config. Passwords, passphrases and private-key contents are never
+stored by Shade.
+
+With the terminal panel open:
+
+- press `⌘⇧P` to search saved profiles by name, host, user, port or key path;
+- press `⌘⇧1`…`⌘⇧9` to connect to the corresponding profile directly;
+- reorder profiles in Settings to choose which server occupies each quick slot.
+
+Profiles are stored as a versioned JSON file at
+`~/Library/Application Support/Shade/connections.json`. Shade creates it with
+user-only (`0600`) permissions. Removing a profile does not modify
+`~/.ssh/config` or delete any key files.
+
+---
+
 ## Releases
 
 See [CHANGELOG.md](./CHANGELOG.md) for release notes.
@@ -427,6 +452,7 @@ Sources/Shade/
 ├── BranchBadge.swift        Floating git branch + status pill (SwiftUI)
 ├── CommandNotifier.swift    Command-finished notifications (OSC 133 C→D timing)
 ├── CommandNotificationCoordinator.swift  Completion-event notification policy/wiring
+├── ConnectionsSettingsView.swift  Saved SSH connection list and ordering controls
 ├── DiagnosticsWindow.swift  Read-only state snapshot, copy-paste for bug reports
 ├── DropdownPanel.swift      NSPanel lifecycle, slide animation and event dispatch
 ├── GitInfo.swift            Git working-tree status aggregation and parsing
@@ -451,15 +477,28 @@ Sources/Shade/
 ├── SettingsView.swift       Settings sidebar navigation and page switching
 ├── SettingsWindow.swift     Settings NSWindowController
 ├── ShortcutsSettingsView.swift  Global hotkey and keyboard reference form
+├── ProcessInvocation.swift  Structured executable and argument boundaries
 ├── TerminalSettingsView.swift  Shell, cursor and feedback settings form
 ├── ShellIntegration.swift   Opt-in ZDOTDIR injection — richer zsh completion + OSC 133
+├── SSHCommandBuilder.swift  Validated OpenSSH invocation construction
+├── SSHConnectionLaunch.swift  SSH profile → generic terminal launch configuration
+├── SSHConnectionPickerComponents.swift  Quick-picker rows and supporting states
+├── SSHConnectionPickerSearch.swift  Tokenized saved-connection filtering
+├── SSHConnectionPickerView.swift  Searchable keyboard-first connection picker
+├── SSHConnectionPickerWindow.swift  Lazy child-panel presentation and focus routing
+├── SSHConnectionsController.swift  Shared connection library state and actions
+├── SSHProfile.swift         Saved SSH profile model and validation
+├── SSHProfileEditor.swift   Add/edit connection sheet and draft parsing
+├── SSHProfileStore.swift    Private versioned JSON persistence
 ├── TabBar.swift             Tab-strip layout, scrolling and new-tab action
 ├── TabChip.swift            Individual tab rendering and inline rename state
 ├── TabsObservable.swift     Observable tab/session projection for SwiftUI
 ├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering
+├── TerminalCommandSequence.swift  One-PTY command → login-shell wrapper
 ├── TerminalContextPoller.swift  Visibility-scoped repeating context refresh
 ├── TerminalContextTracker.swift  CWD, Git status/branch and remote-session masking
 ├── TerminalLinkOpener.swift  Testable link/path resolution + system opening
+├── TerminalLaunchConfiguration.swift  Generic startup directory/title/command descriptor
 ├── TerminalPresentationState.swift  Tab titles, activity and command-status state
 ├── TerminalProcessController.swift  SwiftTerm view, shell lifecycle and callback wiring
 ├── TerminalPromptHistory.swift  OSC 133 state, command timing, prompt navigation/output

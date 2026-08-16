@@ -10,7 +10,6 @@ import Foundation
 final class SSHConnectionsController: ObservableObject {
     @Published private(set) var profiles: [SSHProfile] = []
     @Published private(set) var problem: SSHConnectionsProblem?
-    @Published var isPickerPresented = false
 
     private let store: any SSHProfileStoring
     private let connectAction: @MainActor (SSHProfile) throws -> Void
@@ -82,16 +81,8 @@ final class SSHConnectionsController: ObservableObject {
         try persist(updated)
     }
 
-    func presentPicker() {
-        isPickerPresented = true
-    }
-
-    func dismissPicker() {
-        isPickerPresented = false
-    }
-
     /// Connects through the app-provided terminal action. A failed connection
-    /// keeps the picker open so the user can edit or retry the profile.
+    /// is reported without coupling shared connection state to picker lifetime.
     @discardableResult
     func connect(to id: UUID) -> Bool {
         guard let profile = profiles.first(where: { $0.id == id }) else {
@@ -104,7 +95,6 @@ final class SSHConnectionsController: ObservableObject {
 
         do {
             try connectAction(profile)
-            isPickerPresented = false
             if problem?.kind == .connection { problem = nil }
             return true
         } catch {

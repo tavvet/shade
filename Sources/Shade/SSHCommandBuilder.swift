@@ -27,15 +27,6 @@ enum SSHCommandBuilder {
         return ProcessInvocation(executable: executable, arguments: arguments)
     }
 
-    static func shellCommand(
-        for profile: SSHProfile,
-        homeDirectory: String = NSHomeDirectory()
-    ) throws -> String {
-        ShellCommandRenderer.render(
-            try invocation(for: profile, homeDirectory: homeDirectory)
-        )
-    }
-
     private static func expandHome(in path: String, homeDirectory: String) -> String {
         if path == "~" { return homeDirectory }
         if path.hasPrefix("~/") {

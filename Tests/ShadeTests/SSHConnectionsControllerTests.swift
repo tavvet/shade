@@ -158,7 +158,7 @@ final class SSHConnectionsControllerTests: XCTestCase {
         }
     }
 
-    func testSuccessfulConnectionClosesPicker() async {
+    func testSuccessfulConnectionInvokesAction() async {
         await MainActor.run {
             let profile = SSHProfile(name: "Production", host: "prod")
             let store = SSHProfileStoreStub(profiles: [profile])
@@ -166,26 +166,22 @@ final class SSHConnectionsControllerTests: XCTestCase {
             let controller = SSHConnectionsController(store: store) {
                 connectedIDs.append($0.id)
             }
-            controller.presentPicker()
 
             XCTAssertTrue(controller.connect(to: profile.id))
             XCTAssertEqual(connectedIDs, [profile.id])
-            XCTAssertFalse(controller.isPickerPresented)
             XCTAssertNil(controller.problem)
         }
     }
 
-    func testFailedConnectionKeepsPickerOpenAndReportsProblem() async {
+    func testFailedConnectionReportsProblem() async {
         await MainActor.run {
             let profile = SSHProfile(name: "Production", host: "prod")
             let store = SSHProfileStoreStub(profiles: [profile])
             let controller = SSHConnectionsController(store: store) { _ in
                 throw StubFailure.connection
             }
-            controller.presentPicker()
 
             XCTAssertFalse(controller.connect(to: profile.id))
-            XCTAssertTrue(controller.isPickerPresented)
             XCTAssertEqual(controller.problem?.kind, .connection)
         }
     }

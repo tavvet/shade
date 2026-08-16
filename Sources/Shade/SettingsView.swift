@@ -1,61 +1,67 @@
+import Combine
 import SwiftUI
+
+enum SettingsPage: String, CaseIterable, Identifiable {
+    case general
+    case connections
+    case appearance
+    case terminal
+    case notifications
+    case shortcuts
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .general:       return "General"
+        case .connections:   return "Connections"
+        case .appearance:    return "Appearance"
+        case .terminal:      return "Terminal"
+        case .notifications: return "Notifications"
+        case .shortcuts:     return "Shortcuts"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .general:       return "Window layout, startup and tab behavior"
+        case .connections:   return "Saved SSH servers and quick-access order"
+        case .appearance:    return "Typography, color and background"
+        case .terminal:      return "Shell integration and terminal behavior"
+        case .notifications: return "Command completion alerts"
+        case .shortcuts:     return "Global hotkey and keyboard reference"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .general:       return "gearshape"
+        case .connections:   return "network"
+        case .appearance:    return "paintbrush"
+        case .terminal:      return "terminal"
+        case .notifications: return "bell"
+        case .shortcuts:     return "keyboard"
+        }
+    }
+}
+
+@MainActor
+final class SettingsNavigation: ObservableObject {
+    @Published var selection: SettingsPage? = .general
+}
 
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
     @ObservedObject var connections: SSHConnectionsController
-    @State private var selection: SettingsPage? = .general
-
-    private enum SettingsPage: String, CaseIterable, Identifiable {
-        case general
-        case connections
-        case appearance
-        case terminal
-        case notifications
-        case shortcuts
-
-        var id: Self { self }
-
-        var title: String {
-            switch self {
-            case .general:       return "General"
-            case .connections:   return "Connections"
-            case .appearance:    return "Appearance"
-            case .terminal:      return "Terminal"
-            case .notifications: return "Notifications"
-            case .shortcuts:     return "Shortcuts"
-            }
-        }
-
-        var subtitle: String {
-            switch self {
-            case .general:       return "Window layout, startup and tab behavior"
-            case .connections:   return "Saved SSH servers and quick-access order"
-            case .appearance:    return "Typography, color and background"
-            case .terminal:      return "Shell integration and terminal behavior"
-            case .notifications: return "Command completion alerts"
-            case .shortcuts:     return "Global hotkey and keyboard reference"
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .general:       return "gearshape"
-            case .connections:   return "network"
-            case .appearance:    return "paintbrush"
-            case .terminal:      return "terminal"
-            case .notifications: return "bell"
-            case .shortcuts:     return "keyboard"
-            }
-        }
-    }
+    @ObservedObject var navigation: SettingsNavigation
 
     private var selectedPage: SettingsPage {
-        selection ?? .general
+        navigation.selection ?? .general
     }
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsPage.allCases, selection: $selection) { page in
+            List(SettingsPage.allCases, selection: $navigation.selection) { page in
                 Label(page.title, systemImage: page.systemImage)
                     .tag(page)
                     .padding(.vertical, 3)

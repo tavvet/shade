@@ -1,10 +1,9 @@
 import Darwin
 import Foundation
 
-/// Walks the process tree to spot when the shell has launched a remote-session
-/// helper (ssh / mosh / etc). When that's the case, the local cwd/git heuristics
-/// no longer reflect what the user sees in the terminal, so the UI should mask
-/// them.
+/// Checks the PTY owner and its process tree for a remote-session helper
+/// (ssh / mosh / etc). When that's the case, the local cwd/git heuristics no
+/// longer reflect what the user sees in the terminal, so the UI should mask them.
 enum ProcessTree {
     /// Names that mean "the visible session is happening on another machine."
     static let remoteProcessNames: Set<String> = [
@@ -15,10 +14,10 @@ enum ProcessTree {
     /// process group, or nil if the visible command is local. Background jobs
     /// must not hide the shell's local cwd/git context.
     ///
-    /// Walks *down* from the shell (which has only a handful of descendants)
-    /// instead of scanning the whole system process table. That turns the cost
-    /// from one `proc_pidpath` per process on the machine — every second, per
-    /// tab — into a few syscalls over the shell's own subtree.
+    /// Checks the PTY owner first, then walks *down* through its handful of
+    /// descendants instead of scanning the whole system process table. That
+    /// turns the cost from one `proc_pidpath` per process on the machine — every
+    /// second, per tab — into a few syscalls over the terminal's own subtree.
     static func remoteIndicator(
         forShell shellPid: pid_t,
         foregroundProcessGroup: pid_t?
@@ -43,8 +42,17 @@ enum ProcessTree {
     ) -> String? {
         guard shellPid > 0,
               let foregroundProcessGroup,
-              foregroundProcessGroup > 0,
-              foregroundProcessGroup != shellPid else { return nil }
+              foregroundProcessGroup > 0 else { return nil }
+
+        // A terminal can also exec a remote client as its PTY owner. In that
+        // case it commonly owns the foreground process group whose id is its pid.
+        let ownerIsForeground = shellPid == foregroundProcessGroup
+            || processGroup(shellPid) == foregroundProcessGroup
+        if ownerIsForeground,
+           let name = processName(shellPid),
+           remoteProcessNames.contains(name) {
+            return name
+        }
 
         var queue = children(shellPid)
         var visited = Set<pid_t>()

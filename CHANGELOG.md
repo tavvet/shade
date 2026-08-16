@@ -6,6 +6,23 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Add a built-in saved SSH connection library backed by the system OpenSSH
+  client, with named profiles, optional user/port/identity overrides and a
+  dedicated Settings page for editing and quick-slot ordering.
+- Add a searchable connection picker on `⌘⇧P` and layout-independent
+  `⌘⇧1`…`⌘⇧9` shortcuts for opening the first nine profiles in new
+  terminal tabs.
+
+### Changed
+
+- Generalize terminal startup around an optional directory, pinned title and
+  structured initial process invocation. A single PTY wrapper runs it with the
+  inherited application environment and then becomes the local login shell, so
+  feature-specific SSH details stay outside terminal lifecycle code, shell
+  startup cannot consume the command as input and SwiftTerm is not restarted.
+
 ## [0.1.19] — 2026-08-11
 
 ### Changed

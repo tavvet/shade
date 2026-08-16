@@ -1,11 +1,20 @@
 import AppKit
 import SwiftTerm
 
-/// Owns SwiftTerm's view and local shell process for one tab. It converts
+/// Owns SwiftTerm's view and process lifecycle for one tab. It converts
 /// delegate/parser callbacks into main-actor closures so the session layer does
 /// not need to implement SwiftTerm protocols or manage their threading rules.
 @MainActor
 final class TerminalProcessController: NSObject {
+    typealias ProcessStarter = @MainActor (
+        _ view: LocalProcessTerminalView,
+        _ executable: String,
+        _ arguments: [String],
+        _ environment: [String]?,
+        _ execName: String?,
+        _ currentDirectory: String?
+    ) -> Bool
+
     let view: LocalProcessTerminalView
     let shellName: String
 
@@ -21,13 +30,32 @@ final class TerminalProcessController: NSObject {
     private let delegateProxy: TerminalDelegateProxy
     private let activityView: ActivityTerminalView
     private let launchConfiguration: TerminalLaunchConfiguration
+    private let shellPath: String
+    private let processStarter: ProcessStarter
     private var didPadInitialPrompt = false
-    private var didSendInitialCommand = false
+    private var didStartProcess = false
 
-    init(configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration()) {
-        let shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+    init(
+        configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration(),
+        shellPath: String = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh",
+        processStarter: ProcessStarter? = nil
+    ) {
+        self.shellPath = shellPath
         shellName = (shellPath as NSString).lastPathComponent
         launchConfiguration = configuration
+        self.processStarter = processStarter ?? { view, executable, arguments, environment,
+                                                   execName, currentDirectory in
+            view.startProcess(
+                executable: executable,
+                args: arguments,
+                environment: environment,
+                execName: execName,
+                currentDirectory: currentDirectory
+            )
+            // SwiftTerm does not return a launch result. It assigns shellPid only
+            // after forkpty succeeds, and leaves it at zero when PTY creation fails.
+            return view.process.shellPid > 0
+        }
 
         let activityView = ActivityTerminalView(frame: .zero)
         self.activityView = activityView
@@ -76,29 +104,67 @@ final class TerminalProcessController: NSObject {
     }
 
     func start() {
-        guard !isRunning else { return }
+        guard !isRunning,
+              !didStartProcess else { return }
         if !didPadInitialPrompt {
             padCursorToBottom()
             didPadInitialPrompt = true
         }
-        let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-        let environment = ShellIntegration.environment(
+        let shellEnvironment = ShellIntegration.environment(
             shellName: shellName,
             enabled: PreferencesStore.standard.load().shellEnrichment
         )
-        view.startProcess(
-            executable: shell,
-            args: ["-l"],
-            environment: environment,
-            execName: "-" + shellName,
-            currentDirectory: launchConfiguration.startupDirectory
+        if let initialCommand = launchConfiguration.initialCommand {
+            didStartProcess = startCommandSequence(
+                initialCommand,
+                shellEnvironment: shellEnvironment
+            )
+        } else {
+            didStartProcess = startLoginShell(environment: shellEnvironment)
+        }
+    }
+
+    private func startCommandSequence(
+        _ initialCommand: ProcessInvocation,
+        shellEnvironment: [String]?
+    ) -> Bool {
+        let invocation = TerminalCommandSequence.invocation(
+            initialCommand: initialCommand,
+            loginShellPath: shellPath
         )
-        sendInitialCommandIfNeeded()
+        let environment = TerminalCommandSequence.environment(
+            shellIntegrationEnvironment: shellEnvironment
+        )
+        return processStarter(
+            view,
+            invocation.executable,
+            invocation.arguments,
+            environment,
+            nil,
+            launchConfiguration.startupDirectory
+        )
+    }
+
+    private func startLoginShell(environment: [String]?) -> Bool {
+        processStarter(
+            view,
+            shellPath,
+            ["-l"],
+            environment,
+            "-" + shellName,
+            launchConfiguration.startupDirectory
+        )
     }
 
     func terminate() {
         if isRunning {
-            kill(shellPid, SIGTERM)
+            // forkpty makes the PTY owner its process-group leader. A configured
+            // command is a child of our wrapper, so terminate the complete group
+            // and prevent the wrapper from continuing into the login shell.
+            let pid = shellPid
+            if getpgid(pid) != pid || kill(-pid, SIGTERM) != 0 {
+                kill(pid, SIGTERM)
+            }
         }
     }
 
@@ -117,17 +183,6 @@ final class TerminalProcessController: NSObject {
         let rows = view.getTerminal().rows
         guard rows > 1 else { return }
         view.feed(text: String(repeating: "\n", count: rows - 1))
-    }
-
-    private func sendInitialCommandIfNeeded() {
-        guard !didSendInitialCommand,
-              isRunning,
-              let input = launchConfiguration.initialInput else { return }
-        // This is application-generated startup input, not an explicit user
-        // action, so bypass ActivityTerminalView.sendUserInput and leave the
-        // automatic-respawn limiter untouched.
-        view.send(input)
-        didSendInitialCommand = true
     }
 }
 

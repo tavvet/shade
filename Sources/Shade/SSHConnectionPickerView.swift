@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SSHConnectionPickerView: View {
     @ObservedObject var controller: SSHConnectionsController
+    @ObservedObject var focusRequest: SSHConnectionPickerFocusRequest
 
     let onConnect: (UUID) -> Void
     let onDismiss: () -> Void
@@ -56,10 +57,10 @@ struct SSHConnectionPickerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             repairSelection()
-            DispatchQueue.main.async { searchIsFocused = true }
+            requestSearchFocus()
         }
-        .onChange(of: query) { _ in repairSelection() }
-        .onChange(of: controller.profiles.map(\.id)) { _ in repairSelection() }
+        .onChange(of: focusRequest.generation) { _ in requestSearchFocus() }
+        .onChange(of: matches.map(\.id)) { _ in repairSelection() }
         .onExitCommand(perform: onDismiss)
     }
 
@@ -138,9 +139,12 @@ struct SSHConnectionPickerView: View {
     }
 
     private var connectionList: some View {
-        ScrollViewReader { proxy in
+        let resultIDs = matches.map(\.id)
+        return ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 4) {
+                // The saved-connection library is small, and an eager stack avoids
+                // stale macOS LazyVStack geometry while the filtered IDs change.
+                VStack(spacing: 4) {
                     ForEach(matches) { profile in
                         SSHConnectionPickerRow(
                             profile: profile,
@@ -163,11 +167,14 @@ struct SSHConnectionPickerView: View {
             )
             .onChange(of: selectedID) { id in
                 guard let id else { return }
-                withAnimation(.easeOut(duration: 0.1)) {
+                // Selection repair and filtered-row layout happen in one SwiftUI
+                // transaction. Scroll only after the new subtree has been laid out.
+                DispatchQueue.main.async {
                     proxy.scrollTo(id, anchor: .center)
                 }
             }
         }
+        .id(resultIDs)
     }
 
     private func quickSlot(for profile: SSHProfile) -> Int? {
@@ -203,5 +210,9 @@ struct SSHConnectionPickerView: View {
     private func connectSelected() {
         guard let selectedID else { return }
         onConnect(selectedID)
+    }
+
+    private func requestSearchFocus() {
+        DispatchQueue.main.async { searchIsFocused = true }
     }
 }
