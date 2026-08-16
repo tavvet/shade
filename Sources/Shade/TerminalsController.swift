@@ -58,15 +58,29 @@ final class TerminalsController {
 
     @discardableResult
     func newSession() -> TerminalSession {
-        // TerminalSession.init already applies the persisted preferences.
-        let session = TerminalSession()
         // ⌘T can open in the active tab's directory instead of $HOME. The first tab
         // and the last-tab respawn have no active session, so they keep $HOME.
+        var configuration = TerminalLaunchConfiguration()
         if PreferencesStore.standard.load().newTabInheritsCwd,
            let cwd = activeSession?.cwd,
            !cwd.isEmpty {
-            session.startupDirectory = cwd
+            configuration.startupDirectory = cwd
         }
+        return newSession(configuration: configuration)
+    }
+
+    /// Opens a profile in a fresh tab. Validation and command construction
+    /// happen before the tab collection is mutated, so invalid profiles cannot
+    /// leave behind a partially initialized session.
+    @discardableResult
+    func connect(to profile: SSHProfile) throws -> TerminalSession {
+        try newSession(configuration: SSHConnectionLaunch.configuration(for: profile))
+    }
+
+    @discardableResult
+    func newSession(configuration: TerminalLaunchConfiguration) -> TerminalSession {
+        // TerminalSession.init already applies the persisted preferences.
+        let session = TerminalSession(configuration: configuration)
         // Close this tab when the shell exits (Ctrl-D / `exit` / crash).
         // Weak self + weak session — onExit lives on the session, the
         // session is owned by `sessions`, and the closure must not keep

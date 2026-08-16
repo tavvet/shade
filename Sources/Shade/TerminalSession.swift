@@ -47,10 +47,6 @@ final class TerminalSession {
     var isActive: Bool { presentation.isActive }
     var shellName: String { presentation.shellName }
     var view: LocalProcessTerminalView { process.view }
-    var startupDirectory: String? {
-        get { process.startupDirectory }
-        set { process.startupDirectory = newValue }
-    }
 
     /// What the tab bar shows: an explicit user name, else the shell-provided
     /// title or abbreviated CWD or shell name. The git branch is rendered
@@ -78,11 +74,14 @@ final class TerminalSession {
         presentation.setUserTitle(raw)
     }
 
-    init() {
-        let processController = TerminalProcessController()
+    init(configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration()) {
+        let processController = TerminalProcessController(configuration: configuration)
         process = processController
         presentation = TerminalPresentationState(shellName: processController.shellName)
         presentation.onChange = { [weak self] in self?.notifyTitleChanged() }
+        if let title = configuration.title {
+            presentation.setUserTitle(title)
+        }
         process.onExit = { [weak self] in self?.onExit?() }
         process.onOpenLink = { [weak self] link in
             guard let self else { return }
