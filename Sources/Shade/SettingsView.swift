@@ -2,10 +2,12 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
+    @ObservedObject var connections: SSHConnectionsController
     @State private var selection: SettingsPage? = .general
 
     private enum SettingsPage: String, CaseIterable, Identifiable {
         case general
+        case connections
         case appearance
         case terminal
         case notifications
@@ -16,6 +18,7 @@ struct SettingsView: View {
         var title: String {
             switch self {
             case .general:       return "General"
+            case .connections:   return "Connections"
             case .appearance:    return "Appearance"
             case .terminal:      return "Terminal"
             case .notifications: return "Notifications"
@@ -26,6 +29,7 @@ struct SettingsView: View {
         var subtitle: String {
             switch self {
             case .general:       return "Window layout, startup and tab behavior"
+            case .connections:   return "Saved SSH servers and quick-access order"
             case .appearance:    return "Typography, color and background"
             case .terminal:      return "Shell integration and terminal behavior"
             case .notifications: return "Command completion alerts"
@@ -36,6 +40,7 @@ struct SettingsView: View {
         var systemImage: String {
             switch self {
             case .general:       return "gearshape"
+            case .connections:   return "network"
             case .appearance:    return "paintbrush"
             case .terminal:      return "terminal"
             case .notifications: return "bell"
@@ -75,6 +80,8 @@ struct SettingsView: View {
         switch selectedPage {
         case .general:
             GeneralSettingsView(model: model)
+        case .connections:
+            ConnectionsSettingsView(controller: connections)
         case .appearance:
             AppearanceSettingsView(model: model)
         case .terminal:

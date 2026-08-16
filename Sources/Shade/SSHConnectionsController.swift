@@ -16,6 +16,8 @@ final class SSHConnectionsController: ObservableObject {
     private let connectAction: @MainActor (SSHProfile) throws -> Void
     private var libraryIsLoaded = false
 
+    var canEditProfiles: Bool { libraryIsLoaded }
+
     init(
         store: any SSHProfileStoring = SSHProfileStore(),
         connect: @escaping @MainActor (SSHProfile) throws -> Void
