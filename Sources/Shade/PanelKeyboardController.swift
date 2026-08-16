@@ -14,6 +14,8 @@ enum PanelShortcut: Equatable {
     case previousPrompt
     case nextPrompt
     case copyLastCommandOutput
+    case showConnections
+    case connectQuickSlot(Int)
 }
 
 /// Converts a key event into a Shade command without touching application state.
@@ -63,11 +65,15 @@ enum PanelShortcutResolver {
         }
 
         if flags == commandShift {
+            if let digit = KeyCodes.digitForKeyCode[keyCode] {
+                return .connectQuickSlot(digit)
+            }
             switch keyCode {
             case KeyCodes.upArrow: return .previousPrompt
             case KeyCodes.downArrow: return .nextPrompt
             default:
                 if letter == "o" { return .copyLastCommandOutput }
+                if letter == "p" { return .showConnections }
             }
         }
 
@@ -79,9 +85,17 @@ enum PanelShortcutResolver {
 @MainActor
 final class PanelKeyboardController: PanelKeyHandler {
     private let terminals: TerminalsController
+    private let showConnections: @MainActor () -> Void
+    private let connectQuickSlot: @MainActor (Int) -> Void
 
-    init(terminals: TerminalsController) {
+    init(
+        terminals: TerminalsController,
+        showConnections: @escaping @MainActor () -> Void = {},
+        connectQuickSlot: @escaping @MainActor (Int) -> Void = { _ in }
+    ) {
         self.terminals = terminals
+        self.showConnections = showConnections
+        self.connectQuickSlot = connectQuickSlot
     }
 
     func panelDidReceiveUserInput() {
@@ -149,6 +163,10 @@ final class PanelKeyboardController: PanelKeyHandler {
             terminals.activeSession?.jumpToNextPrompt()
         case .copyLastCommandOutput:
             terminals.activeSession?.copyLastCommandOutput()
+        case .showConnections:
+            showConnections()
+        case .connectQuickSlot(let number):
+            connectQuickSlot(number)
         }
     }
 

@@ -29,8 +29,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     private lazy var tabs = TabsObservable(controller: terminals)
-    private lazy var keyboard = PanelKeyboardController(terminals: terminals)
+    private lazy var keyboard = PanelKeyboardController(
+        terminals: terminals,
+        showConnections: { [weak self] in self?.presentConnectionPicker() },
+        connectQuickSlot: { [weak self] number in
+            _ = self?.connections.connectQuickSlot(number)
+        }
+    )
     private lazy var panelContent = TerminalPanelContentController(terminals: terminals, tabs: tabs)
+    private var connectionPicker: SSHConnectionPickerPresenter?
 
     private lazy var panel: DropdownPanel = {
         let panel = DropdownPanel()
@@ -46,7 +53,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.notifications.panelWillShow(preferences: preferences)
         }
         panel.onShow = { [weak self] in self?.terminals.resumePolling() }
-        panel.onHide = { [weak self] in self?.terminals.pausePolling() }
+        panel.onHide = { [weak self] in
+            self?.connectionPicker?.dismiss()
+            self?.terminals.pausePolling()
+        }
         return panel
     }()
 
@@ -101,6 +111,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         terminals.applyToAll(preferences)
         panel.apply(preferences)
         panelContent.apply(preferences)
+    }
+
+    private func presentConnectionPicker() {
+        if panel.isVisible {
+            panel.makeKeyAndOrderFront(nil)
+        } else {
+            panel.show()
+        }
+
+        if connectionPicker == nil {
+            connectionPicker = SSHConnectionPickerPresenter(
+                controller: connections,
+                openConnectionSettings: { [weak self] in
+                    guard let self else { return }
+                    self.panel.hide()
+                    self.settings.present()
+                }
+            )
+        }
+        connectionPicker?.present(over: panel)
     }
 
     /// Hide on a real app switch, but not during the transient resign-active

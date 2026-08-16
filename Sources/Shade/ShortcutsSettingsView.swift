@@ -14,6 +14,8 @@ struct ShortcutsSettingsView: View {
         .init(action: "New tab",            keys: "⌘T"),
         .init(action: "Close tab",          keys: "⌘W"),
         .init(action: "Switch to tab N",    keys: "⌘1 – ⌘9"),
+        .init(action: "Connection picker",  keys: "⌘⇧P"),
+        .init(action: "Connect profile N",  keys: "⌘⇧1 – ⌘⇧9"),
         .init(action: "Next tab",           keys: "⌃Tab"),
         .init(action: "Previous tab",       keys: "⌃⇧Tab"),
         .init(action: "Copy / Paste",       keys: "⌘C / ⌘V"),
