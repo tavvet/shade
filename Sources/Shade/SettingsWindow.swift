@@ -4,9 +4,13 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let model = SettingsModel()
+    private let connections: SSHConnectionsController
 
-    init() {
-        let hosting = NSHostingController(rootView: SettingsView(model: model))
+    init(connections: SSHConnectionsController) {
+        self.connections = connections
+        let hosting = NSHostingController(
+            rootView: SettingsView(model: model, connections: connections)
+        )
         hosting.preferredContentSize = NSSize(width: 800, height: 580)
         let window = NSWindow(contentViewController: hosting)
         window.styleMask = [.titled, .closable, .resizable]
@@ -23,6 +27,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     func present() {
         model.reloadForPresentation()
+        connections.reload()
         // Switch from .accessory to .regular while the Settings window is open so that
         // system panels (notably NSColorPanel used by SwiftUI's ColorPicker) actually
         // open — they refuse to show for LSUIElement / .accessory apps.

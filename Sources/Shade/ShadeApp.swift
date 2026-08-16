@@ -19,6 +19,15 @@ enum ShadeApp {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let terminals = TerminalsController()
+    private lazy var connections = SSHConnectionsController { [weak self] profile in
+        guard let self else { return }
+        try self.terminals.connect(to: profile)
+        if self.panel.isVisible {
+            self.panel.makeKeyAndOrderFront(nil)
+        } else {
+            self.panel.show()
+        }
+    }
     private lazy var tabs = TabsObservable(controller: terminals)
     private lazy var keyboard = PanelKeyboardController(terminals: terminals)
     private lazy var panelContent = TerminalPanelContentController(terminals: terminals, tabs: tabs)
@@ -43,7 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private lazy var menus = ApplicationMenuController(actions: self)
     private lazy var notifications = CommandNotificationCoordinator(terminals: terminals, panel: panel)
-    private lazy var settings = SettingsWindowController()
+    private lazy var settings = SettingsWindowController(connections: connections)
     private lazy var about = AboutWindowController()
     private lazy var diagnostics = DiagnosticsWindowController(terminals: terminals)
 

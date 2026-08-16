@@ -15,6 +15,7 @@ final class SSHConnectionsControllerTests: XCTestCase {
                 [SSHProfile(id: id, name: "Production", host: "prod")]
             )
             XCTAssertNil(controller.problem)
+            XCTAssertTrue(controller.canEditProfiles)
             XCTAssertEqual(store.loadCount, 1)
         }
     }
@@ -26,6 +27,7 @@ final class SSHConnectionsControllerTests: XCTestCase {
             let controller = SSHConnectionsController(store: store) { _ in }
 
             XCTAssertEqual(controller.problem?.kind, .load)
+            XCTAssertFalse(controller.canEditProfiles)
             XCTAssertTrue(controller.profiles.isEmpty)
             controller.dismissProblem()
             XCTAssertEqual(controller.problem?.kind, .load)
@@ -55,6 +57,7 @@ final class SSHConnectionsControllerTests: XCTestCase {
 
             XCTAssertEqual(controller.profiles, [repaired])
             XCTAssertNil(controller.problem)
+            XCTAssertTrue(controller.canEditProfiles)
             XCTAssertEqual(store.loadCount, 2)
         }
     }
