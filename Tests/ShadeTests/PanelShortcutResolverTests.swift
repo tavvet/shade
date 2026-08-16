@@ -38,6 +38,22 @@ final class PanelShortcutResolverTests: XCTestCase {
         XCTAssertEqual(resolve(key("o"), characters: "щ", flags: [.command, .shift]), .copyLastCommandOutput)
     }
 
+    func testConnectionPickerShortcutUsesPhysicalLetterKey() {
+        XCTAssertEqual(
+            resolve(key("p"), characters: "з", flags: [.command, .shift]),
+            .showConnections
+        )
+    }
+
+    func testConnectionQuickSlotsUsePhysicalNumberRow() {
+        for (keyCode, digit) in KeyCodes.digitForKeyCode {
+            XCTAssertEqual(
+                resolve(keyCode, characters: "", flags: [.command, .shift]),
+                .connectQuickSlot(digit)
+            )
+        }
+    }
+
     func testUnmatchedShortcutFallsThrough() {
         XCTAssertNil(resolve(key("t"), characters: "t", flags: []))
         XCTAssertNil(resolve(KeyCodes.upArrow, flags: [.command]))

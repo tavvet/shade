@@ -28,6 +28,14 @@ enum KeyCodes {
     static let minus: UInt16 = UInt16(kVK_ANSI_Minus)
     static let zero: UInt16 = UInt16(kVK_ANSI_0)
 
+    /// Number-row quick slots stay stable across keyboard layouts, just like
+    /// Shade's letter shortcuts below.
+    static let digitForKeyCode: [UInt16: Int] = [
+        UInt16(kVK_ANSI_1): 1, UInt16(kVK_ANSI_2): 2, UInt16(kVK_ANSI_3): 3,
+        UInt16(kVK_ANSI_4): 4, UInt16(kVK_ANSI_5): 5, UInt16(kVK_ANSI_6): 6,
+        UInt16(kVK_ANSI_7): 7, UInt16(kVK_ANSI_8): 8, UInt16(kVK_ANSI_9): 9,
+    ]
+
     static let asciiLetterForKeyCode: [UInt16: Character] = [
         UInt16(kVK_ANSI_A): "a", UInt16(kVK_ANSI_B): "b", UInt16(kVK_ANSI_C): "c",
         UInt16(kVK_ANSI_D): "d", UInt16(kVK_ANSI_E): "e", UInt16(kVK_ANSI_F): "f",
