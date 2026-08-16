@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.20] — 2026-08-16
+
 ### Added
 
 - Add a built-in saved SSH connection library backed by the system OpenSSH
@@ -18,10 +20,15 @@ All notable changes to Shade are documented in this file. Format follows
 ### Changed
 
 - Generalize terminal startup around an optional directory, pinned title and
-  structured initial process invocation. A single PTY wrapper runs it with the
-  inherited application environment and then becomes the local login shell, so
-  feature-specific SSH details stay outside terminal lifecycle code, shell
-  startup cannot consume the command as input and SwiftTerm is not restarted.
+  structured initial process invocation, keeping feature-specific SSH details
+  outside terminal lifecycle code.
+- Run the initial SSH process and subsequent local login shell under one PTY.
+  SSH inherits the application environment (including an available agent),
+  shell-integration variables stay isolated from it, and closing the tab
+  terminates the whole sequence instead of starting the fallback shell.
+- Protect unreadable, malformed and unsupported connection libraries from
+  accidental replacement: profile edits stay disabled until a reload succeeds,
+  while valid updates are written atomically with user-only permissions.
 
 ## [0.1.19] — 2026-08-11
 
@@ -439,7 +446,8 @@ First public release.
   tab names don't survive a restart.
 - macOS 13 minimum.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.19...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.20...HEAD
+[0.1.20]: https://github.com/tavvet/shade/releases/tag/v0.1.20
 [0.1.19]: https://github.com/tavvet/shade/releases/tag/v0.1.19
 [0.1.18]: https://github.com/tavvet/shade/releases/tag/v0.1.18
 [0.1.17]: https://github.com/tavvet/shade/releases/tag/v0.1.17
