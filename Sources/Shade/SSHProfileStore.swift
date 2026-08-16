@@ -1,5 +1,10 @@
 import Foundation
 
+protocol SSHProfileStoring {
+    func load() throws -> [SSHProfile]
+    func save(_ profiles: [SSHProfile]) throws
+}
+
 /// Persists ordered SSH profiles separately from scalar application preferences.
 /// The versioned envelope leaves room for future migrations without coupling
 /// connection data to `PreferencesStore` or UserDefaults.
@@ -20,11 +25,11 @@ struct SSHProfileStore {
         guard envelope.version == Self.currentVersion else {
             throw SSHProfileStoreError.unsupportedVersion(envelope.version)
         }
-        return try Self.validate(envelope.profiles)
+        return try Self.validated(envelope.profiles)
     }
 
     func save(_ profiles: [SSHProfile]) throws {
-        let validated = try Self.validate(profiles)
+        let validated = try Self.validated(profiles)
         let envelope = Envelope(version: Self.currentVersion, profiles: validated)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -54,7 +59,7 @@ struct SSHProfileStore {
             .appendingPathComponent("connections.json", isDirectory: false)
     }
 
-    private static func validate(_ profiles: [SSHProfile]) throws -> [SSHProfile] {
+    static func validated(_ profiles: [SSHProfile]) throws -> [SSHProfile] {
         let normalized = try profiles.map { try $0.normalized() }
         var ids = Set<UUID>()
         var names = Set<String>()
@@ -76,6 +81,8 @@ struct SSHProfileStore {
         let profiles: [SSHProfile]
     }
 }
+
+extension SSHProfileStore: SSHProfileStoring {}
 
 enum SSHProfileStoreError: Error, Equatable, LocalizedError {
     case unsupportedVersion(Int)
