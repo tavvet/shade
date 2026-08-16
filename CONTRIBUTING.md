@@ -41,7 +41,7 @@ obvious fixes can skip straight to the implementation step.
    no UI tests, so manual confirmation matters.
 5. **Update docs.** Keep documentation in step with the change: the
    [README](README.md) (feature list, Architecture tree, shortcut tables),
-   `CHANGELOG.md` under `[Unreleased]`, the matching [ROADMAP](ROADMAP.md) entry,
+   `CHANGELOG.md` under `[Unreleased]`, any matching [ROADMAP](ROADMAP.md) entry,
    and the `integrations/` snippets if they're affected.
 6. **Merge.** Open a PR — see [Before you open a PR](#before-you-open-a-pr) for
    the pre-merge checklist — and land one logical change at a time. Releases are
@@ -65,8 +65,10 @@ obvious fixes can skip straight to the implementation step.
   (a hidden constraint, an Apple-API quirk, a workaround for a specific bug).
 - `@MainActor` everywhere AppKit / SwiftUI is touched. Concurrency boundaries
   use `nonisolated` + `MainActor.assumeIsolated` (see existing examples).
-- New user-facing settings extend the `Preferences` value model, persist through
-  `PreferencesStore`, and get a control on the appropriate settings page.
+- Scalar user-facing settings extend the `Preferences` value model, persist
+  through `PreferencesStore`, and get a control on the appropriate settings
+  page. Structured collections with their own lifecycle (such as saved SSH
+  profiles) use a dedicated model and store instead of `UserDefaults`.
 - Pure logic (parsers, models, layout math) belongs in a module that's already
   covered by `Tests/ShadeTests/` — add a test alongside the change.
 

@@ -92,7 +92,7 @@ open it, drag `Shade.app` into your `Applications` folder.
 **First launch needs one extra step** while the project doesn't have an
 Apple Developer ID. macOS Gatekeeper will refuse a normal double-click
 with *"Apple could not verify Shade is free of malware…"* —
-**right-click `Shade.app` → Open → Open** the once, and macOS will
+**right-click `Shade.app` → Open → Open** once, and macOS will
 remember the decision forever. (Alternative: `xattr -d com.apple.quarantine
 /Applications/Shade.app` from any terminal.) Notarized builds will follow
 in a later release and remove this step.
@@ -183,6 +183,8 @@ instructions in the terminal.
 | Extend selection (line edge) | `⌘⇧←` / `⌘⇧→` |
 | Jump to previous / next prompt | `⌘⇧↑` / `⌘⇧↓` (requires OSC 133 shell integration — see below) |
 | Copy previous command's output | `⌘⇧O` (requires OSC 133 shell integration — see below) |
+| Open connection picker | `⌘⇧P` |
+| Connect saved profile N | `⌘⇧1` … `⌘⇧9` |
 | Open link / file     | `⌘`-click (URLs go to the default browser, file paths reveal in Finder) |
 | Open Settings        | `⌘,`        |
 | Quit Shade           | `⌘Q`        |
@@ -198,10 +200,11 @@ unchanged — they work even when your keyboard layout is non-Latin
 ### Via the Settings window
 
 Open Settings from the menu-bar `▾` icon. The sidebar groups preferences into
-five focused pages:
+six focused pages:
 
 - **General** — panel size and position, focus behavior, new-tab directory,
   Open at Login and slide animation
+- **Connections** — saved SSH profiles and their quick-access order
 - **Appearance** — monospace font family and size, background opacity, link
   highlight color, blur and material
 - **Terminal** — zsh completion enrichment, cursor shape and blink, visual bell
@@ -274,13 +277,22 @@ stored by Shade.
 With the terminal panel open:
 
 - press `⌘⇧P` to search saved profiles by name, host, user, port or key path;
+- use `↑` / `↓` to select, `Return` to connect and `Esc` to close the picker;
 - press `⌘⇧1`…`⌘⇧9` to connect to the corresponding profile directly;
 - reorder profiles in Settings to choose which server occupies each quick slot.
 
+Each connection opens in a new tab pinned to the profile's display name. When
+SSH exits, the same tab continues as a local login shell. Profile fields are
+passed to OpenSSH as structured arguments rather than interpolated into a shell
+command, and SSH inherits the app environment so an available `SSH_AUTH_SOCK`
+continues to work.
+
 Profiles are stored as a versioned JSON file at
 `~/Library/Application Support/Shade/connections.json`. Shade creates it with
-user-only (`0600`) permissions. Removing a profile does not modify
-`~/.ssh/config` or delete any key files.
+user-only (`0600`) permissions and writes updates atomically. If the file is
+unreadable, malformed or from an unsupported newer format, Shade blocks edits
+instead of overwriting it; repair or restore the file, then click **Retry**.
+Removing a profile does not modify `~/.ssh/config` or delete any key files.
 
 ---
 
@@ -428,11 +440,24 @@ executable directly (e.g. for debugging) rather than via the `.app` bundle.
 
 **Tab title and git badge show wrong info during an SSH session.** This is
 expected — Shade detects `ssh` / `mosh` / `tmate` in the terminal's foreground
-process group
-and hides the local-only readouts (the tab title shows `[ssh]` unless you've
-pinned a name, and the git badge disappears). Local cwd / git state can't describe a remote
-machine. Remote OSC 7 updates are intentionally masked as well; pin a custom
-tab name if you want a host-specific label while the remote session is active.
+process group and hides the local-only readouts (the tab title shows `[ssh]`
+unless you've pinned a name, and the git badge disappears). Tabs opened from a
+saved connection are pinned to the profile name automatically. Local cwd / git
+state can't describe a remote machine. Remote OSC 7 updates are intentionally
+masked as well; pin a custom tab name if you want a host-specific label while
+the remote session is active.
+
+**A saved SSH connection fails or ignores an expected option.** Shade invokes
+the system `/usr/bin/ssh` and explicit profile fields override the matching
+destination, user, port and identity-file arguments. Check the same host or
+`~/.ssh/config` alias with `/usr/bin/ssh` in a regular terminal, verify key-file
+permissions, and confirm your agent is available through `SSH_AUTH_SOCK`.
+
+**Connections cannot be edited after a load error.** Shade deliberately leaves
+an unreadable, malformed or newer `connections.json` untouched. Repair, replace
+or move the file at `~/Library/Application Support/Shade/connections.json`, then
+click **Retry** in Settings or the connection picker. Successful edits remain
+blocked until the library loads again, preventing accidental data loss.
 
 **Settings won't open / "About Shade" crashes / color picker doesn't
 appear.** Make sure you're running the bundled `.app` and not the raw
@@ -526,9 +551,13 @@ Key design choices:
   Edits are persisted immediately and `.shadePreferencesChanged` is posted after
   a short debounce; the application coordinator then updates panel content and
   every session so font/opacity changes remain instant.
+- **Structured initial processes.** Saved connection values remain executable
+  arguments all the way to `/usr/bin/ssh`; a single PTY-owning wrapper runs the
+  initial process and then becomes the local login shell. Closing the tab
+  terminates the wrapper's process group so it cannot start that fallback shell.
 - **Prime-then-start.** The panel's frame is set off-screen at launch and
   layout is resolved before the first shell starts, so SwiftTerm knows its
-  rows count and `padCursorToBottom()` pins the prompt to the bottom of the
+  row count and `padCursorToBottom()` pins the prompt to the bottom of the
   panel from the very first prompt.
 
 ---
