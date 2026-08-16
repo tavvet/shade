@@ -9,7 +9,6 @@ final class TerminalProcessController: NSObject {
     let view: LocalProcessTerminalView
     let shellName: String
 
-    var startupDirectory: String?
     var onExit: (() -> Void)?
     var onOpenLink: ((String) -> Void)?
     var onActivity: (() -> Void)?
@@ -21,11 +20,14 @@ final class TerminalProcessController: NSObject {
 
     private let delegateProxy: TerminalDelegateProxy
     private let activityView: ActivityTerminalView
+    private let launchConfiguration: TerminalLaunchConfiguration
     private var didPadInitialPrompt = false
+    private var didSendInitialCommand = false
 
-    override init() {
+    init(configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration()) {
         let shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         shellName = (shellPath as NSString).lastPathComponent
+        launchConfiguration = configuration
 
         let activityView = ActivityTerminalView(frame: .zero)
         self.activityView = activityView
@@ -89,8 +91,9 @@ final class TerminalProcessController: NSObject {
             args: ["-l"],
             environment: environment,
             execName: "-" + shellName,
-            currentDirectory: startupDirectory
+            currentDirectory: launchConfiguration.startupDirectory
         )
+        sendInitialCommandIfNeeded()
     }
 
     func terminate() {
@@ -114,6 +117,17 @@ final class TerminalProcessController: NSObject {
         let rows = view.getTerminal().rows
         guard rows > 1 else { return }
         view.feed(text: String(repeating: "\n", count: rows - 1))
+    }
+
+    private func sendInitialCommandIfNeeded() {
+        guard !didSendInitialCommand,
+              isRunning,
+              let input = launchConfiguration.initialInput else { return }
+        // This is application-generated startup input, not an explicit user
+        // action, so bypass ActivityTerminalView.sendUserInput and leave the
+        // automatic-respawn limiter untouched.
+        view.send(input)
+        didSendInitialCommand = true
     }
 }
 
