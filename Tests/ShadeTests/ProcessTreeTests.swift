@@ -26,17 +26,43 @@ final class ProcessTreeTests: XCTestCase {
         XCTAssertEqual(indicator, "ssh")
     }
 
-    func testShellAsForegroundMeansNoRemoteClient() {
+    func testFindsRemoteClientWhenItOwnsThePTY() {
+        var didScanChildren = false
+        let indicator = ProcessTree.remoteIndicator(
+            forShell: 10,
+            foregroundProcessGroup: 10,
+            children: { _ in didScanChildren = true; return [] },
+            processName: { pid in pid == 10 ? "ssh" : nil },
+            processGroup: { pid in pid == 10 ? 10 : nil }
+        )
+
+        XCTAssertEqual(indicator, "ssh")
+        XCTAssertFalse(didScanChildren)
+    }
+
+    func testFindsRemoteClientBesideForegroundWrapper() {
+        let indicator = ProcessTree.remoteIndicator(
+            forShell: 10,
+            foregroundProcessGroup: 10,
+            children: { pid in pid == 10 ? [20] : [] },
+            processName: { pid in pid == 10 ? "sh" : "ssh" },
+            processGroup: { _ in 10 }
+        )
+
+        XCTAssertEqual(indicator, "ssh")
+    }
+
+    func testForegroundLocalOwnerIgnoresRemoteBackgroundGroup() {
         var didScan = false
         let indicator = ProcessTree.remoteIndicator(
             forShell: 10,
             foregroundProcessGroup: 10,
             children: { _ in didScan = true; return [20] },
-            processName: { _ in "ssh" },
+            processName: { pid in pid == 10 ? "zsh" : "ssh" },
             processGroup: { _ in 20 }
         )
 
         XCTAssertNil(indicator)
-        XCTAssertFalse(didScan)
+        XCTAssertTrue(didScan)
     }
 }

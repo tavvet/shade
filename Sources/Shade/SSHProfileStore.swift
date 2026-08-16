@@ -10,6 +10,7 @@ protocol SSHProfileStoring {
 /// connection data to `PreferencesStore` or UserDefaults.
 struct SSHProfileStore {
     static let currentVersion = 1
+    private static let comparisonLocale = Locale(identifier: "en_US_POSIX")
 
     let fileURL: URL
 
@@ -35,17 +36,45 @@ struct SSHProfileStore {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(envelope)
 
+        let fileManager = FileManager.default
         let directory = fileURL.deletingLastPathComponent()
-        try FileManager.default.createDirectory(
+        try fileManager.createDirectory(
             at: directory,
             withIntermediateDirectories: true,
             attributes: [.posixPermissions: 0o700]
         )
-        try data.write(to: fileURL, options: .atomic)
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600],
-            ofItemAtPath: fileURL.path
+
+        // Prepare and secure a sibling file before replacing the live library.
+        // There are no throwing operations after the final move/replace, so a
+        // reported save failure can never leave newer data on disk than the
+        // controller has published in memory.
+        let temporaryURL = directory.appendingPathComponent(
+            ".connections-\(UUID().uuidString).tmp",
+            isDirectory: false
         )
+        defer { try? fileManager.removeItem(at: temporaryURL) }
+
+        guard fileManager.createFile(
+            atPath: temporaryURL.path,
+            contents: data,
+            attributes: [.posixPermissions: 0o600]
+        ) else {
+            throw CocoaError(
+                .fileWriteUnknown,
+                userInfo: [NSFilePathErrorKey: temporaryURL.path]
+            )
+        }
+
+        if fileManager.fileExists(atPath: fileURL.path) {
+            _ = try fileManager.replaceItemAt(
+                fileURL,
+                withItemAt: temporaryURL,
+                backupItemName: nil,
+                options: .usingNewMetadataOnly
+            )
+        } else {
+            try fileManager.moveItem(at: temporaryURL, to: fileURL)
+        }
     }
 
     static func defaultFileURL(fileManager: FileManager = .default) -> URL {
@@ -68,7 +97,10 @@ struct SSHProfileStore {
             guard ids.insert(profile.id).inserted else {
                 throw SSHProfileStoreError.duplicateID(profile.id)
             }
-            let comparisonName = profile.name.lowercased()
+            let comparisonName = profile.name.folding(
+                options: [.caseInsensitive],
+                locale: comparisonLocale
+            )
             guard names.insert(comparisonName).inserted else {
                 throw SSHProfileStoreError.duplicateName(profile.name)
             }

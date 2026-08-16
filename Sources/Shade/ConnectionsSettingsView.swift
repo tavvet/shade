@@ -43,12 +43,7 @@ struct ConnectionsSettingsView: View {
                 profile: context.profile,
                 isNew: context.isNew
             ) { profile in
-                if context.isNew {
-                    try controller.add(profile)
-                } else {
-                    try controller.update(profile)
-                }
-                selectedID = profile.id
+                try save(profile, context: context)
             }
         }
         .alert(
@@ -74,10 +69,12 @@ struct ConnectionsSettingsView: View {
                     .contextMenu {
                         Button("Connect") { controller.connect(to: profile.id) }
                         Button("Edit…") { edit(profile) }
+                            .disabled(!controller.canEditProfiles)
                         Divider()
                         Button("Delete…", role: .destructive) {
                             pendingDeletion = profile
                         }
+                        .disabled(!controller.canEditProfiles)
                     }
             }
         }
@@ -224,6 +221,7 @@ struct ConnectionsSettingsView: View {
     }
 
     private func add() {
+        guard controller.canEditProfiles else { return }
         editor = SSHProfileEditorContext(
             profile: SSHProfile(name: "", host: ""),
             isNew: true
@@ -231,14 +229,41 @@ struct ConnectionsSettingsView: View {
     }
 
     private func edit(_ profile: SSHProfile) {
+        guard controller.canEditProfiles else { return }
         editor = SSHProfileEditorContext(profile: profile, isNew: false)
+    }
+
+    private func save(_ profile: SSHProfile, context: SSHProfileEditorContext) throws {
+        do {
+            if context.isNew {
+                try controller.add(profile)
+            } else {
+                try controller.update(profile)
+            }
+        } catch {
+            if ConnectionsSettingsErrorPresentation.isMatchingSaveProblem(
+                error.localizedDescription,
+                reportedProblem: controller.problem
+            ) {
+                // The editor keeps the sheet open and renders this error inline.
+                controller.dismissProblem()
+            }
+            throw error
+        }
+
+        operationError = nil
+        selectedID = profile.id
     }
 
     private func remove(_ profile: SSHProfile) {
         do {
             try controller.remove(id: profile.id)
+            operationError = nil
         } catch {
-            operationError = error.localizedDescription
+            operationError = ConnectionsSettingsErrorPresentation.operationMessage(
+                error.localizedDescription,
+                reportedProblem: controller.problem
+            )
         }
         pendingDeletion = nil
     }
@@ -258,8 +283,12 @@ struct ConnectionsSettingsView: View {
         }
         do {
             try controller.move(id: selectedProfile.id, to: index + offset)
+            operationError = nil
         } catch {
-            operationError = error.localizedDescription
+            operationError = ConnectionsSettingsErrorPresentation.operationMessage(
+                error.localizedDescription,
+                reportedProblem: controller.problem
+            )
         }
     }
 
@@ -277,6 +306,25 @@ struct ConnectionsSettingsView: View {
         )
     }
 
+}
+
+enum ConnectionsSettingsErrorPresentation {
+    static func isMatchingSaveProblem(
+        _ message: String,
+        reportedProblem: SSHConnectionsProblem?
+    ) -> Bool {
+        reportedProblem == SSHConnectionsProblem(kind: .save, message: message)
+    }
+
+    static func operationMessage(
+        _ message: String,
+        reportedProblem: SSHConnectionsProblem?
+    ) -> String? {
+        guard !isMatchingSaveProblem(message, reportedProblem: reportedProblem) else {
+            return nil
+        }
+        return message
+    }
 }
 
 enum SSHProfileDisplay {

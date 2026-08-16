@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// Presents the connection picker as a separate child window above Shade.
@@ -27,12 +28,13 @@ final class SSHConnectionPickerPresenter {
         }
 
         controller.reload()
-        controller.presentPicker()
 
+        let focusRequest = SSHConnectionPickerFocusRequest()
         let picker = SSHConnectionPickerPanel(
             contentViewController: NSHostingController(
                 rootView: SSHConnectionPickerView(
                     controller: controller,
+                    focusRequest: focusRequest,
                     onConnect: { [weak self] id in self?.connect(to: id) },
                     onDismiss: { [weak self] in self?.dismiss() },
                     onManage: { [weak self] in self?.manageConnections() }
@@ -40,7 +42,16 @@ final class SSHConnectionPickerPresenter {
             )
         )
         picker.onCancel = { [weak self] in self?.dismiss() }
-        picker.setFrame(parent.frame, display: false)
+        picker.onBecomeKey = { focusRequest.request() }
+        picker.onQuickSlot = { [weak self] number in self?.connectQuickSlot(number) }
+        let visibleFrame = parent.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? parent.frame
+        picker.setFrame(
+            SSHConnectionPickerLayout.frame(
+                parentFrame: parent.frame,
+                visibleFrame: visibleFrame
+            ),
+            display: false
+        )
 
         parentPanel = parent
         pickerPanel = picker
@@ -58,7 +69,6 @@ final class SSHConnectionPickerPresenter {
 
         pickerPanel = nil
         parentPanel = nil
-        controller.dismissPicker()
 
         if parent?.isVisible == true {
             parent?.makeKeyAndOrderFront(nil)
@@ -70,16 +80,24 @@ final class SSHConnectionPickerPresenter {
         dismiss()
     }
 
+    private func connectQuickSlot(_ number: Int) {
+        guard controller.connectQuickSlot(number) else { return }
+        dismiss()
+    }
+
     private func manageConnections() {
         dismiss()
         openConnectionSettings()
     }
 }
 
-/// A borderless key window that covers only its parent dropdown panel.
+/// A borderless key window aligned with the parent dropdown panel. It expands
+/// to a usable minimum size when the user's terminal panel is very small.
 @MainActor
 private final class SSHConnectionPickerPanel: NSPanel {
     var onCancel: (() -> Void)?
+    var onBecomeKey: (() -> Void)?
+    var onQuickSlot: ((Int) -> Void)?
 
     init(contentViewController: NSViewController) {
         super.init(
@@ -101,7 +119,54 @@ private final class SSHConnectionPickerPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
+    override func becomeKey() {
+        super.becomeKey()
+        onBecomeKey?()
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if let shortcut = PanelShortcutResolver.resolve(
+            keyCode: event.keyCode,
+            charactersIgnoringModifiers: event.charactersIgnoringModifiers ?? "",
+            modifierFlags: event.modifierFlags,
+            tabCount: 0
+        ), case .connectQuickSlot(let number) = shortcut,
+           let onQuickSlot {
+            onQuickSlot(number)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
     override func cancelOperation(_ sender: Any?) {
         onCancel?()
+    }
+}
+
+@MainActor
+final class SSHConnectionPickerFocusRequest: ObservableObject {
+    @Published private(set) var generation = 0
+
+    func request() {
+        generation &+= 1
+    }
+}
+
+enum SSHConnectionPickerLayout {
+    static let minimumWidth: CGFloat = 520
+    // Covers the tallest state: header + search + two-line load error +
+    // empty-library guidance + footer + the card's outer breathing room.
+    static let minimumHeight: CGFloat = 520
+
+    static func frame(parentFrame: NSRect, visibleFrame: NSRect) -> NSRect {
+        let width = min(max(parentFrame.width, minimumWidth), visibleFrame.width)
+        let height = min(max(parentFrame.height, minimumHeight), visibleFrame.height)
+
+        let centeredX = parentFrame.midX - width / 2
+        let x = min(max(centeredX, visibleFrame.minX), visibleFrame.maxX - width)
+        let alignedY = parentFrame.maxY - height
+        let y = min(max(alignedY, visibleFrame.minY), visibleFrame.maxY - height)
+
+        return NSRect(x: x, y: y, width: width, height: height)
     }
 }

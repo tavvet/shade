@@ -63,6 +63,41 @@ final class SSHProfileStoreTests: XCTestCase {
         }
     }
 
+    func testDuplicateNamesUseUnicodeCaseFolding() throws {
+        let fixture = try StoreFixture()
+        defer { fixture.cleanup() }
+
+        XCTAssertThrowsError(
+            try fixture.store.save([
+                SSHProfile(name: "Straße", host: "de-a"),
+                SSHProfile(name: "STRASSE", host: "de-b"),
+            ])
+        ) { error in
+            XCTAssertEqual(error as? SSHProfileStoreError, .duplicateName("STRASSE"))
+        }
+    }
+
+    func testUpdatingExistingFileReplacesContentsAndRestoresPrivatePermissions() throws {
+        let fixture = try StoreFixture()
+        defer { fixture.cleanup() }
+        let original = SSHProfile(name: "Production", host: "prod")
+        let replacement = SSHProfile(name: "Staging", host: "stage")
+
+        try fixture.store.save([original])
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o644],
+            ofItemAtPath: fixture.fileURL.path
+        )
+        try fixture.store.save([replacement])
+
+        XCTAssertEqual(try fixture.store.load(), [replacement])
+        let attributes = try FileManager.default.attributesOfItem(
+            atPath: fixture.fileURL.path
+        )
+        let permissions = try XCTUnwrap(attributes[.posixPermissions] as? NSNumber)
+        XCTAssertEqual(permissions.intValue & 0o777, 0o600)
+    }
+
     func testDuplicateIdentifiersAreRejected() throws {
         let fixture = try StoreFixture()
         defer { fixture.cleanup() }

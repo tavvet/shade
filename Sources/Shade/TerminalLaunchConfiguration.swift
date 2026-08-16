@@ -16,12 +16,4 @@ struct TerminalLaunchConfiguration: Equatable, Sendable {
         self.title = title
         self.initialCommand = initialCommand
     }
-
-    /// Bytes queued into the freshly started login shell. A carriage return is
-    /// the terminal's normal Enter key, so the command is visible in shell
-    /// history and returning from it leaves the local prompt alive.
-    var initialInput: [UInt8]? {
-        guard let initialCommand else { return nil }
-        return Array((ShellCommandRenderer.render(initialCommand) + "\r").utf8)
-    }
 }

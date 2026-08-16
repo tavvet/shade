@@ -39,6 +39,25 @@ final class SSHConnectionPickerSearchTests: XCTestCase {
         )
     }
 
+    func testTurkishLocaleMatchesInvariantHostsAndLocalizedNames() {
+        let locale = Locale(identifier: "tr_TR")
+        let profiles = [
+            SSHProfile(name: "Production", host: "internal.example.com"),
+            SSHProfile(name: "IĞDIR", host: "east.example.com"),
+        ]
+
+        XCTAssertEqual(
+            SSHConnectionPickerSearch.matches(profiles, query: "INTERNAL", locale: locale)
+                .map(\.name),
+            ["Production"]
+        )
+        XCTAssertEqual(
+            SSHConnectionPickerSearch.matches(profiles, query: "ığdır", locale: locale)
+                .map(\.name),
+            ["IĞDIR"]
+        )
+    }
+
     private func matches(_ query: String) -> [SSHProfile] {
         SSHConnectionPickerSearch.matches(profiles, query: query)
     }

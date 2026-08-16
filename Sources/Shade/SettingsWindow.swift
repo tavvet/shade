@@ -4,12 +4,17 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let model = SettingsModel()
+    private let navigation = SettingsNavigation()
     private let connections: SSHConnectionsController
 
     init(connections: SSHConnectionsController) {
         self.connections = connections
         let hosting = NSHostingController(
-            rootView: SettingsView(model: model, connections: connections)
+            rootView: SettingsView(
+                model: model,
+                connections: connections,
+                navigation: navigation
+            )
         )
         hosting.preferredContentSize = NSSize(width: 800, height: 580)
         let window = NSWindow(contentViewController: hosting)
@@ -25,7 +30,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("SettingsWindowController is not Storyboard-loadable") }
 
-    func present() {
+    func present(page: SettingsPage? = nil) {
+        if let page {
+            navigation.selection = page
+        }
         model.reloadForPresentation()
         connections.reload()
         // Switch from .accessory to .regular while the Settings window is open so that

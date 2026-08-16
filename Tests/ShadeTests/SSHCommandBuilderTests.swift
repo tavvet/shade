@@ -36,8 +36,8 @@ final class SSHCommandBuilderTests: XCTestCase {
         )
     }
 
-    func testShellCommandQuotesMetacharactersAndSingleQuotes() throws {
-        let command = try SSHCommandBuilder.shellCommand(
+    func testMetacharactersRemainLiteralStructuredArguments() throws {
+        let invocation = try SSHCommandBuilder.invocation(
             for: SSHProfile(
                 name: "Production",
                 host: "prod;touch-owned",
@@ -49,22 +49,19 @@ final class SSHCommandBuilderTests: XCTestCase {
         )
 
         XCTAssertEqual(
-            command,
-            "/usr/bin/ssh -p 2222 -l 'deploy$(touch)' "
-                + "-i '/Users/tester/.ssh/O'\\''Brien key' 'prod;touch-owned'"
+            invocation.arguments,
+            [
+                "-p", "2222",
+                "-l", "deploy$(touch)",
+                "-i", "/Users/tester/.ssh/O'Brien key",
+                "prod;touch-owned",
+            ]
         )
     }
 
-    func testRendererQuotesEmptyAndUnsafeArgumentsButLeavesSimpleOnesReadable() {
-        XCTAssertEqual(ShellCommandRenderer.quote(""), "''")
-        XCTAssertEqual(ShellCommandRenderer.quote("prod.example.com"), "prod.example.com")
-        XCTAssertEqual(ShellCommandRenderer.quote("$(touch /tmp/nope)"), "'$(touch /tmp/nope)'")
-        XCTAssertEqual(ShellCommandRenderer.quote("O'Brien"), "'O'\\''Brien'")
-    }
-
-    func testBuilderRejectsHostOptionInjectionBeforeRendering() {
+    func testBuilderRejectsHostOptionInjectionBeforeLaunching() {
         XCTAssertThrowsError(
-            try SSHCommandBuilder.shellCommand(
+            try SSHCommandBuilder.invocation(
                 for: SSHProfile(name: "Unexpected", host: "-oProxyCommand=touch")
             )
         ) { error in

@@ -22,6 +22,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var connections = SSHConnectionsController { [weak self] profile in
         guard let self else { return }
         try self.terminals.connect(to: profile)
+        // A connection may originate in Settings while the picker is also open.
+        // Defer teardown so a picker button can finish its SwiftUI action first.
+        DispatchQueue.main.async { [weak self] in
+            self?.connectionPicker?.dismiss()
+        }
         if self.panel.isVisible {
             self.panel.makeKeyAndOrderFront(nil)
         } else {
@@ -125,12 +130,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 controller: connections,
                 openConnectionSettings: { [weak self] in
                     guard let self else { return }
-                    self.panel.hide()
-                    self.settings.present()
+                    self.presentSettings(page: .connections)
                 }
             )
         }
         connectionPicker?.present(over: panel)
+    }
+
+    private func prepareForAuxiliaryWindow() {
+        connectionPicker?.dismiss()
+        panel.hide()
+    }
+
+    private func presentSettings(page: SettingsPage? = nil) {
+        prepareForAuxiliaryWindow()
+        settings.present(page: page)
     }
 
     /// Hide on a real app switch, but not during the transient resign-active
@@ -146,14 +160,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: ApplicationMenuActions {
     func applicationMenuShowAbout() {
+        prepareForAuxiliaryWindow()
         about.present()
     }
 
     func applicationMenuShowSettings() {
-        settings.present()
+        presentSettings()
     }
 
     func applicationMenuShowDiagnostics() {
+        prepareForAuxiliaryWindow()
         diagnostics.present()
     }
 
