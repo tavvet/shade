@@ -120,7 +120,7 @@ final class PanelKeyboardController: PanelKeyHandler {
         case .bytes(let bytes):
             session.sendUserInput(bytes)
         case .selection(let direction, let byWord):
-            session.view.extendKeyboardSelection(direction: direction.swiftTermDirection, byWord: byWord)
+            session.view.extendShadeKeyboardSelection(direction: direction, byWord: byWord)
         }
     }
 
@@ -128,13 +128,14 @@ final class PanelKeyboardController: PanelKeyHandler {
     /// characters to the left of the shell cursor using DEL bytes.
     func cutSelection() {
         guard let session = terminals.activeSession,
-              let text = session.view.shadeSelectedText() else { return }
+              let text = session.view.getSelection(),
+              !text.isEmpty else { return }
         let view = session.view
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         session.sendUserInput([UInt8](repeating: 0x7F, count: text.count))
-        view.clearKeyboardSelection()
+        view.selectNone()
     }
 
     private func perform(_ shortcut: PanelShortcut) {
@@ -187,18 +188,5 @@ final class PanelKeyboardController: PanelKeyHandler {
         let lastRow = max(1, rows)
         session.view.feed(text: "\u{1B}[2J\u{1B}[\(lastRow);1H")
         session.sendUserInput([0x0D])
-    }
-}
-
-private extension PanelSelectionDirection {
-    var swiftTermDirection: TerminalView.ShadeKeyboardDirection {
-        switch self {
-        case .left:      return .left
-        case .right:     return .right
-        case .up:        return .up
-        case .down:      return .down
-        case .lineStart: return .lineStart
-        case .lineEnd:   return .lineEnd
-        }
     }
 }

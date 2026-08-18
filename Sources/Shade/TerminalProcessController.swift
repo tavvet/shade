@@ -77,12 +77,7 @@ final class TerminalProcessController: NSObject {
         activityView.onUserInput = { [weak self] in
             MainActor.assumeIsolated { self?.onUserInput?() }
         }
-
-        let terminal = view.getTerminal()
-        terminal.registerOscHandler(code: 133) { [weak self, weak terminal] data in
-            guard let terminal else { return }
-            let row = terminal.scrollInvariantCursorRow
-            let payload = Array(data)
+        activityView.onOSC133 = { [weak self] payload, row in
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     self?.onPromptMark?(payload, row)
