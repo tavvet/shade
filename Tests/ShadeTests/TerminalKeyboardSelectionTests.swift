@@ -101,6 +101,34 @@ final class TerminalKeyboardSelectionTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(view.getSelection()), "c")
     }
 
+    func testCharacterMovementResetsStaleMouseWordSelectionMode() throws {
+        let view = makeView(cols: 8, rows: 3)
+        view.terminal.feed(text: "abc")
+        view.selection.selectWordOrExpression(
+            at: Position(col: 0, row: 0),
+            in: view.terminal.buffer
+        )
+        // SwiftTerm uses this direct transition on ordinary key input and
+        // resize, leaving the previous selection mode intact.
+        view.selection.active = false
+
+        view.extendShadeKeyboardSelection(direction: .left, byWord: false)
+
+        XCTAssertEqual(try XCTUnwrap(view.getSelection()), "c")
+    }
+
+    func testKeyboardMovementClearsStaleMouseRowSelectionState() {
+        let view = makeView(cols: 8, rows: 3)
+        view.terminal.feed(text: "abc")
+        view.selection.select(row: 0)
+        view.selection.active = false
+        XCTAssertTrue(view.selection.selectingRows)
+
+        view.extendShadeKeyboardSelection(direction: .left, byWord: false)
+
+        XCTAssertFalse(view.selection.selectingRows)
+    }
+
     func testFirstKeyboardSelectionAnchorsAtCursorWhileViewportIsScrolledUp() {
         let view = makeView(cols: 8, rows: 3)
         for index in 0..<8 {

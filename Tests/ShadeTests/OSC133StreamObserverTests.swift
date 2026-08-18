@@ -16,6 +16,13 @@ final class OSC133StreamObserverTests: XCTestCase {
         )
     }
 
+    func testRecognizesC1StringTerminator() {
+        var observer = OSC133StreamObserver()
+        let bytes = Array("\u{1B}]133;A".utf8) + [0x9C]
+
+        XCTAssertEqual(consume(bytes, with: &observer), [Array("A".utf8)])
+    }
+
     func testUTF8ContinuationBytesDoNotStartControlStrings() {
         var observer = OSC133StreamObserver()
         let bytes = Array("Привет \u{1B}]133;C\u{07}".utf8)
@@ -109,6 +116,23 @@ final class OSC133StreamObserverTests: XCTestCase {
         view.dataReceived(slice: second[...])
 
         XCTAssertEqual(payloads, [Array("D;42".utf8)])
+    }
+
+    @MainActor
+    func testActivityViewDispatchesC1STThroughSwiftTermBeforeCallback() {
+        let view = ActivityTerminalView(frame: .zero)
+        view.terminal.resize(cols: 20, rows: 4)
+        var payloads: [String] = []
+        view.onOSC133 = { payload, _ in
+            payloads.append(String(decoding: payload, as: UTF8.self))
+        }
+        let bytes = Array("\u{1B}]133;A".utf8) + [0x9C] + Array("x".utf8)
+
+        view.dataReceived(slice: bytes[...])
+
+        XCTAssertEqual(payloads, ["A"])
+        XCTAssertEqual(view.terminal.semanticPromptMarks(at: 0).map(\.kind), [.initial])
+        XCTAssertEqual(view.terminal.getCharacter(col: 0, row: 0), "x")
     }
 
     @MainActor

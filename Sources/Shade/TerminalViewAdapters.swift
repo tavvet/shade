@@ -92,7 +92,19 @@ final class ActivityTerminalView: LocalProcessTerminalView {
             let payload = osc133Observer.consume(slice[index])
             let nextIndex = slice.index(after: index)
             if let payload {
-                super.dataReceived(slice: slice[segmentStart..<nextIndex])
+                if slice[index] == 0x9C {
+                    // SwiftTerm's OSC fast path can absorb C1 ST as payload
+                    // when it follows printable bytes in the same feed call.
+                    // End the payload feed first, then present ST as the first
+                    // byte of its own call so the built-in OSC 133 handler is
+                    // guaranteed to dispatch before Shade observes the mark.
+                    if segmentStart < index {
+                        super.dataReceived(slice: slice[segmentStart..<index])
+                    }
+                    super.dataReceived(slice: slice[index..<nextIndex])
+                } else {
+                    super.dataReceived(slice: slice[segmentStart..<nextIndex])
+                }
                 if !terminal.isCurrentBufferAlternate,
                    let cursor = TerminalBufferGeometry.scrollInvariantCursorPosition(
                        in: terminal
