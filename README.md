@@ -547,9 +547,11 @@ Key design choices:
   when the panel is shown so that `⌘`-shortcuts route to us instead of
   leaking to whichever browser was last focused.
 - **`performKeyEquivalent` + `sendEvent` override** in `DropdownPanel`.
-  `performKeyEquivalent` catches `⌘`-tab-shortcuts; `sendEvent` delegates raw
-  terminal key translation to `PanelTerminalInputResolver`. The resolver uses
-  physical key codes, so Control combinations work independently of input layout.
+  Both paths route Shade shortcuts before the responder chain; `sendEvent` is
+  also the fallback for modified navigation keys and delegates terminal-specific
+  translation to `PanelTerminalInputResolver`. The resolvers use physical key
+  codes, so Control combinations and app shortcuts work independently of input
+  layout.
 - **Live-apply prefs.** `SettingsModel` publishes one `Preferences` snapshot.
   Edits are persisted immediately and `.shadePreferencesChanged` is posted after
   a short debounce; the application coordinator then updates panel content and

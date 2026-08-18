@@ -6,6 +6,20 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Rebase the SwiftTerm fork onto current upstream and reduce Shade's local fork
+  delta from five patches to one focused link-highlight patch. Keyboard
+  selection, cut and OSC 133 observation now live in Shade on public APIs or the
+  open PTY view.
+
+### Fixed
+
+- Reset stale mouse word/row selection state before handling keyboard selection,
+  so plain `Shift`+arrow movement remains character-based.
+- Keep Shade's OSC 133 observer synchronized with SwiftTerm when a stream uses
+  the C1 string terminator (`ST`, `0x9C`).
+
 ## [0.1.20] — 2026-08-16
 
 ### Added
