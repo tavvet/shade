@@ -6,6 +6,12 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Split the saved-connections Settings page into focused composition,
+  testable interaction state, reusable UI components and shared destination
+  formatting without changing its behavior.
+
 ## Current limitations
 
 - Published bundles are ad-hoc signed; on first launch macOS Gatekeeper

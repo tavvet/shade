@@ -484,7 +484,9 @@ Sources/Shade/
 ├── BranchBadge.swift        Floating git branch + status pill (SwiftUI)
 ├── CommandNotifier.swift    Command-finished notifications (OSC 133 C→D timing)
 ├── CommandNotificationCoordinator.swift  Completion-event notification policy/wiring
-├── ConnectionsSettingsView.swift  Saved SSH connection list and ordering controls
+├── ConnectionsSettingsComponents.swift  Saved-connection list, controls and status UI
+├── ConnectionsSettingsView.swift  Saved-connections page composition
+├── ConnectionsSettingsViewState.swift  Selection, editor and operation presentation state
 ├── DiagnosticsWindow.swift  Read-only state snapshot, copy-paste for bug reports
 ├── DropdownPanel.swift      NSPanel lifecycle, slide animation and event dispatch
 ├── GitInfo.swift            Git working-tree status aggregation and parsing
@@ -521,6 +523,7 @@ Sources/Shade/
 ├── SSHConnectionPickerWindow.swift  Lazy child-panel presentation and focus routing
 ├── SSHConnectionsController.swift  Shared connection library state and actions
 ├── SSHProfile.swift         Saved SSH profile model and validation
+├── SSHProfileDisplay.swift  Shared saved-connection destination formatting
 ├── SSHProfileEditor.swift   Add/edit connection sheet and draft parsing
 ├── SSHProfileStore.swift    Private versioned JSON persistence
 ├── TabBar.swift             Tab-strip layout, scrolling and new-tab action
