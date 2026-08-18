@@ -14,9 +14,10 @@ only a native Mac app can do well.
   Find-in-buffer with next / previous and highlight. Listed under CHANGELOG
   "Known limitations".
   *Why:* core terminal feature and a natural fit for the keyboard-first ethos.
-  *How:* scan buffer text via the fork's scroll-invariant accessors; scroll to a
-  match and select it with the existing `extendKeyboardSelection`. Multi-match
-  highlighting may need a small fork addition. New SwiftUI search overlay.
+  *How:* build a small search overlay around SwiftTerm's public `findNext`,
+  `findPrevious`, `searchMatchSummary` and `clearSearch` APIs. The pinned
+  upstream version already owns matching, selection and reveal-scrolling, so
+  this requires no fork patch.
 
 - **Tab reorder / color labels** — *M.*
   Drag-to-reorder tabs and an optional color tag. (Tab **rename** shipped — a

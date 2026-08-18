@@ -54,8 +54,10 @@ Treat every SwiftTerm modification as a last resort:
    fork delta.
 
 The link-highlight patch passes this rule because Shade cannot obtain the full
-wrapped link range or inject attributes into both renderer paths through public
-API. An overlay would duplicate private renderer geometry and caching.
+wrapped link range or inject color into SwiftTerm's private CoreGraphics
+attributed-run and URL-attribute cache through public API. An overlay would
+duplicate private renderer geometry and caching. Shade does not enable the
+optional Metal renderer; doing so would require a separate link-highlight audit.
 
 ## Upstream sync procedure
 
