@@ -13,6 +13,13 @@ extension TerminalView {
             return
         }
 
+        // Mouse selection leaves its word/row mode behind when SwiftTerm
+        // deactivates the range directly (for example on key input or resize).
+        // Keyboard movement owns its own character/word stepping below, so do
+        // not let SelectionService snap the destination a second time.
+        selection.selectingRows = false
+        selection.selectionMode = .character
+
         if !selection.active {
             guard let cursor = TerminalBufferGeometry.cursorBufferPosition(in: terminal) else {
                 return
