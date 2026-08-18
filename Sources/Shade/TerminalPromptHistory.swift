@@ -43,14 +43,15 @@ struct TerminalPromptHistory {
         }
     }
 
-    /// Returns the viewport-relative row for the adjacent prompt, clamped to
-    /// SwiftTerm's valid scrollback range.
+    /// Returns the viewport-relative row for the adjacent prompt. SwiftTerm's
+    /// `scrollTo(row:)` performs the final clamp to the valid scrollback range.
     mutating func viewportRow(
         toward direction: NavigationDirection,
         in terminal: Terminal
     ) -> Int? {
         pruneStaleMarks(in: terminal)
-        let viewportTopInvariant = terminal.scrollInvariantLinesTop + terminal.buffer.yDisp
+        let linesTop = terminal.buffer.totalLinesTrimmed
+        let viewportTopInvariant = linesTop + terminal.buffer.yDisp
         let mark: PromptMark?
         switch direction {
         case .previous:
@@ -60,8 +61,7 @@ struct TerminalPromptHistory {
         }
         guard let mark else { return nil }
 
-        let rawViewportRow = mark.row - terminal.scrollInvariantLinesTop
-        return max(0, min(rawViewportRow, terminal.maxScrollbackRow))
+        return max(0, mark.row - linesTop)
     }
 
     /// Returns the most recently completed command's output without coupling
@@ -76,7 +76,7 @@ struct TerminalPromptHistory {
         // SwiftTerm's range extraction understands BufferLine.isWrapped: it
         // joins visual soft wraps but retains real line feeds. Prompt marks use
         // scroll-invariant rows, so translate them back into buffer indices.
-        let linesTop = terminal.scrollInvariantLinesTop
+        let linesTop = terminal.buffer.totalLinesTrimmed
         let text = terminal.getText(
             start: Position(col: 0, row: firstRow - linesTop),
             end: Position(col: lastLine.count, row: lastRow - linesTop)

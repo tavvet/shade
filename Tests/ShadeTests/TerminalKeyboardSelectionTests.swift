@@ -1,0 +1,133 @@
+import AppKit
+import SwiftTerm
+import XCTest
+@testable import Shade
+
+@MainActor
+final class TerminalKeyboardSelectionTests: XCTestCase {
+    func testDownStopsAtLastExistingBufferRow() {
+        let view = makeView(cols: 8, rows: 3)
+        let lastRow = TerminalBufferGeometry.lastBufferRow(in: view.terminal)
+        XCTAssertNotNil(lastRow)
+        view.selection.setSoftStart(bufferPosition: Position(col: 0, row: lastRow ?? 0))
+
+        view.extendShadeKeyboardSelection(direction: .down, byWord: false)
+
+        XCTAssertEqual(view.selection.end, Position(col: 0, row: lastRow ?? 0))
+    }
+
+    func testWordMovementCrossesMultipleRowsAndBlankLines() {
+        let view = makeView(cols: 6, rows: 4)
+        view.terminal.feed(text: "one \r\n\r\n  two")
+        view.selection.setSoftStart(bufferPosition: Position(col: 0, row: 0))
+
+        view.extendShadeKeyboardSelection(direction: .right, byWord: true)
+
+        XCTAssertEqual(view.selection.end, Position(col: 2, row: 2))
+    }
+
+    func testCharacterMovementSelectsWholeWideGrapheme() throws {
+        let view = makeView(cols: 8, rows: 3)
+        view.terminal.feed(text: "a界b")
+        view.selection.setSoftStart(bufferPosition: Position(col: 1, row: 0))
+
+        view.extendShadeKeyboardSelection(direction: .right, byWord: false)
+
+        XCTAssertEqual(view.selection.end, Position(col: 3, row: 0))
+        XCTAssertEqual(try XCTUnwrap(view.getSelection()), "界")
+    }
+
+    func testMovingLeftDoesNotStopOnWideGlyphContinuationCell() throws {
+        let view = makeView(cols: 8, rows: 3)
+        view.terminal.feed(text: "a界b")
+        view.selection.setSoftStart(bufferPosition: Position(col: 3, row: 0))
+
+        view.extendShadeKeyboardSelection(direction: .left, byWord: false)
+
+        XCTAssertEqual(view.selection.end, Position(col: 1, row: 0))
+        XCTAssertEqual(try XCTUnwrap(view.getSelection()), "界")
+    }
+
+    func testCharacterMovementTreatsEmojiClusterAsOneGlyph() throws {
+        let view = makeView(cols: 12, rows: 3)
+        let emoji = "👩‍👩‍👦‍👦"
+        view.terminal.feed(text: "a\(emoji)b")
+        view.selection.setSoftStart(bufferPosition: Position(col: 1, row: 0))
+
+        view.extendShadeKeyboardSelection(direction: .right, byWord: false)
+
+        XCTAssertEqual(try XCTUnwrap(view.getSelection()), emoji)
+        XCTAssertGreaterThan(view.selection.end.col, 1)
+    }
+
+    func testBidiTextUsesLogicalBufferOrder() throws {
+        let view = makeView(cols: 8, rows: 3)
+        view.terminal.feed(text: "אב")
+        view.selection.setSoftStart(bufferPosition: Position(col: 0, row: 0))
+
+        view.extendShadeKeyboardSelection(direction: .right, byWord: false)
+
+        XCTAssertEqual(try XCTUnwrap(view.getSelection()), "א")
+    }
+
+    func testVerticalMovementNormalizesWideGlyphContinuationColumn() {
+        let view = makeView(cols: 8, rows: 3)
+        view.terminal.feed(text: "xx\r\na界")
+        view.selection.setSoftStart(bufferPosition: Position(col: 2, row: 0))
+
+        view.extendShadeKeyboardSelection(direction: .down, byWord: false)
+
+        XCTAssertEqual(view.selection.end, Position(col: 1, row: 1))
+    }
+
+    func testWordMovementTreatsSoftWrapAsOneLogicalWord() {
+        let view = makeView(cols: 5, rows: 3)
+        view.terminal.feed(text: "abcdef ghi")
+        view.selection.setSoftStart(bufferPosition: Position(col: 0, row: 0))
+
+        view.extendShadeKeyboardSelection(direction: .right, byWord: true)
+
+        XCTAssertEqual(view.selection.end, Position(col: 2, row: 1))
+    }
+
+    func testFirstKeyboardSelectionAnchorsAtTerminalCursor() throws {
+        let view = makeView(cols: 8, rows: 3)
+        view.terminal.feed(text: "abc")
+
+        view.extendShadeKeyboardSelection(direction: .left, byWord: false)
+
+        XCTAssertEqual(view.selection.start, Position(col: 3, row: 0))
+        XCTAssertEqual(view.selection.end, Position(col: 2, row: 0))
+        XCTAssertEqual(try XCTUnwrap(view.getSelection()), "c")
+    }
+
+    func testFirstKeyboardSelectionAnchorsAtCursorWhileViewportIsScrolledUp() {
+        let view = makeView(cols: 8, rows: 3)
+        for index in 0..<8 {
+            view.terminal.feed(text: "line\(index)\r\n")
+        }
+        view.scrollTo(row: 0)
+
+        let expected = TerminalBufferGeometry.cursorBufferPosition(in: view.terminal)
+        view.extendShadeKeyboardSelection(direction: .left, byWord: false)
+
+        XCTAssertEqual(view.selection.start, expected)
+    }
+
+    func testLineEndIncludesContentInFinalColumn() throws {
+        let view = makeView(cols: 5, rows: 3)
+        view.terminal.feed(text: "abcde")
+        view.selection.setSoftStart(bufferPosition: Position(col: 0, row: 0))
+
+        view.extendShadeKeyboardSelection(direction: .lineEnd, byWord: false)
+
+        XCTAssertEqual(view.selection.end, Position(col: 5, row: 0))
+        XCTAssertEqual(try XCTUnwrap(view.getSelection()), "abcde")
+    }
+
+    private func makeView(cols: Int, rows: Int) -> TerminalView {
+        let view = TerminalView(frame: .zero)
+        view.terminal.resize(cols: cols, rows: rows)
+        return view
+    }
+}

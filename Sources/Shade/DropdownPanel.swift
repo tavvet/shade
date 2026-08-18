@@ -56,8 +56,11 @@ final class DropdownPanel: NSPanel {
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if !PanelInputRouting.isEditingText(firstResponder),
-           keyHandler?.panelHandleKey(event) == true {
-            return true
+           let handler = keyHandler {
+            handler.panelDidReceiveUserInput()
+            if handler.panelHandleKey(event) {
+                return true
+            }
         }
         return super.performKeyEquivalent(with: event)
     }
@@ -67,6 +70,14 @@ final class DropdownPanel: NSPanel {
            !PanelInputRouting.isEditingText(firstResponder),
            let handler = keyHandler {
             handler.panelDidReceiveUserInput()
+            // Command-key events normally arrive through
+            // `performKeyEquivalent`, but AppKit can route modified navigation
+            // keys (notably Command-Shift-Up/Down) straight to `sendEvent`.
+            // Keep this fallback so every Shade shortcut has one reliable path
+            // before terminal-specific input translation or the responder chain.
+            if handler.panelHandleKey(event) {
+                return
+            }
             if let input = PanelTerminalInputResolver.resolve(
                 keyCode: event.keyCode,
                 modifierFlags: event.modifierFlags

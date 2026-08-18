@@ -71,10 +71,42 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
 final class ActivityTerminalView: LocalProcessTerminalView {
     var onData: (() -> Void)?
     var onUserInput: (() -> Void)?
+    var onOSC133: (([UInt8], Int) -> Void)?
+
+    private var osc133Observer = OSC133StreamObserver()
 
     override func dataReceived(slice: ArraySlice<UInt8>) {
         onData?()
-        super.dataReceived(slice: slice)
+        guard !slice.isEmpty else {
+            super.dataReceived(slice: slice)
+            return
+        }
+
+        // Forward bytes in larger contiguous segments, splitting only after a
+        // complete OSC 133 terminator. The callback therefore observes the
+        // exact terminal state produced by SwiftTerm's built-in handler even
+        // when one PTY chunk contains several marks and intervening output.
+        var segmentStart = slice.startIndex
+        var index = slice.startIndex
+        while index < slice.endIndex {
+            let payload = osc133Observer.consume(slice[index])
+            let nextIndex = slice.index(after: index)
+            if let payload {
+                super.dataReceived(slice: slice[segmentStart..<nextIndex])
+                if !terminal.isCurrentBufferAlternate,
+                   let cursor = TerminalBufferGeometry.scrollInvariantCursorPosition(
+                       in: terminal
+                   ) {
+                    onOSC133?(payload, cursor.row)
+                }
+                segmentStart = nextIndex
+            }
+            index = nextIndex
+        }
+
+        if segmentStart < slice.endIndex {
+            super.dataReceived(slice: slice[segmentStart..<slice.endIndex])
+        }
     }
 
     override func paste(_ sender: Any) {

@@ -497,6 +497,7 @@ Sources/Shade/
 ├── AppearanceSettingsView.swift  Appearance settings form
 ├── GeneralSettingsView.swift  Window, startup and behavior settings form
 ├── NotificationSettingsView.swift  Command-notification settings form
+├── OSC133StreamObserver.swift  Non-invasive OSC 133 observation in the PTY stream
 ├── SettingsModel.swift      Observable settings snapshot + live-apply coordination
 ├── SettingsSystemServices.swift  Login-item and notification authorization adapters
 ├── SettingsView.swift       Settings sidebar navigation and page switching
@@ -519,9 +520,11 @@ Sources/Shade/
 ├── TabChip.swift            Individual tab rendering and inline rename state
 ├── TabsObservable.swift     Observable tab/session projection for SwiftUI
 ├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering
+├── TerminalBufferGeometry.swift  Public-API-only active-buffer geometry
 ├── TerminalCommandSequence.swift  One-PTY command → login-shell wrapper
 ├── TerminalContextPoller.swift  Visibility-scoped repeating context refresh
 ├── TerminalContextTracker.swift  CWD, Git status/branch and remote-session masking
+├── TerminalKeyboardSelection.swift  Keyboard-driven buffer selection
 ├── TerminalLinkOpener.swift  Testable link/path resolution + system opening
 ├── TerminalLaunchConfiguration.swift  Generic startup directory/title/command descriptor
 ├── TerminalPresentationState.swift  Tab titles, activity and command-status state
@@ -566,14 +569,12 @@ Key design choices:
 
 - [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) — VT100 / xterm
   terminal emulator + local PTY shell hosting. Shade depends on a
-  [rebase-tracked fork](https://github.com/tavvet/SwiftTerm) (`shade` branch,
-  pinned by revision) that carries a few local patches on top of upstream: a
-  configurable link-highlight color, keyboard text selection in the buffer, `⌘X`
-  on read-only buffers, OSC 133 scroll-invariant accessors, and a trivial
-  warning-silence. Two former patches are now **upstream** and dropped: the
-  CoreGraphics-renderer fix ([SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582))
-  and wheel → xterm-button forwarding. Syncing upstream = rebase the fork and
-  bump the pin — see [docs/swiftterm-fork-migration.md](./docs/swiftterm-fork-migration.md).
+  [rebase-tracked fork](https://github.com/tavvet/SwiftTerm), pinned by
+  revision. The fork carries one local patch: configurable link-highlight
+  color and cell tint. Keyboard selection, cut and OSC 133 tracking live in
+  Shade and use SwiftTerm's public APIs or the open PTY view. Syncing upstream
+  requires a patch re-audit before bumping the pin — see
+  [docs/swiftterm-fork-migration.md](./docs/swiftterm-fork-migration.md).
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
   global hotkey registration with a SwiftUI recorder UI.
 

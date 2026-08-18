@@ -48,6 +48,31 @@ final class PromptMarkTests: XCTestCase {
             PromptMark(kind: .promptStart, row: 1))
     }
 
+    func testAcceptsValidSemanticOptions() {
+        XCTAssertEqual(
+            PromptMark.parse(
+                payload: Array("A;k=i;cl=w;click_events=2;special_key=1".utf8)[...],
+                row: 3
+            ),
+            PromptMark(kind: .promptStart, row: 3)
+        )
+    }
+
+    func testRejectsKnownSemanticOptionWithInvalidValue() {
+        XCTAssertNil(
+            PromptMark.parse(payload: Array("A;k=bogus".utf8)[...], row: 3)
+        )
+        XCTAssertNil(
+            PromptMark.parse(payload: Array("C;click_events=3".utf8)[...], row: 3)
+        )
+    }
+
+    func testDoesNotCreateNavigationMarksForGroupedPromptKinds() {
+        for payload in ["A;k=r", "A;k=c", "A;k=s"] {
+            XCTAssertNil(PromptMark.parse(payload: Array(payload.utf8)[...], row: 3))
+        }
+    }
+
     func testRejectsUnknownKind() {
         XCTAssertNil(PromptMark.parse(payload: Array("X".utf8)[...], row: 0))
     }
@@ -195,33 +220,29 @@ final class PromptMarkTests: XCTestCase {
 
     // MARK: - End-to-end through SwiftTerm
 
-    func testSwiftTermDispatchesOsc133AndReportsCursorRow() {
-        let delegate = NoopTerminalDelegate()
-        let terminal = Terminal(delegate: delegate, options: TerminalOptions(cols: 80, rows: 24))
+    @MainActor
+    func testActivityViewObservesOsc133AfterSwiftTermDispatch() {
+        let view = ActivityTerminalView(frame: .zero)
+        view.terminal.resize(cols: 80, rows: 24)
         var seenPayloads: [String] = []
         var seenRows: [Int] = []
-        terminal.registerOscHandler(code: 133) { data in
-            seenRows.append(terminal.scrollInvariantCursorRow)
+        view.onOSC133 = { data, row in
+            seenRows.append(row)
             seenPayloads.append(String(bytes: data, encoding: .utf8) ?? "")
         }
 
         // Two linefeeds → cursor on row 2 (0-indexed). Then OSC 133 ; A BEL.
-        terminal.feed(text: "hi\r\nthere\r\n")
-        let osc: [UInt8] = [0x1B, 0x5D] + Array("133;A".utf8) + [0x07]
-        terminal.feed(byteArray: osc)
+        let bytes = Array("hi\r\nthere\r\n\u{1B}]133;A\u{07}".utf8)
+        view.dataReceived(slice: bytes[...])
 
         XCTAssertEqual(seenPayloads, ["A"])
         XCTAssertEqual(seenRows, [2])
+        XCTAssertEqual(view.terminal.semanticPromptMarks(at: 2).map(\.kind), [.initial])
 
         // Now emit OSC 133 ; D ; 0 — different payload, same row.
         let oscDone: [UInt8] = [0x1B, 0x5D] + Array("133;D;0".utf8) + [0x07]
-        terminal.feed(byteArray: oscDone)
+        view.dataReceived(slice: oscDone[...])
         XCTAssertEqual(seenPayloads, ["A", "D;0"])
         XCTAssertEqual(seenRows.last, 2)
     }
-}
-
-/// Minimal TerminalDelegate for tests — only `send` lacks a default impl.
-private final class NoopTerminalDelegate: TerminalDelegate {
-    func send(source: Terminal, data: ArraySlice<UInt8>) {}
 }

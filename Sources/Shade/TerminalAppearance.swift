@@ -8,7 +8,7 @@ enum TerminalAppearance {
     static func apply(_ prefs: Preferences, to view: LocalProcessTerminalView) {
         view.font = prefs.terminalFont()
         view.nativeBackgroundColor = NSColor(white: 0.08, alpha: prefs.backgroundOpacity)
-        view.linkHoverColor = prefs.linkHighlightColor()
+        view.linkHighlightColor = prefs.linkHighlightColor()
         view.wantsLayer = true
         view.layer?.isOpaque = false
         view.layer?.backgroundColor = NSColor.clear.cgColor

@@ -67,8 +67,32 @@ final class TerminalPromptHistoryTests: XCTestCase {
         XCTAssertEqual(history.lastCommandOutput(in: terminal), "abcdefgh")
     }
 
-    private func makeTerminal(cols: Int = 80) -> Terminal {
-        Terminal(delegate: HistoryTerminalDelegate(), options: TerminalOptions(cols: cols, rows: 24))
+    func testNavigationAndCopyUseBufferRowsAfterScrollbackGrows() throws {
+        let terminal = makeTerminal(cols: 20, rows: 4)
+        var history = TerminalPromptHistory()
+        _ = history.record(payload: Array("A".utf8), row: 0, in: terminal)
+        _ = history.record(payload: Array("C".utf8), row: 0, in: terminal)
+        for index in 1...8 {
+            terminal.feed(text: "line-\(index)\r\n")
+        }
+        let doneRow = terminal.buffer.totalLinesTrimmed + terminal.buffer.yDisp
+            + terminal.getCursorLocation().y
+        _ = history.record(payload: Array("D;0".utf8), row: doneRow, in: terminal)
+        _ = history.record(payload: Array("A".utf8), row: doneRow, in: terminal)
+
+        XCTAssertGreaterThan(terminal.buffer.yDisp, 0)
+        XCTAssertEqual(
+            history.viewportRow(toward: .previous, in: terminal),
+            0
+        )
+        XCTAssertEqual(
+            try XCTUnwrap(history.lastCommandOutput(in: terminal)),
+            (1...8).map { "line-\($0)" }.joined(separator: "\n")
+        )
+    }
+
+    private func makeTerminal(cols: Int = 80, rows: Int = 24) -> Terminal {
+        Terminal(delegate: HistoryTerminalDelegate(), options: TerminalOptions(cols: cols, rows: rows))
     }
 }
 
