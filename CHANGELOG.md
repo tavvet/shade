@@ -6,21 +6,17 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
-### Changed
+## Current limitations
 
-- Rebase the SwiftTerm fork onto current upstream and reduce Shade's local fork
-  delta from five patches to one focused link-highlight patch. Keyboard
-  selection, cut and OSC 133 observation now live in Shade on public APIs or the
-  open PTY view.
+- Published bundles are ad-hoc signed; on first launch macOS Gatekeeper
+  requires the user to clear the quarantine attribute or use the right-click →
+  Open flow. Developer ID release signing and notarization are not configured
+  yet.
+- No window splits, scrollback search, or session save/restore yet, so custom
+  tab names do not survive a restart.
+- macOS 13 is the minimum supported version.
 
-### Fixed
-
-- Reset stale mouse word/row selection state before handling keyboard selection,
-  so plain `Shift`+arrow movement remains character-based.
-- Keep Shade's OSC 133 observer synchronized with SwiftTerm when a stream uses
-  the C1 string terminator (`ST`, `0x9C`).
-
-## [0.1.20] — 2026-08-16
+## [0.1.20] — 2026-08-18
 
 ### Added
 
@@ -33,6 +29,10 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Changed
 
+- Rebase the SwiftTerm fork onto the audited upstream base `c74d1e6` and reduce
+  Shade's local fork delta from five patches to one focused link-highlight
+  patch. Keyboard selection, cut and OSC 133 observation now live in Shade on
+  public APIs or the open PTY view.
 - Generalize terminal startup around an optional directory, pinned title and
   structured initial process invocation, keeping feature-specific SSH details
   outside terminal lifecycle code.
@@ -43,6 +43,13 @@ All notable changes to Shade are documented in this file. Format follows
 - Protect unreadable, malformed and unsupported connection libraries from
   accidental replacement: profile edits stay disabled until a reload succeeds,
   while valid updates are written atomically with user-only permissions.
+
+### Fixed
+
+- Reset stale mouse word/row selection state before handling keyboard selection,
+  so plain `Shift`+arrow movement remains character-based.
+- Keep Shade's OSC 133 observer synchronized with SwiftTerm when a stream uses
+  the C1 string terminator (`ST`, `0x9C`).
 
 ## [0.1.19] — 2026-08-11
 
@@ -450,15 +457,6 @@ First public release.
 - Shells start in `$HOME` instead of `/`.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
-
-### Known limitations
-
-- Bundle is ad-hoc signed; on first launch macOS Gatekeeper requires the
-  user to clear the quarantine attribute or use the right-click → Open
-  flow. Real Developer ID + notarization arrives in a follow-up release.
-- No window splits, scrollback search, or session save/restore yet — so custom
-  tab names don't survive a restart.
-- macOS 13 minimum.
 
 [Unreleased]: https://github.com/tavvet/shade/compare/v0.1.20...HEAD
 [0.1.20]: https://github.com/tavvet/shade/releases/tag/v0.1.20

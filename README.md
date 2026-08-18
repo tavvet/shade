@@ -8,7 +8,7 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
 ![Shade demo](docs/demo.gif)
 
-[Guake]: http://guake-project.org/
+[Guake]: https://guake.github.io/
 [Yakuake]: https://apps.kde.org/yakuake/
 
 ---
@@ -16,7 +16,7 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 ## Features
 
 - **Global hotkey** to toggle the panel (default `F12`, rebind in Settings).
-- **Slides** down from the top of the active screen, fades back up.
+- **Slides** down from the top of the active screen and back up when hidden.
 - **Tabs** with `⌘T` / `⌘W` / `⌘1…9` / `⌃Tab` (macOS-standard).
 - **Saved SSH connections** — keep named servers or `~/.ssh/config` aliases in
   Settings, open the searchable picker with `⌘⇧P`, or connect directly to
@@ -74,7 +74,13 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
 ## Install
 
-### Homebrew (recommended)
+### Download .dmg (recommended)
+
+Grab `Shade.dmg` from the
+[latest GitHub release](https://github.com/tavvet/shade/releases/latest),
+open it, drag `Shade.app` into your `Applications` folder.
+
+### Homebrew
 
 ```sh
 brew tap tavvet/tap
@@ -82,22 +88,18 @@ brew install --cask shade
 ```
 
 Tap source: [tavvet/homebrew-tap](https://github.com/tavvet/homebrew-tap).
+The tap is maintained separately and can lag behind GitHub Releases; if its
+cask reports an older version, use the `.dmg` above for the current build.
 
-### Download .dmg
-
-Grab `Shade.dmg` from the
-[latest GitHub release](https://github.com/tavvet/shade/releases/latest),
-open it, drag `Shade.app` into your `Applications` folder.
-
-**First launch needs one extra step** while the project doesn't have an
-Apple Developer ID. macOS Gatekeeper will refuse a normal double-click
+**First launch needs one extra step** because published builds are ad-hoc
+signed and not notarized. macOS Gatekeeper will refuse a normal double-click
 with *"Apple could not verify Shade is free of malware…"* —
 **right-click `Shade.app` → Open → Open** once, and macOS will
-remember the decision forever. (Alternative: `xattr -d com.apple.quarantine
+remember the decision for that installed copy. (Alternative: `xattr -d com.apple.quarantine
 /Applications/Shade.app` from any terminal.) Notarized builds will follow
 in a later release and remove this step.
 
-Once Shade is running you'll see a `▾` icon in the menu bar. Press
+Once Shade is running you'll see its icon in the menu bar. Press
 `F12` (the default toggle hotkey — rebindable in Settings) and the
 drop-down terminal slides in from the top of the screen.
 
@@ -114,9 +116,12 @@ make run        # build + launch
 swift test      # unit tests
 ```
 
-Requirements: macOS 13+ and Xcode 16+ (Swift 6 toolchain). The build
-ad-hoc codesigns the bundle so the OS can prompt cleanly for any future
-entitlements / permissions. To sign with a real Developer ID for
+Shade's deployment target is macOS 13+. Building requires Xcode 16+ (Swift 6)
+on a macOS version supported by that Xcode; Xcode 16.0–16.2 require macOS 14.5+
+and newer Xcode releases can require newer hosts (see
+[Apple's compatibility table](https://developer.apple.com/xcode/system-requirements)).
+The build ad-hoc codesigns the bundle so the OS can prompt cleanly for any
+future entitlements / permissions. To sign with a real Developer ID for
 distribution: `DEVELOPER_ID="Developer ID Application: Name (TEAMID)"
 make build`.
 
@@ -199,7 +204,7 @@ unchanged — they work even when your keyboard layout is non-Latin
 
 ### Via the Settings window
 
-Open Settings from the menu-bar `▾` icon. The sidebar groups preferences into
+Open Settings from Shade's menu-bar icon. The sidebar groups preferences into
 six focused pages:
 
 - **General** — panel size and position, focus behavior, new-tab directory,
@@ -225,13 +230,13 @@ the panel is shown.
 
 ```sh
 # Layout
-defaults write dev.shade.Shade widthFraction 0.6
-defaults write dev.shade.Shade heightFraction 0.45
+defaults write dev.shade.Shade widthFraction 0.6              # 0.1 – 1.0
+defaults write dev.shade.Shade heightFraction 0.45             # 0.1 – 1.0
 defaults write dev.shade.Shade horizontalAlignment center      # left | center | right
 defaults write dev.shade.Shade screenChoice mouseLocation      # main | mouseLocation
 
 # Appearance
-defaults write dev.shade.Shade fontSize 14
+defaults write dev.shade.Shade fontSize 14                     # 8 – 32; Settings slider: 9 – 22
 defaults write dev.shade.Shade fontName "Menlo"                # "" = system monospaced
 defaults write dev.shade.Shade backgroundOpacity 0.85          # 0.3 – 1.0
 defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdrop (most visible at lower opacity)
@@ -250,12 +255,12 @@ defaults write dev.shade.Shade shellEnrichment -bool true      # richer zsh comp
 
 # Notifications (command finished while panel hidden; needs OSC 133)
 defaults write dev.shade.Shade notifyOnCommandFinish -bool true
-defaults write dev.shade.Shade notifyThresholdSeconds 30        # min command duration, seconds
+defaults write dev.shade.Shade notifyThresholdSeconds 30        # 1 – 600; Settings slider: 5 – 300
 
-# Link highlight color (Cmd-hover underline + cell tint). 6-char hex, no '#'.
+# Link highlight color (Cmd-hover underline + cell tint). 6-char RRGGBB; optional '#'.
 defaults write dev.shade.Shade linkHighlightHex "00CCFF"       # default: FFCC00
 
-# Inspect / reset
+# Inspect / reset scalar preferences (the hotkey is stored separately)
 defaults read dev.shade.Shade
 defaults delete dev.shade.Shade
 ```
@@ -318,9 +323,9 @@ Terminal → Shell Integration → "Enrich completion inside Shade"** (or
 shellEnrichment -bool true`). Shade then launches zsh with `ZDOTDIR` pointed at a
 bundled shim that:
 
-- loads your real `~/.zshrc` first, so your `PATH`, aliases, prompt and key
-  bindings win, while respecting a custom `ZDOTDIR` and changes made by earlier
-  zsh startup files;
+- loads your real user `.zshrc` first (including a custom `ZDOTDIR`), so your
+  `PATH`, aliases, prompt and key bindings win, while respecting changes made
+  by earlier zsh startup files;
 - runs `compinit` **only if you haven't already**, lighting up the tab-completion
   for `git`, `make`, `ssh`, … that already ships with zsh; and
 - enables the OSC 133 prompt marks, so `⌘⇧↑` / `⌘⇧↓` / `⌘⇧O` work without the
@@ -434,9 +439,11 @@ still misbehaves, check `KeyCodes.swift` — the ANSI map covers letter rows
 A–Z by default; non-letter rows are forwarded to SwiftTerm unmodified.
 
 **New tabs open in `/` instead of `~`.** GUI apps launched via
-LaunchServices start with `cwd = /`. Shade `chdir`s to `$HOME` at launch so
-spawned shells inherit it — if you still see `/`, you launched the
-executable directly (e.g. for debugging) rather than via the `.app` bundle.
+LaunchServices start with `cwd = /`, so Shade changes its own working directory
+to your macOS home before creating any terminal session. This also happens when
+the raw executable is launched directly. If a new local tab still starts in
+`/`, include a Diagnostics report and the relevant shell startup files in a bug
+report.
 
 **Tab title and git badge show wrong info during an SSH session.** This is
 expected — Shade detects `ssh` / `mosh` / `tmate` in the terminal's foreground
@@ -580,8 +587,10 @@ Key design choices:
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
   global hotkey registration with a SwiftUI recorder UI.
 
-Both are pinned via Swift Package Manager (`Package.swift`) and both are MIT
-licensed, the same as Shade. Full license texts: [THIRDPARTY.md](./THIRDPARTY.md).
+SwiftTerm is revision-pinned in `Package.swift`. KeyboardShortcuts uses a
+compatible-version requirement starting at 2.4.0; `Package.resolved` locks the
+exact revisions used by normal checkouts and CI. Both are MIT licensed, the
+same as Shade. Full license texts: [THIRDPARTY.md](./THIRDPARTY.md).
 
 ---
 

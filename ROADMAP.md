@@ -12,7 +12,7 @@ only a native Mac app can do well.
 
 - **Scrollback search (`⌘F`)** — *M.*
   Find-in-buffer with next / previous and highlight. Listed under CHANGELOG
-  "Known limitations".
+  "Current limitations".
   *Why:* core terminal feature and a natural fit for the keyboard-first ethos.
   *How:* build a small search overlay around SwiftTerm's public `findNext`,
   `findPrevious`, `searchMatchSummary` and `clearSearch` APIs. The pinned
@@ -22,13 +22,14 @@ only a native Mac app can do well.
 - **Tab reorder / color labels** — *M.*
   Drag-to-reorder tabs and an optional color tag. (Tab **rename** shipped — a
   user-set name now overrides the cwd auto-title via `userTitle`.)
-  *How:* reorder the `sessions` array from `TabBar` drags; a per-session tint.
-  No fork API.
+  *How:* add a move operation to `TerminalTabStore` / `TerminalsController`,
+  invoke it from `TabBar` drags, and keep a per-session tint. No fork API.
 
 - **Broadcast input to all tabs** — *M.*
   iTerm2-style: type once, send to every session.
-  *How:* a mode flag that fans `panelSendToActiveTerminal` out to all sessions,
-  with a visible indicator so it can't be left on by accident.
+  *How:* centralize locally initiated input behind a controller-level fan-out
+  that covers ordinary keys, translated keys and paste, with a visible mode
+  indicator so it can't be left on by accident.
 
 ## Bigger bets
 
@@ -42,7 +43,7 @@ only a native Mac app can do well.
 
 - **Session save / restore** — *M.*
   Remember open tabs (cwd + title) and rebuild them on the next launch.
-  *Why:* CHANGELOG "Known limitations".
+  *Why:* CHANGELOG "Current limitations".
   *How:* persist tab descriptors on change / quit and recreate them on launch.
   Shares the spawn-in-a-given-cwd mechanism with "new tab inherits cwd".
 

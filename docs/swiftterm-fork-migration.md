@@ -6,12 +6,17 @@ re-audited and minimized on 2026-08-18._
 ## Current state
 
 Shade uses a revision-pinned
-[SwiftTerm fork](https://github.com/tavvet/SwiftTerm) rebased on upstream. The
-2026-08-18 audit reduced the fork from five local patches to exactly one:
+[SwiftTerm fork](https://github.com/tavvet/SwiftTerm) maintained by rebasing on
+upstream. The 2026-08-18 audit reduced the fork from five local patches to
+exactly one:
 
 - configurable link-highlight color and cell tint;
 - fork commit: `c665309` on top of upstream `c74d1e6`, published on fork
-  `main` and pinned by Shade.
+  `main`, preserved by tag `shade-pin-2026-08-18`, and pinned by Shade.
+
+The base SHA identifies the upstream state that was actually reviewed. A newer
+`upstream/main` does not silently change Shade's dependency; adopting it requires
+another explicit patch re-audit and pin update using the procedure below.
 
 `Package.swift` and `Package.resolved` both pin the published full revision
 `c665309f8fb31ad3600c93aa3a957b573e964dd2`, so a fresh clone does not depend
