@@ -6,5 +6,6 @@ This project follows the
 Be respectful, assume good intent, and help each other ship a useful tool.
 
 If you experience or witness behavior that violates the Covenant in this
-project's spaces (issues, pull requests, discussions), report it privately
-via GitHub to the repository owner.
+project's spaces (issues, pull requests, discussions), report it privately to
+[anton.rudakov@zoho.com](mailto:anton.rudakov@zoho.com?subject=Shade%20conduct%20report)
+with the subject `Shade conduct report`.

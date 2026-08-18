@@ -11,7 +11,9 @@ permission notice.
 - **Repository:** https://github.com/migueldeicaza/SwiftTerm
 - **Distribution:** Swift Package Manager dependency on a
   [rebase-tracked fork](https://github.com/tavvet/SwiftTerm) (`main`, pinned by
-  revision) that carries one local patch on top of `upstream/main`.
+  revision) that carries one local patch relative to its audited upstream base.
+  The exact base and pin are recorded in the fork-maintenance guide below;
+  `upstream/main` may advance between explicit syncs.
 - **Modifications:**
   - Added a public `linkHighlightColor: NSColor?` on the macOS
     `TerminalView`. When set, highlighted links use that color for their
@@ -26,7 +28,7 @@ permission notice.
 - **Used for:** VT100 / xterm terminal emulation and local PTY shell hosting.
 
 ```
-Copyright (c) 2019-2022 Miguel de Icaza (https://github.com/migueldeicaza)
+Copyright (c) 2019-2026 Miguel de Icaza (https://github.com/migueldeicaza)
 Copyright (c) 2017-2019, The xterm.js authors (https://github.com/xtermjs/xterm.js)
 Copyright (c) 2014-2016, SourceLair Private Company (https://www.sourcelair.com)
 Copyright (c) 2012-2013, Christopher Jeffrey (https://github.com/chjj/)

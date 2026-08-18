@@ -8,8 +8,10 @@ Yakuake / iTerm2 are very welcome.
 
 Requirements:
 
-- macOS 13 or later (development tested on macOS 15)
-- Xcode 16+ (Swift 6 toolchain)
+- Deployment target: macOS 13 or later
+- Development host: a macOS version supported by the selected Xcode (Xcode
+  16.0–16.2 require macOS 14.5+; CI runs on macOS 15)
+- Xcode 16+ (Swift 6 toolchain); newer Xcode releases can require newer macOS
 
 ```sh
 git clone <fork-url>
@@ -57,6 +59,21 @@ obvious fixes can skip straight to the implementation step.
 - One logical change per PR. Refactors that mix with feature work are hard
   to review; please split them.
 
+## Cutting a release (maintainers)
+
+1. Move the accumulated `[Unreleased]` notes into a dated version section and
+   update the comparison links at the bottom of `CHANGELOG.md`.
+2. Run `swift test` and `make verify-bundle`, then manually exercise the built
+   `build/Shade.app`.
+3. Commit the release state, tag it as `vX.Y.Z`, and push both `main` and the
+   tag. The tag workflow builds `Shade.dmg` and creates a **draft** GitHub
+   Release; it does not publish the release automatically.
+4. Inspect the draft and its attached DMG, then publish it manually. Confirm
+   that `/releases/latest` resolves to the new version.
+5. Update `Casks/shade.rb` in `tavvet/homebrew-tap` with the same version and
+   DMG SHA-256, then verify the tap installation. The Homebrew cask is a
+   separate repository and is not updated by Shade's release workflow.
+
 ## Coding style
 
 - Follow [Swift API Design Guidelines](https://www.swift.org/documentation/api-design-guidelines/)
@@ -74,12 +91,14 @@ obvious fixes can skip straight to the implementation step.
 
 ## Reporting bugs
 
-Use the *Bug report* template. Please include:
+Use the *Bug report* template. Open **Diagnostics…** from Shade's menu-bar
+menu, click **Copy**, and paste the complete report whenever the app can launch.
+It includes the app build, macOS version and chip, screen layout, hotkey and
+active-terminal context. Also include:
 
-- macOS version + chip (Intel / Apple Silicon)
-- Build / commit SHA
 - Active keyboard layout(s) — several past bugs have been layout-specific
 - Steps to reproduce
+- Manual environment details if Shade cannot launch far enough to open Diagnostics
 
 ## Licensing
 

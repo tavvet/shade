@@ -21,9 +21,8 @@ labels: bug
 
 ### Environment
 
-- macOS version: <!-- e.g. 15.1, Apple Silicon -->
-- Shade build / commit: <!-- output of `Settings → About`, or the git SHA you built -->
-- Shell: <!-- output of `echo $SHELL` -->
+- Shade diagnostics: <!-- Menu-bar icon → Diagnostics… → Copy; paste the complete block -->
+- If Diagnostics is unavailable: <!-- macOS version + chip, Shade version / SHA, shell -->
 - Keyboard layout(s) you typically use:
 
 ### Anything else
