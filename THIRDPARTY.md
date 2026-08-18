@@ -10,24 +10,18 @@ permission notice.
 
 - **Repository:** https://github.com/migueldeicaza/SwiftTerm
 - **Distribution:** Swift Package Manager dependency on a
-  [rebase-tracked fork](https://github.com/tavvet/SwiftTerm) (`shade` branch,
-  pinned by revision) that carries the local patches below as clean per-feature
-  commits on top of `upstream/main`.
+  [rebase-tracked fork](https://github.com/tavvet/SwiftTerm) (`main`, pinned by
+  revision) that carries one local patch on top of `upstream/main`.
 - **Modifications:**
-  - Added a public `linkHoverColor: NSColor?` on `TerminalView` and used
-    it in `Apple/AppleTerminalView.swift` to color the link underline
-    when set. Falls back to upstream behavior when nil.
-  - Added public scroll-invariant accessors on `Terminal`
-    (`scrollInvariantCursorRow`, `scrollInvariantLinesTop`,
-    `maxScrollbackRow`) plus public `extendKeyboardSelection` /
-    `clearKeyboardSelection` / `shadeSelectedText` on the terminal view,
-    used by Shade for OSC 133 prompt-mark navigation, keyboard text
-    selection and `⌘X` copy on read-only buffers.
-  - A trivial unused-result warning-silence in the Metal renderer.
+  - Added a public `linkHighlightColor: NSColor?` on the macOS
+    `TerminalView`. When set, highlighted links use that color for their
+    underline and a subtle cell-background tint; `nil` preserves upstream
+    rendering.
 
-  (Wheel → xterm-button forwarding and the CoreGraphics restricted-region
-  renderer fix were formerly local patches; both are now upstream, the latter
-  via [SwiftTerm#582](https://github.com/migueldeicaza/SwiftTerm/pull/582).)
+  Keyboard selection, cut and OSC 133 tracking are implemented in Shade using
+  SwiftTerm's public API or the open PTY view; they are not fork patches. The
+  complete current and historical patch inventory is documented in
+  [the fork-maintenance guide](https://github.com/tavvet/shade/blob/main/docs/swiftterm-fork-migration.md).
 - **License:** MIT
 - **Used for:** VT100 / xterm terminal emulation and local PTY shell hosting.
 
