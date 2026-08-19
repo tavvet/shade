@@ -6,16 +6,23 @@ import SwiftUI
 final class TerminalPanelContentController {
     private let terminals: TerminalsController
     private let tabs: TabsObservable
+    private let inputSource: InputSourceMonitor
     private weak var blurView: NSVisualEffectView?
 
-    init(terminals: TerminalsController, tabs: TabsObservable) {
+    init(
+        terminals: TerminalsController,
+        tabs: TabsObservable,
+        inputSource: InputSourceMonitor
+    ) {
         self.terminals = terminals
         self.tabs = tabs
+        self.inputSource = inputSource
     }
 
     func install(in panel: DropdownPanel) {
         let tabBar = TabBarView(
             tabs: tabs,
+            inputSource: inputSource,
             onSelect: { [weak self] in self?.terminals.select(at: $0) },
             onClose: { [weak self] in self?.terminals.close(at: $0) },
             onNew: { [weak self] in self?.terminals.newSession() },
@@ -65,6 +72,7 @@ final class TerminalPanelContentController {
         blur.translatesAutoresizingMaskIntoConstraints = false
         blur.isHidden = !prefs.backgroundBlur
         blurView = blur
+        inputSource.setEnabled(prefs.showInputSourceIndicator)
 
         let root = NSView()
         root.addSubview(blur)
@@ -86,6 +94,7 @@ final class TerminalPanelContentController {
     func apply(_ prefs: Preferences) {
         blurView?.isHidden = !prefs.backgroundBlur
         blurView?.material = prefs.blurMaterial.nsMaterial
+        inputSource.setEnabled(prefs.showInputSourceIndicator)
     }
 
     /// Returns keyboard focus after an inline tab rename or app activation.

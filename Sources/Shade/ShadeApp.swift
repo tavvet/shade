@@ -19,6 +19,7 @@ enum ShadeApp {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let terminals = TerminalsController()
+    private let inputSource = InputSourceMonitor()
     private lazy var connections = SSHConnectionsController { [weak self] profile in
         guard let self else { return }
         try self.terminals.connect(to: profile)
@@ -41,7 +42,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             _ = self?.connections.connectQuickSlot(number)
         }
     )
-    private lazy var panelContent = TerminalPanelContentController(terminals: terminals, tabs: tabs)
+    private lazy var panelContent = TerminalPanelContentController(
+        terminals: terminals,
+        tabs: tabs,
+        inputSource: inputSource
+    )
     private var connectionPicker: SSHConnectionPickerPresenter?
 
     private lazy var panel: DropdownPanel = {
@@ -49,6 +54,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.keyHandler = keyboard
         panel.onBecomeKey = { [weak self] in
             guard let self else { return }
+            // macOS can restore an app-specific input source during activation.
+            // Refresh after the panel becomes key so the badge reflects that
+            // final source even if the transition did not emit a notification.
+            self.inputSource.refresh()
             self.panelContent.focusActiveTerminal()
             self.terminals.activeSession?.focusReturned()
         }
@@ -69,7 +78,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var notifications = CommandNotificationCoordinator(terminals: terminals, panel: panel)
     private lazy var settings = SettingsWindowController(connections: connections)
     private lazy var about = AboutWindowController()
-    private lazy var diagnostics = DiagnosticsWindowController(terminals: terminals)
+    private lazy var diagnostics = DiagnosticsWindowController(
+        terminals: terminals,
+        inputSource: inputSource
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // The system's window-tab shortcuts would consume ⌘T before Shade's

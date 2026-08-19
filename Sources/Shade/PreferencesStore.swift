@@ -55,6 +55,11 @@ struct PreferencesStore {
         if userDefaults.object(forKey: Key.backgroundBlur) != nil {
             preferences.backgroundBlur = userDefaults.bool(forKey: Key.backgroundBlur)
         }
+        if userDefaults.object(forKey: Key.showInputSourceIndicator) != nil {
+            preferences.showInputSourceIndicator = userDefaults.bool(
+                forKey: Key.showInputSourceIndicator
+            )
+        }
         if userDefaults.object(forKey: Key.notifyOnCommandFinish) != nil {
             preferences.notifyOnCommandFinish = userDefaults.bool(forKey: Key.notifyOnCommandFinish)
         }
@@ -101,6 +106,10 @@ struct PreferencesStore {
         userDefaults.set(preferences.animationDuration, forKey: Key.animationDuration)
         userDefaults.set(preferences.linkHighlightHex, forKey: Key.linkHighlightHex)
         userDefaults.set(preferences.backgroundBlur, forKey: Key.backgroundBlur)
+        userDefaults.set(
+            preferences.showInputSourceIndicator,
+            forKey: Key.showInputSourceIndicator
+        )
         userDefaults.set(preferences.notifyOnCommandFinish, forKey: Key.notifyOnCommandFinish)
         userDefaults.set(preferences.notifyThresholdSeconds, forKey: Key.notifyThresholdSeconds)
         userDefaults.set(preferences.hideOnFocusLoss, forKey: Key.hideOnFocusLoss)
@@ -129,6 +138,7 @@ struct PreferencesStore {
         static let animationDuration = "animationDuration"
         static let linkHighlightHex = "linkHighlightHex"
         static let backgroundBlur = "backgroundBlur"
+        static let showInputSourceIndicator = "showInputSourceIndicator"
         static let notifyOnCommandFinish = "notifyOnCommandFinish"
         static let notifyThresholdSeconds = "notifyThresholdSeconds"
         static let hideOnFocusLoss = "hideOnFocusLoss"

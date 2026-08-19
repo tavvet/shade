@@ -18,6 +18,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.backgroundOpacity, 0.94)
         XCTAssertEqual(prefs.animationDuration, 0.16)
         XCTAssertTrue(prefs.backgroundBlur)
+        XCTAssertFalse(prefs.showInputSourceIndicator)
         XCTAssertFalse(prefs.hideOnFocusLoss)
         XCTAssertEqual(prefs.blurMaterial, .hud)
         XCTAssertFalse(prefs.newTabInheritsCwd)
@@ -55,6 +56,7 @@ final class PreferencesTests: XCTestCase {
         prefs.animationDuration = 0.3
         prefs.linkHighlightHex = "123ABC"
         prefs.backgroundBlur = false
+        prefs.showInputSourceIndicator = true
         prefs.notifyOnCommandFinish = true
         prefs.notifyThresholdSeconds = 90
         prefs.hideOnFocusLoss = true
@@ -91,6 +93,13 @@ final class PreferencesTests: XCTestCase {
 
         store.set(true, forKey: PreferencesStore.Key.backgroundBlur)
         XCTAssertTrue(PreferencesStore(userDefaults: store).load().backgroundBlur)
+    }
+
+    func testInputSourceIndicatorReadsStoredValue() {
+        let store = freshStore()
+        store.set(true, forKey: PreferencesStore.Key.showInputSourceIndicator)
+
+        XCTAssertTrue(PreferencesStore(userDefaults: store).load().showInputSourceIndicator)
     }
 
     func testHideOnFocusLossReadsStoredValue() {
