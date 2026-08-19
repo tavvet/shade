@@ -13,6 +13,7 @@ struct Preferences: Equatable {
     var animationDuration: Double     // 0.0 – 0.5 seconds
     var linkHighlightHex: String      // 6-char RRGGBB; falls back to systemYellow if invalid
     var backgroundBlur: Bool          // frosted-glass backdrop behind the translucent terminal
+    var showInputSourceIndicator: Bool // show the current keyboard input source in the tab bar
     var notifyOnCommandFinish: Bool   // notify when a long command finishes while the panel is hidden
     var notifyThresholdSeconds: Double // minimum command duration (seconds) to notify
     var hideOnFocusLoss: Bool         // auto-hide the panel when Shade stops being the active app
@@ -69,6 +70,7 @@ struct Preferences: Equatable {
         animationDuration: 0.16,
         linkHighlightHex: "FFCC00",     // ≈ NSColor.systemYellow
         backgroundBlur: true,
+        showInputSourceIndicator: false,
         notifyOnCommandFinish: false,
         notifyThresholdSeconds: 30,
         hideOnFocusLoss: false,

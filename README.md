@@ -18,6 +18,9 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Global hotkey** to toggle the panel (default `F12`, rebind in Settings).
 - **Slides** down from the top of the active screen and back up when hidden.
 - **Tabs** with `⌘T` / `⌘W` / `⌘1…9` / `⌃Tab` (macOS-standard).
+- **Current input source (opt-in)** — a compact `EN` / `RU` / `FI` badge in
+  the tab bar follows the keyboard source selected in macOS. It is off by
+  default and needs no Accessibility or Input Monitoring permission.
 - **Saved SSH connections** — keep named servers or `~/.ssh/config` aliases in
   Settings, open the searchable picker with `⌘⇧P`, or connect directly to
   the first nine profiles with `⌘⇧1…9`.
@@ -164,6 +167,11 @@ abbreviated current working directory (e.g. `1 · ~/projects/shade`).
 Double-click a tab (or right-click → Rename) to pin a fixed name instead; an
 empty name or Reset Name restores the automatic title.
 
+When **Settings → Appearance → Interface → Show current input source in
+tab bar** is enabled, a read-only language badge stays beside the `+` button.
+Hover it to see the full system input-source name. Sources without a language
+code use their system name instead.
+
 Closing the last tab opens a fresh one. If that replacement shell exits before
 receiving user input (for example because `$SHELL` is invalid or a startup file
 calls `exit`), Shade stops the automatic restart loop and leaves recovery
@@ -210,8 +218,8 @@ six focused pages:
 - **General** — panel size and position, focus behavior, new-tab directory,
   Open at Login and slide animation
 - **Connections** — saved SSH profiles and their quick-access order
-- **Appearance** — monospace font family and size, background opacity, link
-  highlight color, blur and material
+- **Appearance** — optional current-input-source badge, monospace font family
+  and size, background opacity, link highlight color, blur and material
 - **Terminal** — zsh completion enrichment, cursor shape and blink, visual bell
 - **Notifications** — command-finished alerts and their duration threshold
 - **Shortcuts** — global-hotkey recorder and keyboard reference
@@ -241,6 +249,7 @@ defaults write dev.shade.Shade fontName "Menlo"                # "" = system mon
 defaults write dev.shade.Shade backgroundOpacity 0.85          # 0.3 – 1.0
 defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdrop (most visible at lower opacity)
 defaults write dev.shade.Shade blurMaterial hud                # hud | underWindow | sidebar | fullScreen
+defaults write dev.shade.Shade showInputSourceIndicator -bool true # live EN / RU / FI badge; default false
 defaults write dev.shade.Shade cursorShape block               # block | bar | underline
 defaults write dev.shade.Shade cursorBlink -bool false
 
@@ -494,6 +503,8 @@ Sources/Shade/
 ├── GitRefreshCoordinator.swift  Event-driven, debounced git-status scheduler
 ├── GitRepository.swift      Filesystem-only repository discovery and HEAD reading
 ├── Hotkeys.swift            KeyboardShortcuts.Name declarations (toggleShade)
+├── InputSourceBadge.swift   Compact read-only tab-bar input-source marker
+├── InputSourceMonitor.swift Event-driven macOS input-source observation and projection
 ├── KeyCodes.swift           Layout-agnostic keyCode → ASCII mapping
 ├── PanelInputRouting.swift  Responder-chain guard + panel input contract
 ├── PanelKeyboardController.swift  Panel shortcuts, terminal input forwarding, cut/clear
@@ -526,7 +537,7 @@ Sources/Shade/
 ├── SSHProfileDisplay.swift  Shared saved-connection destination formatting
 ├── SSHProfileEditor.swift   Add/edit connection sheet and draft parsing
 ├── SSHProfileStore.swift    Private versioned JSON persistence
-├── TabBar.swift             Tab-strip layout, scrolling and new-tab action
+├── TabBar.swift             Tab-strip layout, scrolling, input source and new-tab action
 ├── TabChip.swift            Individual tab rendering and inline rename state
 ├── TabsObservable.swift     Observable tab/session projection for SwiftUI
 ├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering

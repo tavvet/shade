@@ -26,7 +26,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         switch self {
         case .general:       return "Window layout, startup and tab behavior"
         case .connections:   return "Saved SSH servers and quick-access order"
-        case .appearance:    return "Typography, color and background"
+        case .appearance:    return "Interface, typography, color and background"
         case .terminal:      return "Shell integration and terminal behavior"
         case .notifications: return "Command completion alerts"
         case .shortcuts:     return "Global hotkey and keyboard reference"

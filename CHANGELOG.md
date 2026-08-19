@@ -6,6 +6,12 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Add an optional live keyboard input-source badge to the tab bar, showing a
+  compact language marker such as `EN`, `RU` or `FI`. It is off by default and
+  can be enabled under Settings → Appearance → Interface.
+
 ### Changed
 
 - Split the saved-connections Settings page into focused composition,

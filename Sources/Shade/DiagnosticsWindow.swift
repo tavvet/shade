@@ -3,7 +3,7 @@ import SwiftUI
 import KeyboardShortcuts
 
 /// Diagnostics window — a read-only snapshot of what Shade currently sees
-/// (app version, macOS version, screens, hotkey, active session state).
+/// (app version, macOS version, screens, hotkey, input source and session state).
 /// Designed to be copy-paste-ready for GitHub issue bodies.
 struct DiagnosticsView: View {
     let report: String
@@ -55,9 +55,11 @@ struct DiagnosticsView: View {
 @MainActor
 final class DiagnosticsWindowController: NSWindowController {
     private let terminals: TerminalsController
+    private let inputSource: InputSourceMonitor
 
-    init(terminals: TerminalsController) {
+    init(terminals: TerminalsController, inputSource: InputSourceMonitor) {
         self.terminals = terminals
+        self.inputSource = inputSource
         // Placeholder window — the real view is installed in `present()` so the
         // report reflects state at the moment of opening, not at app launch.
         let window = NSWindow(contentRect: .zero,
@@ -74,7 +76,10 @@ final class DiagnosticsWindowController: NSWindowController {
     }
 
     func present() {
-        let report = DiagnosticsReport.build(terminals: terminals)
+        let report = DiagnosticsReport.build(
+            terminals: terminals,
+            inputSource: inputSource
+        )
         let hosting = NSHostingController(rootView: DiagnosticsView(report: report))
         window?.contentViewController = hosting
         showWindow(nil)
@@ -86,11 +91,15 @@ final class DiagnosticsWindowController: NSWindowController {
 
 /// Builds the markdown-ish text rendered in the Diagnostics window.
 /// Pulls from `Bundle.main`, `ProcessInfo`, `NSScreen`, `KeyboardShortcuts`,
-/// and the active `TerminalSession`. Anything the user couldn't reasonably
-/// look up themselves and would be asked for in an issue should land here.
+/// `InputSourceMonitor` and the active `TerminalSession`. Anything the user
+/// couldn't reasonably look up themselves and would be asked for in an issue
+/// should land here.
 enum DiagnosticsReport {
     @MainActor
-    static func build(terminals: TerminalsController) -> String {
+    static func build(
+        terminals: TerminalsController,
+        inputSource: InputSourceMonitor
+    ) -> String {
         var lines: [String] = []
         lines.append("**Shade diagnostics**")
         lines.append("")
@@ -98,6 +107,7 @@ enum DiagnosticsReport {
         lines.append(systemLine())
         lines.append(screensLine())
         lines.append(hotkeyLine())
+        lines.append("Input:      \(inputSource.diagnosticsDescription)")
         lines.append("")
         lines.append("Active session:")
         if let session = terminals.activeSession {

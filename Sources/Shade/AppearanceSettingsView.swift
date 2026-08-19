@@ -13,6 +13,17 @@ struct AppearanceSettingsView: View {
 
     var body: some View {
         Form {
+            Section("Interface") {
+                Toggle(
+                    "Show current input source in tab bar",
+                    isOn: $model.preferences.showInputSourceIndicator
+                )
+
+                Text("Displays the active keyboard input source next to the new-tab button.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Typography") {
                 Picker("Font", selection: $model.preferences.fontName) {
                     ForEach(fontChoices, id: \.value) { choice in

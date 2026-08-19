@@ -14,6 +14,7 @@ enum TabBarLayout {
 
 struct TabBarView: View {
     @ObservedObject var tabs: TabsObservable
+    @ObservedObject var inputSource: InputSourceMonitor
     var onSelect: (Int) -> Void
     var onClose: (Int) -> Void
     var onNew: () -> Void
@@ -79,6 +80,10 @@ struct TabBarView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            if inputSource.isEnabled {
+                InputSourceBadge(inputSource: inputSource)
+            }
 
             Button(action: onNew) {
                 Image(systemName: "plus")
