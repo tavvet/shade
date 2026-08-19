@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.21] — 2026-08-19
+
 ### Added
 
 - Add an optional live keyboard input-source badge to the tab bar, showing a
