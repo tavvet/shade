@@ -6,8 +6,6 @@ disappears just as fast. Tabs, transparency, keyboard-first.
 
 Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
-![Shade demo](docs/demo.gif)
-
 [Guake]: https://guake.github.io/
 [Yakuake]: https://apps.kde.org/yakuake/
 
@@ -83,16 +81,19 @@ Grab `Shade.dmg` from the
 [latest GitHub release](https://github.com/tavvet/shade/releases/latest),
 open it, drag `Shade.app` into your `Applications` folder.
 
-### Homebrew
+### Homebrew (may lag behind)
 
 ```sh
-brew tap tavvet/tap
-brew install --cask shade
+brew install --cask tavvet/tap/shade
 ```
 
 Tap source: [tavvet/homebrew-tap](https://github.com/tavvet/homebrew-tap).
-The tap is maintained separately and can lag behind GitHub Releases; if its
-cask reports an older version, use the `.dmg` above for the current build.
+The fully qualified name follows Homebrew's trust model for third-party taps.
+The tap is maintained separately and is not updated by Shade's release
+workflow, so check `brew info --cask tavvet/tap/shade` before installing or
+upgrading. If it reports an older version than the latest GitHub Release, use
+the `.dmg` above; GitHub Releases are the authoritative source for current
+builds.
 
 **First launch needs one extra step** because published builds are ad-hoc
 signed and not notarized. macOS Gatekeeper will refuse a normal double-click
@@ -529,9 +530,10 @@ Sources/Shade/
 ├── SSHCommandBuilder.swift  Validated OpenSSH invocation construction
 ├── SSHConnectionLaunch.swift  SSH profile → generic terminal launch configuration
 ├── SSHConnectionPickerComponents.swift  Quick-picker rows and supporting states
+├── SSHConnectionPickerNavigation.swift  Picker key routing and bounded selection movement
 ├── SSHConnectionPickerSearch.swift  Tokenized saved-connection filtering
 ├── SSHConnectionPickerView.swift  Searchable keyboard-first connection picker
-├── SSHConnectionPickerWindow.swift  Lazy child-panel presentation and focus routing
+├── SSHConnectionPickerWindow.swift  Lazy child-panel presentation, focus and key routing
 ├── SSHConnectionsController.swift  Shared connection library state and actions
 ├── SSHProfile.swift         Saved SSH profile model and validation
 ├── SSHProfileDisplay.swift  Shared saved-connection destination formatting

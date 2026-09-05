@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ConnectionsSettingsList: View {
@@ -8,13 +9,15 @@ struct ConnectionsSettingsList: View {
     let onEdit: (SSHProfile) -> Void
     let onDelete: (SSHProfile) -> Void
 
+    @FocusState private var listIsFocused: Bool
+
     var body: some View {
         List(selection: $selectedID) {
             ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
                 ConnectionsSettingsRow(profile: profile, quickSlot: index + 1)
                     .tag(profile.id)
                     .contentShape(Rectangle())
-                    .onTapGesture(count: 2) { onEdit(profile) }
+                    .onTapGesture { handleClick(on: profile) }
                     .contextMenu {
                         Button("Connect") { onConnect(profile.id) }
                         Button("Edit…") { onEdit(profile) }
@@ -26,8 +29,27 @@ struct ConnectionsSettingsList: View {
             }
         }
         .listStyle(.inset)
+        .focused($listIsFocused)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+    }
+
+    private func handleClick(on profile: SSHProfile) {
+        selectedID = profile.id
+        listIsFocused = true
+        if ConnectionsSettingsClickEvent.isDoubleClick(NSApp.currentEvent) {
+            onEdit(profile)
+        }
+    }
+}
+
+enum ConnectionsSettingsClickEvent {
+    static func isDoubleClick(_ event: NSEvent?) -> Bool {
+        guard let event,
+              event.type == .leftMouseDown || event.type == .leftMouseUp else {
+            return false
+        }
+        return event.clickCount == 2
     }
 }
 
@@ -95,48 +117,65 @@ struct ConnectionsSettingsControls: View {
     let onConnect: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Button(action: onAdd) {
-                Image(systemName: "plus")
+                Label("Add", systemImage: "plus")
             }
+            .buttonStyle(.bordered)
             .help("Add connection")
             .disabled(!canEditProfiles)
 
-            Button(action: onDelete) {
-                Image(systemName: "minus")
-            }
-            .help("Delete connection")
-            .disabled(!hasSelection || !canEditProfiles)
-
             Button(action: onEdit) {
-                Image(systemName: "pencil")
+                Label("Edit", systemImage: "pencil")
             }
+            .buttonStyle(.bordered)
             .help("Edit connection")
             .disabled(!hasSelection || !canEditProfiles)
 
+            Button(role: .destructive, action: onDelete) {
+                Label("Delete", systemImage: "trash")
+            }
+            .buttonStyle(.bordered)
+            .help("Delete connection")
+            .disabled(!hasSelection || !canEditProfiles)
+
             Divider()
-                .frame(height: 18)
+                .frame(height: 22)
+                .padding(.horizontal, 2)
 
-            Button(action: onMoveUp) {
-                Image(systemName: "arrow.up")
-            }
-            .help("Move connection up")
-            .disabled(!canMoveUp || !canEditProfiles)
+            HStack(spacing: 6) {
+                Text("Order")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
 
-            Button(action: onMoveDown) {
-                Image(systemName: "arrow.down")
+                ControlGroup {
+                    Button(action: onMoveUp) {
+                        Label("Move Up", systemImage: "chevron.up")
+                            .labelStyle(.iconOnly)
+                    }
+                    .help("Move connection up")
+                    .disabled(!canMoveUp || !canEditProfiles)
+
+                    Button(action: onMoveDown) {
+                        Label("Move Down", systemImage: "chevron.down")
+                            .labelStyle(.iconOnly)
+                    }
+                    .help("Move connection down")
+                    .disabled(!canMoveDown || !canEditProfiles)
+                }
             }
-            .help("Move connection down")
-            .disabled(!canMoveDown || !canEditProfiles)
 
             Spacer()
 
-            Button("Connect", action: onConnect)
-                .disabled(!hasSelection)
+            Button(action: onConnect) {
+                Label("Connect", systemImage: "arrow.right")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!hasSelection)
         }
-        .buttonStyle(.bordered)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 }
 
