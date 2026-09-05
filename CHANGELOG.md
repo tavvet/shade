@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.22] — 2026-09-05
+
 ### Changed
 
 - Refresh the saved-connections action bar with labeled profile actions, grouped
@@ -489,7 +491,8 @@ First public release.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.21...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.22...HEAD
+[0.1.22]: https://github.com/tavvet/shade/releases/tag/v0.1.22
 [0.1.21]: https://github.com/tavvet/shade/releases/tag/v0.1.21
 [0.1.20]: https://github.com/tavvet/shade/releases/tag/v0.1.20
 [0.1.19]: https://github.com/tavvet/shade/releases/tag/v0.1.19
