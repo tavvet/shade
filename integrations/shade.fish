@@ -4,7 +4,7 @@
 # and ⌘⇧O to copy the previous command's output to the clipboard.
 #
 # Source this from your ~/.config/fish/config.fish:
-#   # Homebrew install (Cask drops Shade.app in /Applications):
+#   # Installed application:
 #   source /Applications/Shade.app/Contents/Resources/integrations/shade.fish
 #   # From-source checkout:
 #   source /path/to/shade/integrations/shade.fish

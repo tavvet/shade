@@ -75,25 +75,12 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
 ## Install
 
-### Download .dmg (recommended)
+### Download .dmg
 
-Grab `Shade.dmg` from the
+Prebuilt releases are distributed through GitHub Releases as a DMG. Grab
+`Shade.dmg` from the
 [latest GitHub release](https://github.com/tavvet/shade/releases/latest),
 open it, drag `Shade.app` into your `Applications` folder.
-
-### Homebrew (may lag behind)
-
-```sh
-brew install --cask tavvet/tap/shade
-```
-
-Tap source: [tavvet/homebrew-tap](https://github.com/tavvet/homebrew-tap).
-The fully qualified name follows Homebrew's trust model for third-party taps.
-The tap is maintained separately and is not updated by Shade's release
-workflow, so check `brew info --cask tavvet/tap/shade` before installing or
-upgrading. If it reports an older version than the latest GitHub Release, use
-the `.dmg` above; GitHub Releases are the authoritative source for current
-builds.
 
 **First launch needs one extra step** because published builds are ad-hoc
 signed and not notarized. macOS Gatekeeper will refuse a normal double-click
@@ -393,11 +380,11 @@ using the marks without the toggle.)
 
 Shade ships ready-to-source files for zsh, bash, and fish in
 [`integrations/`](./integrations); the build copies them into
-`Shade.app/Contents/Resources/integrations/` so they ride with each
-Homebrew release. Add one line to your shell rc:
+`Shade.app/Contents/Resources/integrations/` so they are included in every app
+bundle. Add one line to your shell rc:
 
 ```sh
-# ~/.zshrc — Homebrew install (Cask drops Shade.app in /Applications)
+# ~/.zshrc — installed application
 source "/Applications/Shade.app/Contents/Resources/integrations/shade.zsh"
 # or from a source checkout
 source /path/to/shade/integrations/shade.zsh

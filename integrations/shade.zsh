@@ -4,7 +4,7 @@
 # and ⌘⇧O to copy the previous command's output to the clipboard.
 #
 # Source this from your ~/.zshrc:
-#   # Homebrew install (Cask drops Shade.app in /Applications):
+#   # Installed application:
 #   source "/Applications/Shade.app/Contents/Resources/integrations/shade.zsh"
 #   # From-source checkout:
 #   source /path/to/shade/integrations/shade.zsh
