@@ -11,6 +11,11 @@ All notable changes to Shade are documented in this file. Format follows
 - Refresh the saved-connections action bar with labeled profile actions, grouped
   ordering controls and a prominent connect button.
 
+### Removed
+
+- Drop Homebrew Cask as a supported distribution path for now. GitHub Release
+  DMGs remain the supported prebuilt installation method.
+
 ### Fixed
 
 - Make `↑` / `↓` move the selected saved SSH connection while the picker search

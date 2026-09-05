@@ -70,9 +70,6 @@ obvious fixes can skip straight to the implementation step.
    Release; it does not publish the release automatically.
 4. Inspect the draft and its attached DMG, then publish it manually. Confirm
    that `/releases/latest` resolves to the new version.
-5. Update `Casks/shade.rb` in `tavvet/homebrew-tap` with the same version and
-   DMG SHA-256, then verify the tap installation. The Homebrew cask is a
-   separate repository and is not updated by Shade's release workflow.
 
 ## Coding style
 
