@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SSHConnectionPickerView: View {
     @ObservedObject var controller: SSHConnectionsController
-    @ObservedObject var focusRequest: SSHConnectionPickerFocusRequest
+    @ObservedObject var inputBridge: SSHConnectionPickerInputBridge
 
     let onConnect: (UUID) -> Void
     let onDismiss: () -> Void
@@ -59,7 +59,8 @@ struct SSHConnectionPickerView: View {
             repairSelection()
             requestSearchFocus()
         }
-        .onChange(of: focusRequest.generation) { _ in requestSearchFocus() }
+        .onChange(of: inputBridge.focusGeneration) { _ in requestSearchFocus() }
+        .onReceive(inputBridge.selectionMoves, perform: moveSelection)
         .onChange(of: matches.map(\.id)) { _ in repairSelection() }
         .onExitCommand(perform: onDismiss)
     }
@@ -102,7 +103,6 @@ struct SSHConnectionPickerView: View {
                 .textFieldStyle(.plain)
                 .focused($searchIsFocused)
                 .onSubmit(connectSelected)
-                .onMoveCommand(perform: moveSelection)
 
             if !query.isEmpty {
                 Button {
@@ -190,21 +190,13 @@ struct SSHConnectionPickerView: View {
         selectedID = matches.first?.id
     }
 
-    private func moveSelection(_ direction: MoveCommandDirection) {
-        let offset: Int
-        switch direction {
-        case .up: offset = -1
-        case .down: offset = 1
-        default: return
-        }
-
+    private func moveSelection(_ direction: SSHConnectionPickerSelectionDirection) {
         let ids = matches.map(\.id)
-        guard !ids.isEmpty else { return }
-        guard let selectedID, let current = ids.firstIndex(of: selectedID) else {
-            self.selectedID = offset > 0 ? ids.first : ids.last
-            return
-        }
-        self.selectedID = ids[min(max(0, current + offset), ids.count - 1)]
+        selectedID = SSHConnectionPickerSelection.movedID(
+            in: ids,
+            from: selectedID,
+            direction: direction
+        )
     }
 
     private func connectSelected() {
