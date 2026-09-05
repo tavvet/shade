@@ -29,12 +29,12 @@ final class SSHConnectionPickerPresenter {
 
         controller.reload()
 
-        let focusRequest = SSHConnectionPickerFocusRequest()
+        let inputBridge = SSHConnectionPickerInputBridge()
         let picker = SSHConnectionPickerPanel(
             contentViewController: NSHostingController(
                 rootView: SSHConnectionPickerView(
                     controller: controller,
-                    focusRequest: focusRequest,
+                    inputBridge: inputBridge,
                     onConnect: { [weak self] id in self?.connect(to: id) },
                     onDismiss: { [weak self] in self?.dismiss() },
                     onManage: { [weak self] in self?.manageConnections() }
@@ -42,7 +42,8 @@ final class SSHConnectionPickerPresenter {
             )
         )
         picker.onCancel = { [weak self] in self?.dismiss() }
-        picker.onBecomeKey = { focusRequest.request() }
+        picker.onBecomeKey = { inputBridge.requestFocus() }
+        picker.onMoveSelection = { inputBridge.moveSelection($0) }
         picker.onQuickSlot = { [weak self] number in self?.connectQuickSlot(number) }
         let visibleFrame = parent.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? parent.frame
         picker.setFrame(
@@ -94,9 +95,10 @@ final class SSHConnectionPickerPresenter {
 /// A borderless key window aligned with the parent dropdown panel. It expands
 /// to a usable minimum size when the user's terminal panel is very small.
 @MainActor
-private final class SSHConnectionPickerPanel: NSPanel {
+final class SSHConnectionPickerPanel: NSPanel {
     var onCancel: (() -> Void)?
     var onBecomeKey: (() -> Void)?
+    var onMoveSelection: ((SSHConnectionPickerSelectionDirection) -> Void)?
     var onQuickSlot: ((Int) -> Void)?
 
     init(contentViewController: NSViewController) {
@@ -138,17 +140,39 @@ private final class SSHConnectionPickerPanel: NSPanel {
         return super.performKeyEquivalent(with: event)
     }
 
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown,
+           let direction = SSHConnectionPickerKeyNavigation.direction(
+               keyCode: event.keyCode,
+               modifierFlags: event.modifierFlags,
+               hasMarkedText: activeTextInputHasMarkedText
+           ), let onMoveSelection {
+            onMoveSelection(direction)
+            return
+        }
+        super.sendEvent(event)
+    }
+
+    private var activeTextInputHasMarkedText: Bool {
+        (firstResponder as? any NSTextInputClient)?.hasMarkedText() == true
+    }
+
     override func cancelOperation(_ sender: Any?) {
         onCancel?()
     }
 }
 
 @MainActor
-final class SSHConnectionPickerFocusRequest: ObservableObject {
-    @Published private(set) var generation = 0
+final class SSHConnectionPickerInputBridge: ObservableObject {
+    @Published private(set) var focusGeneration = 0
+    let selectionMoves = PassthroughSubject<SSHConnectionPickerSelectionDirection, Never>()
 
-    func request() {
-        generation &+= 1
+    func requestFocus() {
+        focusGeneration &+= 1
+    }
+
+    func moveSelection(_ direction: SSHConnectionPickerSelectionDirection) {
+        selectionMoves.send(direction)
     }
 }
 
