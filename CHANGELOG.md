@@ -6,6 +6,18 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Refresh the saved-connections action bar with labeled profile actions, grouped
+  ordering controls and a prominent connect button.
+
+### Fixed
+
+- Make `↑` / `↓` move the selected saved SSH connection while the picker search
+  field stays focused, without stealing navigation from active IME composition.
+- Restore immediate single-click selection and list focus in Settings →
+  Connections while preserving double-click editing.
+
 ## [0.1.21] — 2026-08-19
 
 ### Added
@@ -472,7 +484,8 @@ First public release.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.20...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.21...HEAD
+[0.1.21]: https://github.com/tavvet/shade/releases/tag/v0.1.21
 [0.1.20]: https://github.com/tavvet/shade/releases/tag/v0.1.20
 [0.1.19]: https://github.com/tavvet/shade/releases/tag/v0.1.19
 [0.1.18]: https://github.com/tavvet/shade/releases/tag/v0.1.18
