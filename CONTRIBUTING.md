@@ -81,10 +81,12 @@ obvious fixes can skip straight to the implementation step.
   (a hidden constraint, an Apple-API quirk, a workaround for a specific bug).
 - `@MainActor` everywhere AppKit / SwiftUI is touched. Concurrency boundaries
   use `nonisolated` + `MainActor.assumeIsolated` (see existing examples).
-- Scalar user-facing settings extend the `Preferences` value model, persist
-  through `PreferencesStore`, and get a control on the appropriate settings
-  page. Structured collections with their own lifecycle (such as saved SSH
-  profiles) use a dedicated model and store instead of `UserDefaults`.
+- Scalar user-facing settings extend the `Preferences` value model and get a
+  control on the appropriate settings page. Runtime persistence goes through
+  `ConfigurationStore` / `PreferencesStoring`; `PreferencesStore` remains the
+  local-defaults backend. Update the portable document version/migration when
+  changing its schema; see [Configuration storage](docs/configuration-storage.md).
+  Structured collections such as SSH profiles retain their own model and codec.
 - Pure logic (parsers, models, layout math) belongs in a module that's already
   covered by `Tests/ShadeTests/` — add a test alongside the change.
 

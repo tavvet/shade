@@ -8,6 +8,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     case terminal
     case notifications
     case shortcuts
+    case storage
 
     var id: Self { self }
 
@@ -19,6 +20,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .terminal:      return "Terminal"
         case .notifications: return "Notifications"
         case .shortcuts:     return "Shortcuts"
+        case .storage:       return "Storage"
         }
     }
 
@@ -30,6 +32,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .terminal:      return "Shell integration and terminal behavior"
         case .notifications: return "Command completion alerts"
         case .shortcuts:     return "Global hotkey and keyboard reference"
+        case .storage:       return "Location of settings and saved connections"
         }
     }
 
@@ -41,6 +44,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .terminal:      return "terminal"
         case .notifications: return "bell"
         case .shortcuts:     return "keyboard"
+        case .storage:       return "externaldrive"
         }
     }
 }
@@ -51,6 +55,7 @@ final class SettingsNavigation: ObservableObject {
 }
 
 struct SettingsView: View {
+    @ObservedObject private var configuration = ConfigurationStore.shared
     @ObservedObject var model: SettingsModel
     @ObservedObject var connections: SSHConnectionsController
     @ObservedObject var navigation: SettingsNavigation
@@ -72,7 +77,18 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 pageHeader(selectedPage)
                 Divider()
+                if let error = model.persistenceError {
+                    HStack(alignment: .top) {
+                        Label(error, systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 8)
+                        Button("Dismiss") { model.persistenceError = nil }
+                    }
+                    .padding()
+                }
                 selectedPageView
+                    .disabled(configuration.isChangingLocation)
                     .id(selectedPage)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -96,6 +112,9 @@ struct SettingsView: View {
             NotificationSettingsView(model: model)
         case .shortcuts:
             ShortcutsSettingsView()
+        case .storage:
+            ConfigurationSettingsView(configuration: .shared)
+                .disabled(model.isSaving || connections.isSaving)
         }
     }
 
@@ -115,6 +134,10 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            if model.isSaving || configuration.isChangingLocation {
+                ProgressView().controlSize(.small)
+                    .help("Updating configuration…")
+            }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 18)

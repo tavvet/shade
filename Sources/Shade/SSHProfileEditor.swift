@@ -60,17 +60,18 @@ struct SSHProfileEditorView: View {
     }
 
     let isNew: Bool
-    let onSave: (SSHProfile) throws -> Void
+    let onSave: (SSHProfile) async throws -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var draft: SSHProfileDraft
     @State private var errorMessage: String?
+    @State private var isSaving = false
     @FocusState private var focusedField: Field?
 
     init(
         profile: SSHProfile,
         isNew: Bool,
-        onSave: @escaping (SSHProfile) throws -> Void
+        onSave: @escaping (SSHProfile) async throws -> Void
     ) {
         self.isNew = isNew
         self.onSave = onSave
@@ -145,6 +146,7 @@ struct SSHProfileEditorView: View {
             Divider()
 
             HStack {
+                if isSaving { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
@@ -154,18 +156,25 @@ struct SSHProfileEditorView: View {
             .padding(16)
         }
         .frame(width: 520, height: 500)
+        .disabled(isSaving)
+        .interactiveDismissDisabled(isSaving)
         .onAppear {
             focusedField = isNew ? .name : .host
         }
     }
 
     private func save() {
-        do {
-            let profile = try draft.makeProfile()
-            try onSave(profile)
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
+        guard !isSaving else { return }
+        isSaving = true
+        Task { @MainActor in
+            defer { isSaving = false }
+            do {
+                let profile = try draft.makeProfile()
+                try await onSave(profile)
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

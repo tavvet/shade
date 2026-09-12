@@ -1,7 +1,7 @@
 import AppKit
 
 /// Value snapshot of user-tunable layout, behavior and terminal appearance.
-struct Preferences: Equatable {
+struct Preferences: Codable, Equatable, Sendable {
     var widthFraction: CGFloat
     var heightFraction: CGFloat
     var horizontalAlignment: HorizontalAlignment
@@ -24,16 +24,16 @@ struct Preferences: Equatable {
     var cursorBlink: Bool             // blink the cursor
     var visualBell: Bool              // flash the terminal instead of relying on the audible bell
 
-    enum HorizontalAlignment: String {
+    enum HorizontalAlignment: String, Codable, Sendable {
         case left, center, right
     }
 
-    enum ScreenChoice: String {
+    enum ScreenChoice: String, Codable, Sendable {
         case main
         case mouseLocation
     }
 
-    enum BlurMaterial: String {
+    enum BlurMaterial: String, Codable, Sendable {
         case hud, underWindow, sidebar, fullScreen
 
         var nsMaterial: NSVisualEffectView.Material {
@@ -46,7 +46,7 @@ struct Preferences: Equatable {
         }
     }
 
-    enum CursorShape: String {
+    enum CursorShape: String, Codable, Sendable {
         case block, bar, underline
 
         /// Steady DECSCUSR parameter (CSI Ps SP q); the blinking variant is this minus one.

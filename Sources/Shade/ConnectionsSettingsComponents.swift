@@ -5,6 +5,7 @@ struct ConnectionsSettingsList: View {
     let profiles: [SSHProfile]
     @Binding var selectedID: UUID?
     let canEditProfiles: Bool
+    let canConnectProfiles: Bool
     let onConnect: (UUID) -> Void
     let onEdit: (SSHProfile) -> Void
     let onDelete: (SSHProfile) -> Void
@@ -20,6 +21,7 @@ struct ConnectionsSettingsList: View {
                     .onTapGesture { handleClick(on: profile) }
                     .contextMenu {
                         Button("Connect") { onConnect(profile.id) }
+                            .disabled(!canConnectProfiles)
                         Button("Edit…") { onEdit(profile) }
                             .disabled(!canEditProfiles)
                         Divider()
@@ -107,6 +109,7 @@ struct ConnectionsSettingsEmptyState: View {
 struct ConnectionsSettingsControls: View {
     let hasSelection: Bool
     let canEditProfiles: Bool
+    let canConnectProfiles: Bool
     let canMoveUp: Bool
     let canMoveDown: Bool
     let onAdd: () -> Void
@@ -171,7 +174,7 @@ struct ConnectionsSettingsControls: View {
                 Label("Connect", systemImage: "arrow.right")
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!hasSelection)
+            .disabled(!hasSelection || !canConnectProfiles)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
