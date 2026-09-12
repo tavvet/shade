@@ -117,21 +117,30 @@ extension PromptMark {
     /// `D` just before the next prompt — so output lives in
     /// `[C.row, D.row)`. Matching is chronological (by array index, not
     /// by row), so a `clear` command between two C/D pairs doesn't
-    /// confuse the picker. Returns nil if there's no completed pair or
-    /// the command produced no output (C.row == D.row).
+    /// confuse the picker. An unmatched D (e.g. empty Enter in zsh) does not
+    /// change the previous completed pair. Returns nil if there's no completed
+    /// pair or the latest completed command produced no output (C.row == D.row).
     static func lastCommandOutputRange(in marks: [PromptMark]) -> Range<Int>? {
-        guard let dIndex = marks.lastIndex(where: { mark in
-            if case .commandDone = mark.kind { return true }
-            return false
-        }) else { return nil }
-        let d = marks[dIndex]
-        let preceding = marks[0..<dIndex]
-        guard let cIndex = preceding.lastIndex(where: { mark in
-            if case .commandStart = mark.kind { return true }
-            return false
-        }) else { return nil }
-        let c = marks[cIndex]
-        guard c.row < d.row else { return nil }
-        return c.row..<d.row
+        var commandStart: Int?
+        var completedOutput: Range<Int>?
+        for mark in marks {
+            switch mark.kind {
+            case .commandStart:
+                commandStart = mark.row
+            case .commandDone:
+                // zsh also emits D on an empty Enter, without a new C. Only
+                // the first D consumes a C; later D marks cannot extend an
+                // already completed command across intervening prompts.
+                if let start = commandStart {
+                    completedOutput = start < mark.row ? start..<mark.row : nil
+                }
+                commandStart = nil
+            case .promptStart, .promptEnd:
+                // A new prompt without D means the preceding start is no
+                // longer matchable, e.g. an interrupted shell integration.
+                commandStart = nil
+            }
+        }
+        return completedOutput
     }
 }

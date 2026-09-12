@@ -218,6 +218,52 @@ final class PromptMarkTests: XCTestCase {
         XCTAssertEqual(PromptMark.lastCommandOutputRange(in: marks), 2..<5)
     }
 
+    func testEmptyEnterDoesNotExtendCompletedOutputAcrossPrompts() {
+        let marks: [PromptMark] = [
+            .init(kind: .commandStart, row: 2),
+            .init(kind: .commandDone(exitCode: 0), row: 4),
+            .init(kind: .promptStart, row: 4),
+            .init(kind: .promptEnd, row: 4),
+            .init(kind: .commandDone(exitCode: 0), row: 5),
+            .init(kind: .promptStart, row: 5),
+            .init(kind: .commandDone(exitCode: 0), row: 6),
+        ]
+
+        XCTAssertEqual(PromptMark.lastCommandOutputRange(in: marks), 2..<4)
+    }
+
+    func testLatestEmptyCommandDoesNotFallBackToOlderOutput() {
+        let marks: [PromptMark] = [
+            .init(kind: .commandStart, row: 2),
+            .init(kind: .commandDone(exitCode: 0), row: 4),
+            .init(kind: .commandStart, row: 5),
+            .init(kind: .commandDone(exitCode: 0), row: 5),
+            .init(kind: .commandDone(exitCode: 0), row: 6),
+        ]
+
+        XCTAssertNil(PromptMark.lastCommandOutputRange(in: marks))
+    }
+
+    func testUnterminatedCommandCannotMatchDoneAfterAnotherPrompt() {
+        let marks: [PromptMark] = [
+            .init(kind: .commandStart, row: 2),
+            .init(kind: .promptStart, row: 4),
+            .init(kind: .commandDone(exitCode: 0), row: 5),
+        ]
+
+        XCTAssertNil(PromptMark.lastCommandOutputRange(in: marks))
+    }
+
+    func testInFlightCommandPreservesLatestCompletedOutput() {
+        let marks: [PromptMark] = [
+            .init(kind: .commandStart, row: 2),
+            .init(kind: .commandDone(exitCode: 0), row: 4),
+            .init(kind: .commandStart, row: 5),
+        ]
+
+        XCTAssertEqual(PromptMark.lastCommandOutputRange(in: marks), 2..<4)
+    }
+
     // MARK: - End-to-end through SwiftTerm
 
     @MainActor

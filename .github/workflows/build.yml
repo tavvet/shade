@@ -32,8 +32,8 @@ jobs:
       - name: Build Shade.app (ad-hoc signed)
         run: make build
 
-      - name: Verify bundle metadata and license notices
-        run: make verify-bundle
+      - name: Verify bundle and packaging regressions
+        run: make test-build
 
       - name: Build Shade.dmg
         run: make dmg

@@ -9,8 +9,8 @@ import Foundation
 ///
 /// - **debounce** — a burst of `cd repo && git checkout … && git pull` only
 ///   triggers a single status update at the end of the burst.
-/// - **cancel-previous** — fast tab/cwd switching never has overlapping git
-///   subprocesses, only the most recent one runs to completion.
+/// - **cancel-previous** — new strong events or a changed path replace older
+///   work. Weak events for the same path share its pending/in-flight refresh.
 /// - **weak-reason rate-limit** — `tabActivated` / `focusReturned` events
 ///   shouldn't re-fork git if we already refreshed seconds ago and the repo
 ///   root hasn't changed. `cwdChanged` / `commandFinished` (strong) always
@@ -44,6 +44,8 @@ final class GitRefreshCoordinator {
     private let clock: () -> Date
 
     private var task: Task<Void, Never>?
+    private var pendingPath: String?
+    private var requestID: UUID?
     private var lastRefreshAt: Date?
     private var lastRoot: String?
 
@@ -64,7 +66,14 @@ final class GitRefreshCoordinator {
     }
 
     func schedule(path: String, reason: Reason) {
+        // A poll/focus event does not invalidate the work already underway.
+        // Restarting its debounce/fetch on every 1 Hz poll would otherwise
+        // prevent a slow repository from ever producing a status snapshot.
+        if !reason.isStrong, task != nil, pendingPath == path {
+            return
+        }
         if !reason.isStrong,
+           task == nil,
            let last = lastRefreshAt,
            clock().timeIntervalSince(last) < weakReasonCooldown,
            path == lastRoot {
@@ -72,10 +81,22 @@ final class GitRefreshCoordinator {
         }
 
         task?.cancel()
+        let requestID = UUID()
+        self.requestID = requestID
+        pendingPath = path
         let debounce = self.debounce
         let fetch = self.fetch
         let apply = self.apply
         task = Task { @MainActor [weak self] in
+            defer {
+                // A cancelled fetch can finish after its replacement starts.
+                // Only the current request may clear the coalescing state.
+                if self?.requestID == requestID {
+                    self?.task = nil
+                    self?.pendingPath = nil
+                    self?.requestID = nil
+                }
+            }
             try? await Task.sleep(for: debounce)
             guard !Task.isCancelled else { return }
 
@@ -105,6 +126,8 @@ final class GitRefreshCoordinator {
     func cancel() {
         task?.cancel()
         task = nil
+        pendingPath = nil
+        requestID = nil
         lastRefreshAt = nil
         lastRoot = nil
     }

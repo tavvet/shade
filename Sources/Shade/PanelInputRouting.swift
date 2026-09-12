@@ -1,4 +1,5 @@
 import AppKit
+import SwiftTerm
 
 enum PanelInputRouting {
     /// An `NSTextField` installs an `NSTextView` field editor as the window's
@@ -6,6 +7,14 @@ enum PanelInputRouting {
     /// translations and edit commands must stay on the normal responder chain.
     static func isEditingText(_ responder: NSResponder?) -> Bool {
         responder is NSTextView
+    }
+
+    @MainActor
+    static func terminalReceivingInput(in window: NSWindow?) -> TerminalView? {
+        guard let window = window as? DropdownPanel,
+              let terminal = window.firstResponder as? TerminalView,
+              terminal.window === window else { return nil }
+        return terminal
     }
 }
 

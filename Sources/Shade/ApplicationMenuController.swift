@@ -127,6 +127,7 @@ final class ApplicationMenuController: NSObject {
             NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: self)
             return
         }
+        guard PanelInputRouting.terminalReceivingInput(in: NSApp.keyWindow) != nil else { return }
         actions?.applicationMenuCutSelection()
     }
 

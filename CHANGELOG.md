@@ -6,6 +6,29 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Make `⌘K` clear previous visible text without executing pending shell input
+  or moving the cursor; preserve the current logical line and OSC 133 multiline
+  prompts, and leave alternate-screen apps and IME composition untouched.
+  Inline images remain intact because the public buffer API only clears text.
+- Restrict terminal Cut to a terminal responder in the dropdown panel so `⌘X`
+  in auxiliary windows cannot send backspaces to an unrelated session.
+- Include SwiftPM dependency resources in the signed application and verify
+  packaged localization without relying on the developer's build directory.
+- Fail packaging on copy, metadata or signing errors and verify the resulting
+  code signature rather than reporting a successful incomplete build.
+- Let slow Git-status refreshes finish while recurring weak events arrive, and
+  rediscover newly initialized, nested or removed repositories without a `cd`.
+- Invalidate prompt coordinates after column reflow while preserving command
+  timing; keep normal-buffer history intact when shortcuts are used inside an
+  alternate-screen application.
+- Match each command-start mark with its first completion so empty Enter presses
+  do not append prompt text to the copied command output.
+- Restore the selected SSH profile's scroll position when filtering recreates
+  the result list, including when the selection itself has not changed.
+- Correct the documented build requirement to Xcode 16.3+ / Swift 6.1+.
+
 ## [0.1.22] — 2026-09-05
 
 ### Changed

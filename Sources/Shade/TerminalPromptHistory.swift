@@ -17,6 +17,23 @@ struct TerminalPromptHistory {
 
     private(set) var marks: [PromptMark] = []
     private var commandStartedAt: Date?
+    private var recordedColumns: Int?
+    var isCommandRunning: Bool { commandStartedAt != nil }
+
+    /// Coordinates cannot survive SwiftTerm's reflow. Command timing is
+    /// independent of buffer geometry and must survive a resize or UI clear.
+    mutating func invalidateCoordinates() {
+        marks.removeAll()
+    }
+
+    /// Called synchronously for every view resize, including a resize back to
+    /// the original width before the next OSC mark or history shortcut.
+    mutating func terminalResized(columns: Int) {
+        if let recordedColumns, recordedColumns != columns {
+            invalidateCoordinates()
+        }
+        recordedColumns = columns
+    }
 
     /// Records one OSC 133 payload. A completion is returned for every valid
     /// `D` mark; `duration` is nil when no preceding `C` mark was observed.
@@ -26,6 +43,7 @@ struct TerminalPromptHistory {
         in terminal: Terminal,
         now: Date = Date()
     ) -> CommandCompletion? {
+        guard !terminal.isCurrentBufferAlternate else { return nil }
         guard let mark = PromptMark.parse(payload: payload[...], row: row) else { return nil }
         pruneStaleMarks(in: terminal)
         marks.append(mark)
@@ -38,7 +56,10 @@ struct TerminalPromptHistory {
             let duration = commandStartedAt.map { now.timeIntervalSince($0) }
             commandStartedAt = nil
             return CommandCompletion(exitCode: exitCode, duration: duration)
-        default:
+        case .promptStart, .promptEnd:
+            // A fresh prompt/input without D abandons an unmatched C. Do not
+            // later report the intervening idle time as a command duration.
+            commandStartedAt = nil
             return nil
         }
     }
@@ -49,6 +70,7 @@ struct TerminalPromptHistory {
         toward direction: NavigationDirection,
         in terminal: Terminal
     ) -> Int? {
+        guard !terminal.isCurrentBufferAlternate else { return nil }
         pruneStaleMarks(in: terminal)
         let linesTop = terminal.buffer.totalLinesTrimmed
         let viewportTopInvariant = linesTop + terminal.buffer.yDisp
@@ -67,6 +89,7 @@ struct TerminalPromptHistory {
     /// Returns the most recently completed command's output without coupling
     /// history state to AppKit's pasteboard.
     mutating func lastCommandOutput(in terminal: Terminal) -> String? {
+        guard !terminal.isCurrentBufferAlternate else { return nil }
         pruneStaleMarks(in: terminal)
         guard let range = PromptMark.lastCommandOutputRange(in: marks),
               let firstRow = range.first,
@@ -85,6 +108,8 @@ struct TerminalPromptHistory {
     }
 
     private mutating func pruneStaleMarks(in terminal: Terminal) {
+        guard !terminal.isCurrentBufferAlternate else { return }
+        terminalResized(columns: terminal.cols)
         marks.removeAll { terminal.getScrollInvariantLine(row: $0.row) == nil }
     }
 }
