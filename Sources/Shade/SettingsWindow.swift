@@ -35,7 +35,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             navigation.selection = page
         }
         model.reloadForPresentation()
-        connections.reload()
+        Task { await connections.reload() }
         // Switch from .accessory to .regular while the Settings window is open so that
         // system panels (notably NSColorPanel used by SwiftUI's ColorPicker) actually
         // open — they refuse to show for LSUIElement / .accessory apps.
@@ -73,4 +73,6 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
     }
+
+    func waitForPendingSave() async { await model.waitForPendingSave() }
 }

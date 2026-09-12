@@ -31,7 +31,7 @@ struct SSHConnectionPickerView: View {
                 if let problem = controller.problem {
                     SSHConnectionPickerProblemBanner(
                         problem: problem,
-                        onRetry: controller.reload,
+                        onRetry: { Task { await controller.reload() } },
                         onDismiss: controller.dismissProblem
                     )
                         .padding(.horizontal, 18)

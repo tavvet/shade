@@ -7,6 +7,8 @@ import SwiftUI
 /// and saving cannot drift across parallel lists of properties.
 @MainActor
 final class SettingsModel: NSObject, ObservableObject {
+    @Published var persistenceError: String?
+    @Published private(set) var isSaving = false
     @Published var preferences: Preferences {
         didSet { preferencesDidChange(from: oldValue) }
     }
@@ -25,25 +27,35 @@ final class SettingsModel: NSObject, ObservableObject {
         )
     }
 
-    private let preferencesStore: PreferencesStore
+    private let preferencesStore: any PreferencesStoring
     private let loginItemManager: any LoginItemManaging
     private let notificationAuthorizationRequester: any NotificationAuthorizationRequesting
     private var suppressPreferenceWrites = false
     private var suppressOpenAtLoginWrite = false
     private var applyDebounce: Task<Void, Never>?
+    private var saveTask: Task<Void, Never>?
+    private var savedPreferences: Preferences
 
     init(
-        store: UserDefaults = .standard,
+        store: UserDefaults? = nil,
+        configuration: ConfigurationStore? = nil,
         openAtLogin: Bool? = nil,
         loginItemManager: any LoginItemManaging = SystemLoginItemManager(),
         notificationAuthorizationRequester: any NotificationAuthorizationRequesting =
             SystemNotificationAuthorizationRequester()
     ) {
-        let preferencesStore = PreferencesStore(userDefaults: store)
+        let preferencesStore: any PreferencesStoring
+        if let store {
+            preferencesStore = PreferencesStore(userDefaults: store)
+        } else {
+            preferencesStore = configuration ?? .shared
+        }
         self.preferencesStore = preferencesStore
         self.loginItemManager = loginItemManager
         self.notificationAuthorizationRequester = notificationAuthorizationRequester
-        preferences = preferencesStore.load()
+        let loaded = preferencesStore.load()
+        preferences = loaded
+        savedPreferences = loaded
         self.openAtLogin = openAtLogin ?? loginItemManager.isEnabled
         super.init()
         NotificationCenter.default.addObserver(
@@ -70,19 +82,45 @@ final class SettingsModel: NSObject, ObservableObject {
     /// Re-read values changed outside this model, such as keyboard font zoom or
     /// `defaults write`, without echoing the assignment back to UserDefaults.
     private func reloadPreferences() {
+        guard !isSaving else { return }
         suppressPreferenceWrites = true
         defer { suppressPreferenceWrites = false }
         preferences = preferencesStore.load()
+        savedPreferences = preferences
     }
 
     private func preferencesDidChange(from oldValue: Preferences) {
         guard !suppressPreferenceWrites else { return }
-        preferencesStore.save(preferences)
-        if preferences.notifyOnCommandFinish, !oldValue.notifyOnCommandFinish {
-            notificationAuthorizationRequester.requestAuthorizationIfNeeded()
+        guard preferences != oldValue else { return }
+        guard saveTask == nil else { return }
+        isSaving = true
+        saveTask = Task { @MainActor in
+            // One write at a time. Slider changes arriving during I/O become
+            // the next candidate, based only on the last successful save.
+            while preferences != savedPreferences {
+                let candidate = preferences
+                let previous = savedPreferences
+                do {
+                    try await preferencesStore.save(candidate, replacing: previous)
+                    savedPreferences = candidate
+                    persistenceError = nil
+                    if candidate.notifyOnCommandFinish, !previous.notifyOnCommandFinish {
+                        notificationAuthorizationRequester.requestAuthorizationIfNeeded()
+                    }
+                } catch {
+                    persistenceError = error.localizedDescription
+                    _ = await preferencesStore.reload()
+                    break
+                }
+            }
+            isSaving = false
+            saveTask = nil
+            reloadPreferences()
+            scheduleApply()
         }
-        scheduleApply()
     }
+
+    func waitForPendingSave() async { await saveTask?.value }
 
     @objc private func preferencesChanged(_ notification: Notification) {
         if let source = notification.object as AnyObject?, source === self { return }
@@ -101,8 +139,7 @@ final class SettingsModel: NSObject, ObservableObject {
         }
     }
 
-    /// Coalesce the live re-apply. Slider and color-picker drags persist every
-    /// value immediately, but the expensive terminal relayout waits for a pause.
+    /// Coalesce the live re-apply after pending slider/color changes are saved.
     private func scheduleApply() {
         applyDebounce?.cancel()
         applyDebounce = Task { @MainActor in

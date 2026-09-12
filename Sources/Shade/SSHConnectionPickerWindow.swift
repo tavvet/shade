@@ -9,6 +9,7 @@ import SwiftUI
 final class SSHConnectionPickerPresenter {
     private let controller: SSHConnectionsController
     private let openConnectionSettings: @MainActor () -> Void
+    private let connectionRequest: SSHConnectionPickerConnectionRequest
 
     private weak var parentPanel: DropdownPanel?
     private var pickerPanel: SSHConnectionPickerPanel?
@@ -19,6 +20,7 @@ final class SSHConnectionPickerPresenter {
     ) {
         self.controller = controller
         self.openConnectionSettings = openConnectionSettings
+        connectionRequest = SSHConnectionPickerConnectionRequest(controller: controller)
     }
 
     func present(over parent: DropdownPanel) {
@@ -27,7 +29,7 @@ final class SSHConnectionPickerPresenter {
             return
         }
 
-        controller.reload()
+        Task { await controller.reload() }
 
         let inputBridge = SSHConnectionPickerInputBridge()
         let picker = SSHConnectionPickerPanel(
@@ -61,6 +63,7 @@ final class SSHConnectionPickerPresenter {
     }
 
     func dismiss() {
+        connectionRequest.cancel()
         let parent = parentPanel
         if let pickerPanel {
             parent?.removeChildWindow(pickerPanel)
@@ -77,13 +80,13 @@ final class SSHConnectionPickerPresenter {
     }
 
     private func connect(to id: UUID) {
-        guard controller.connect(to: id) else { return }
-        dismiss()
+        guard pickerPanel != nil else { return }
+        connectionRequest.connect(.profile(id)) { [weak self] in self?.dismiss() }
     }
 
     private func connectQuickSlot(_ number: Int) {
-        guard controller.connectQuickSlot(number) else { return }
-        dismiss()
+        guard pickerPanel != nil else { return }
+        connectionRequest.connect(.quickSlot(number)) { [weak self] in self?.dismiss() }
     }
 
     private func manageConnections() {

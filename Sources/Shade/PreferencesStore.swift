@@ -1,5 +1,16 @@
 import Foundation
 
+@MainActor
+protocol PreferencesStoring {
+    func load() -> Preferences
+    func reload() async -> Preferences
+    func save(_ preferences: Preferences, replacing previous: Preferences) async throws
+}
+
+extension PreferencesStoring {
+    func reload() async -> Preferences { load() }
+}
+
 /// Persists the complete Preferences snapshot in UserDefaults. Validation
 /// happens while loading so every consumer receives values inside the ranges
 /// supported by the UI and terminal renderer.
@@ -10,7 +21,8 @@ struct PreferencesStore {
         self.userDefaults = userDefaults
     }
 
-    static var standard: PreferencesStore { PreferencesStore() }
+    @MainActor
+    static var standard: ConfigurationStore { .shared }
 
     func load() -> Preferences {
         var preferences = Preferences.defaults
@@ -158,5 +170,14 @@ struct PreferencesStore {
 
     private func clampFraction(_ value: Double) -> CGFloat {
         CGFloat(min(max(value, 0.1), 1.0))
+    }
+}
+
+extension PreferencesStore: PreferencesStoring {
+    func save(_ preferences: Preferences, replacing previous: Preferences) throws {
+        // The caller's snapshot may predate a queued font zoom. Compare and
+        // write without yielding so another main-actor save cannot intervene.
+        guard load() == previous else { throw ConfigurationError.changedExternally }
+        save(preferences)
     }
 }

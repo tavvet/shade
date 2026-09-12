@@ -205,7 +205,7 @@ unchanged — they work even when your keyboard layout is non-Latin
 ### Via the Settings window
 
 Open Settings from Shade's menu-bar icon. The sidebar groups preferences into
-six focused pages:
+seven focused pages:
 
 - **General** — panel size and position, focus behavior, new-tab directory,
   Open at Login and slide animation
@@ -215,11 +215,62 @@ six focused pages:
 - **Terminal** — zsh completion enrichment, cursor shape and blink, visual bell
 - **Notifications** — command-finished alerts and their duration threshold
 - **Shortcuts** — global-hotkey recorder and keyboard reference
+- **Storage** — choose a folder for settings and SSH connections, reload files,
+  or return to the preserved local configuration
 
 Changes that affect the visible panel apply immediately; size/position changes
 apply on the next toggle.
 
+### Portable configuration folder
+
+By default, nothing changes: preferences use macOS `UserDefaults`, and saved
+SSH profiles use `~/Library/Application Support/Shade/connections.json`.
+
+In **Settings → Storage → Choose Folder…**, select a directory:
+
+- If neither configuration file exists, **Copy and Use** writes `settings.json`
+  and `connections.json`, then activates that folder. Original data is retained.
+- If both files exist and are valid, **Use Existing** loads them without
+  overwriting them. This is how another Mac joins the same configuration.
+- A partial, unreadable, malformed or unsupported configuration is rejected.
+  A failed copy never changes the active location; if only part of the copy
+  succeeded, those new files remain in the destination for inspection.
+
+The folder path is stored only on this Mac. It is not exported. The global
+hotkey, Open at Login and macOS permissions stay local. Connection UUIDs and
+quick-slot order travel with the connection file, but private keys do not;
+identity-file paths and SSH aliases must be usable on each Mac.
+
+Choose an iCloud Drive or other file-sync folder if desired. Shade reloads
+files when its panel, Settings or connection picker opens, before a quick-slot
+connection, or when **Reload Files** is pressed. There is no continuous cloud
+monitor or automatic conflict merge. A change already present on disk blocks
+a stale save; reload before retrying. Avoid concurrent edits on multiple Macs,
+especially offline, and resolve any provider-created conflict copies yourself.
+Keep both files downloaded locally; if iCloud evicts a file, download it in
+Finder and reload. Shade does not start a network download from a hotkey action.
+File access runs in the background: F12 immediately uses the last valid settings,
+then refreshed preferences are applied when available. Saves show progress and
+finish before normal app quit. Files larger than 5 MB are rejected before writing.
+
+If the active folder disappears or a file becomes invalid, Shade keeps the last
+valid settings in memory and blocks writes to that configuration. It does not
+recreate missing files or silently switch back to local storage. On a fresh
+launch without readable custom files, the preserved local preferences keep the
+terminal usable; connection edits remain blocked. Repair the folder and reload,
+or explicitly choose another valid configuration.
+
+**Use Local Storage…** restores the local settings and connections preserved
+before switching. It does **not** copy custom-folder changes back. The custom
+folder is left untouched; the confirmation explains this before switching.
+See [Configuration storage](docs/configuration-storage.md) for the file format
+and persistence boundaries.
+
 ### Via `defaults` (CLI)
+
+This interface edits the **local** configuration only. While a custom folder is
+active, use the Settings window or edit that folder's JSON instead. Do not move
+or symlink the macOS-managed preferences plist.
 
 The Settings window is the easy path; for headless / dotfiles use the same
 keys via `defaults`. Shade reloads them whenever the panel opens: layout and
@@ -296,12 +347,14 @@ passed to OpenSSH as structured arguments rather than interpolated into a shell
 command, and SSH inherits the app environment so an available `SSH_AUTH_SOCK`
 continues to work.
 
-Profiles are stored as a versioned JSON file at
+In local-storage mode, profiles are stored as a versioned JSON file at
 `~/Library/Application Support/Shade/connections.json`. Shade creates it with
 user-only (`0600`) permissions and writes updates atomically. If the file is
 unreadable, malformed or from an unsupported newer format, Shade blocks edits
 instead of overwriting it; repair or restore the file, then click **Retry**.
 Removing a profile does not modify `~/.ssh/config` or delete any key files.
+With a custom configuration folder, the same versioned `connections.json`
+format is used there instead; see [Portable configuration folder](#portable-configuration-folder).
 
 ---
 
@@ -498,6 +551,11 @@ Sources/Shade/
 ├── BundleVerification.swift  Non-interactive packaged-resource smoke check
 ├── CommandNotifier.swift    Command-finished notifications (OSC 133 C→D timing)
 ├── CommandNotificationCoordinator.swift  Completion-event notification policy/wiring
+├── ConfigurationFileIO.swift  Coordinated reads and private atomic file replacement
+├── ConfigurationFiles.swift  Portable settings/connection pair inspection and creation
+├── ConfigurationSettingsView.swift  Storage location, confirmation and error UI
+├── ConfigurationStore.swift  Local/custom backend selection and stale-write protection
+├── ConfigurationTaskQueue.swift  Serialized transactions and off-main disk operations
 ├── ConnectionsSettingsComponents.swift  Saved-connection list, controls and status UI
 ├── ConnectionsSettingsView.swift  Saved-connections page composition
 ├── ConnectionsSettingsViewState.swift  Selection, editor and operation presentation state
@@ -524,6 +582,7 @@ Sources/Shade/
 ├── NotificationSettingsView.swift  Command-notification settings form
 ├── OSC133StreamObserver.swift  Non-invasive OSC 133 observation in the PTY stream
 ├── SettingsModel.swift      Observable settings snapshot + live-apply coordination
+├── SettingsFileDocument.swift  Versioned portable preferences JSON and validation
 ├── SettingsSystemServices.swift  Login-item and notification authorization adapters
 ├── SettingsView.swift       Settings sidebar navigation and page switching
 ├── SettingsWindow.swift     Settings NSWindowController

@@ -25,7 +25,9 @@ enum ShadeApp {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let terminals = TerminalsController()
     private let inputSource = InputSourceMonitor()
-    private lazy var connections = SSHConnectionsController { [weak self] profile in
+    private lazy var connections = SSHConnectionsController(
+        store: ConfigurationSSHProfileStore(configuration: .shared)
+    ) { [weak self] profile in
         guard let self else { return }
         try self.terminals.connect(to: profile)
         // A connection may originate in Settings while the picker is also open.
@@ -44,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         terminals: terminals,
         showConnections: { [weak self] in self?.presentConnectionPicker() },
         connectQuickSlot: { [weak self] number in
-            _ = self?.connections.connectQuickSlot(number)
+            self?.connectQuickSlot(number)
         }
     )
     private lazy var panelContent = TerminalPanelContentController(
@@ -53,6 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         inputSource: inputSource
     )
     private var connectionPicker: SSHConnectionPickerPresenter?
+    private var quickSlotTask: Task<Void, Never>?
+    private var settingsWerePresented = false
 
     private lazy var panel: DropdownPanel = {
         let panel = DropdownPanel()
@@ -68,11 +72,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         panel.onWillShow = { [weak self] preferences in
             guard let self else { return }
+            Task { await self.connections.reload() }
+            self.terminals.ensureAtLeastOneSession()
             self.applyPreferences(preferences)
             self.notifications.panelWillShow(preferences: preferences)
         }
         panel.onShow = { [weak self] in self?.terminals.resumePolling() }
         panel.onHide = { [weak self] in
+            self?.quickSlotTask?.cancel()
             self?.connectionPicker?.dismiss()
             self?.terminals.pausePolling()
         }
@@ -97,7 +104,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelContent.install(in: panel)
         notifications.start()
         primePanelFrame()
-        terminals.ensureAtLeastOneSession()
 
         NotificationCenter.default.addObserver(
             self,
@@ -111,8 +117,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSApplication.didResignActiveNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(configurationDidChange),
+            name: ConfigurationStore.didChange,
+            object: ConfigurationStore.shared
+        )
         KeyboardShortcuts.onKeyDown(for: .toggleShade) { [weak self] in
             self?.panel.toggle()
+        }
+        // Start with portable preferences when available. F12 remains usable
+        // during a slow initial read and can create a session from the fallback.
+        Task { @MainActor in
+            await connections.reload()
+            if !panel.isVisible { primePanelFrame() }
+            terminals.ensureAtLeastOneSession()
         }
     }
 
@@ -129,6 +148,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyPreferences(PreferencesStore.standard.load())
     }
 
+    @objc private func configurationDidChange() {
+        connections.invalidateLibrary()
+        Task { await connections.reload() }
+    }
+
     private func applyPreferences(_ preferences: Preferences) {
         terminals.applyToAll(preferences)
         panel.apply(preferences)
@@ -136,6 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func presentConnectionPicker() {
+        Task { await connections.reload() }
         if panel.isVisible {
             panel.makeKeyAndOrderFront(nil)
         } else {
@@ -154,6 +179,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         connectionPicker?.present(over: panel)
     }
 
+    private func connectQuickSlot(_ number: Int) {
+        quickSlotTask?.cancel()
+        quickSlotTask = Task { @MainActor in
+            await connections.reload()
+            guard !Task.isCancelled, panel.isVisible else { return }
+            _ = connections.connectQuickSlot(number)
+        }
+    }
+
     private func prepareForAuxiliaryWindow() {
         connectionPicker?.dismiss()
         panel.hide()
@@ -161,7 +195,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func presentSettings(page: SettingsPage? = nil) {
         prepareForAuxiliaryWindow()
+        settingsWerePresented = true
         settings.present(page: page)
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        quickSlotTask?.cancel()
+        Task { @MainActor in
+            // Let tasks accepted by the last button/key action enter their queues.
+            await Task.yield()
+            if settingsWerePresented { await settings.waitForPendingSave() }
+            await connections.waitForPendingSave()
+            await keyboard.waitForPendingSave()
+            await ConfigurationStore.shared.waitForPendingWrites()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 
     /// Hide on a real app switch, but not during the transient resign-active

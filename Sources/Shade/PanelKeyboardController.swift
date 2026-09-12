@@ -87,6 +87,7 @@ final class PanelKeyboardController: PanelKeyHandler {
     private let terminals: TerminalsController
     private let showConnections: @MainActor () -> Void
     private let connectQuickSlot: @MainActor (Int) -> Void
+    private let zoomOperations = ConfigurationTaskQueue()
 
     init(
         terminals: TerminalsController,
@@ -101,6 +102,8 @@ final class PanelKeyboardController: PanelKeyHandler {
     func panelDidReceiveUserInput() {
         terminals.noteUserInput()
     }
+
+    func waitForPendingSave() async { await zoomOperations.waitForAll() }
 
     func panelHandleKey(_ event: NSEvent) -> Bool {
         guard let shortcut = PanelShortcutResolver.resolve(
@@ -172,12 +175,21 @@ final class PanelKeyboardController: PanelKeyHandler {
     }
 
     private func adjustFontSize(by delta: CGFloat?) {
-        let store = PreferencesStore.standard
-        let current = store.load().fontSize
-        let target = Preferences.zoomedFontSize(from: current, delta: delta)
-        guard target != current else { return }
-        store.saveFontSize(target)
-        NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+        Task { @MainActor in
+            do {
+                try await zoomOperations.run {
+                    let store = PreferencesStore.standard
+                    let current = await store.reload().fontSize
+                    let target = Preferences.zoomedFontSize(from: current, delta: delta)
+                    guard target != current else { return }
+                    try await store.saveFontSize(target)
+                    NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+                }
+            } catch {
+                NSLog("Shade: cannot save font size: %@", error.localizedDescription)
+                NSSound.beep()
+            }
+        }
     }
 
     /// Clears previous output locally without submitting or rewriting shell input.

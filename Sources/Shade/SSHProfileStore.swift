@@ -1,14 +1,25 @@
 import Foundation
 
 protocol SSHProfileStoring {
-    func load() throws -> [SSHProfile]
-    func save(_ profiles: [SSHProfile]) throws
+    @MainActor
+    func load() async throws -> [SSHProfile]
+    @MainActor
+    func save(_ profiles: [SSHProfile]) async throws
+    @MainActor
+    func save(_ profiles: [SSHProfile], replacing previous: [SSHProfile]) async throws
+}
+
+extension SSHProfileStoring {
+    @MainActor
+    func save(_ profiles: [SSHProfile], replacing previous: [SSHProfile]) async throws {
+        try await save(profiles)
+    }
 }
 
 /// Persists ordered SSH profiles separately from scalar application preferences.
 /// The versioned envelope leaves room for future migrations without coupling
 /// connection data to `PreferencesStore` or UserDefaults.
-struct SSHProfileStore {
+struct SSHProfileStore: Sendable {
     static let currentVersion = 1
     private static let comparisonLocale = Locale(identifier: "en_US_POSIX")
 
@@ -18,10 +29,14 @@ struct SSHProfileStore {
         self.fileURL = fileURL
     }
 
-    func load() throws -> [SSHProfile] {
+    nonisolated func load() throws -> [SSHProfile] {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
 
         let data = try Data(contentsOf: fileURL)
+        return try Self.decode(data)
+    }
+
+    static func decode(_ data: Data) throws -> [SSHProfile] {
         let envelope = try JSONDecoder().decode(Envelope.self, from: data)
         guard envelope.version == Self.currentVersion else {
             throw SSHProfileStoreError.unsupportedVersion(envelope.version)
@@ -29,12 +44,8 @@ struct SSHProfileStore {
         return try Self.validated(envelope.profiles)
     }
 
-    func save(_ profiles: [SSHProfile]) throws {
-        let validated = try Self.validated(profiles)
-        let envelope = Envelope(version: Self.currentVersion, profiles: validated)
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let data = try encoder.encode(envelope)
+    nonisolated func save(_ profiles: [SSHProfile]) throws {
+        let data = try Self.encode(profiles)
 
         let fileManager = FileManager.default
         let directory = fileURL.deletingLastPathComponent()
@@ -44,37 +55,15 @@ struct SSHProfileStore {
             attributes: [.posixPermissions: 0o700]
         )
 
-        // Prepare and secure a sibling file before replacing the live library.
-        // There are no throwing operations after the final move/replace, so a
-        // reported save failure can never leave newer data on disk than the
-        // controller has published in memory.
-        let temporaryURL = directory.appendingPathComponent(
-            ".connections-\(UUID().uuidString).tmp",
-            isDirectory: false
-        )
-        defer { try? fileManager.removeItem(at: temporaryURL) }
+        try ConfigurationFileIO.replace(data, at: fileURL)
+    }
 
-        guard fileManager.createFile(
-            atPath: temporaryURL.path,
-            contents: data,
-            attributes: [.posixPermissions: 0o600]
-        ) else {
-            throw CocoaError(
-                .fileWriteUnknown,
-                userInfo: [NSFilePathErrorKey: temporaryURL.path]
-            )
-        }
-
-        if fileManager.fileExists(atPath: fileURL.path) {
-            _ = try fileManager.replaceItemAt(
-                fileURL,
-                withItemAt: temporaryURL,
-                backupItemName: nil,
-                options: .usingNewMetadataOnly
-            )
-        } else {
-            try fileManager.moveItem(at: temporaryURL, to: fileURL)
-        }
+    static func encode(_ profiles: [SSHProfile]) throws -> Data {
+        let validated = try Self.validated(profiles)
+        let envelope = Envelope(version: Self.currentVersion, profiles: validated)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(envelope)
     }
 
     static func defaultFileURL(fileManager: FileManager = .default) -> URL {
@@ -114,7 +103,15 @@ struct SSHProfileStore {
     }
 }
 
-extension SSHProfileStore: SSHProfileStoring {}
+extension SSHProfileStore: SSHProfileStoring {
+    func load() async throws -> [SSHProfile] {
+        try await ConfigurationDisk.run { try self.load() }
+    }
+
+    func save(_ profiles: [SSHProfile]) async throws {
+        try await ConfigurationDisk.run { try self.save(profiles) }
+    }
+}
 
 enum SSHProfileStoreError: Error, Equatable, LocalizedError {
     case unsupportedVersion(Int)

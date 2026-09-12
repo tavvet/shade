@@ -13,7 +13,7 @@ struct ConnectionsSettingsView: View {
             if let problem = controller.problem {
                 ConnectionsSettingsProblemBanner(
                     problem: problem,
-                    onRetry: controller.reload,
+                    onRetry: { Task { await controller.reload() } },
                     onDismiss: controller.dismissProblem
                 )
                 .padding(.horizontal, 20)
@@ -39,6 +39,7 @@ struct ConnectionsSettingsView: View {
                     profiles: controller.profiles,
                     selectedID: $state.selectedID,
                     canEditProfiles: controller.canEditProfiles,
+                    canConnectProfiles: controller.canConnectProfiles,
                     onConnect: { controller.connect(to: $0) },
                     onEdit: beginEditing,
                     onDelete: state.requestDeletion
@@ -55,7 +56,7 @@ struct ConnectionsSettingsView: View {
                 profile: context.profile,
                 isNew: context.isNew
             ) { profile in
-                try state.save(profile, context: context, using: controller)
+                try await state.save(profile, context: context, using: controller)
             }
         }
         .alert(
@@ -64,7 +65,7 @@ struct ConnectionsSettingsView: View {
             presenting: state.pendingDeletion
         ) { profile in
             Button("Delete", role: .destructive) {
-                state.remove(profile, using: controller)
+                Task { await state.remove(profile, using: controller) }
             }
             Button("Cancel", role: .cancel) {}
         } message: { profile in
@@ -77,6 +78,7 @@ struct ConnectionsSettingsView: View {
         ConnectionsSettingsControls(
             hasSelection: selectedProfile != nil,
             canEditProfiles: controller.canEditProfiles,
+            canConnectProfiles: controller.canConnectProfiles,
             canMoveUp: state.canMoveSelected(in: controller.profiles, by: -1),
             canMoveDown: state.canMoveSelected(in: controller.profiles, by: 1),
             onAdd: beginAdding,
@@ -86,8 +88,8 @@ struct ConnectionsSettingsView: View {
             onEdit: {
                 if let selectedProfile { beginEditing(selectedProfile) }
             },
-            onMoveUp: { state.moveSelected(using: controller, by: -1) },
-            onMoveDown: { state.moveSelected(using: controller, by: 1) },
+            onMoveUp: { Task { await state.moveSelected(using: controller, by: -1) } },
+            onMoveDown: { Task { await state.moveSelected(using: controller, by: 1) } },
             onConnect: {
                 if let selectedID = state.selectedID { controller.connect(to: selectedID) }
             }

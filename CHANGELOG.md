@@ -6,6 +6,17 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Add Settings → Storage for choosing a portable configuration folder containing
+  `settings.json` and `connections.json`. Copy into an empty destination or
+  explicitly use an existing valid configuration; preserve the original data.
+- Keep the folder selection, global hotkey, login item and system permissions
+  local. Detect invalid/missing custom files and stale saves without replacing
+  data with defaults; provide explicit reload and return-to-local actions.
+- Keep configuration file access off the UI thread, serialize pending saves,
+  reject stale SSH editor drafts, and check file-size limits before writing.
+
 ## [0.1.23] — 2026-09-12
 
 ### Fixed

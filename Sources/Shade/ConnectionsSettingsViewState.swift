@@ -53,12 +53,12 @@ final class ConnectionsSettingsViewState: ObservableObject {
         _ profile: SSHProfile,
         context: SSHProfileEditorContext,
         using controller: SSHConnectionsController
-    ) throws {
+    ) async throws {
         do {
             if context.isNew {
-                try controller.add(profile)
+                try await controller.add(profile)
             } else {
-                try controller.update(profile)
+                try await controller.update(profile, replacing: context.profile)
             }
         } catch {
             if ConnectionsSettingsErrorPresentation.isMatchingSaveProblem(
@@ -75,9 +75,9 @@ final class ConnectionsSettingsViewState: ObservableObject {
         selectedID = profile.id
     }
 
-    func remove(_ profile: SSHProfile, using controller: SSHConnectionsController) {
+    func remove(_ profile: SSHProfile, using controller: SSHConnectionsController) async {
         do {
-            try controller.remove(id: profile.id)
+            try await controller.remove(id: profile.id, replacing: profile)
             operationError = nil
         } catch {
             operationError = ConnectionsSettingsErrorPresentation.operationMessage(
@@ -96,13 +96,13 @@ final class ConnectionsSettingsViewState: ObservableObject {
         return profiles.indices.contains(index + offset)
     }
 
-    func moveSelected(using controller: SSHConnectionsController, by offset: Int) {
+    func moveSelected(using controller: SSHConnectionsController, by offset: Int) async {
         guard let selectedProfile = selectedProfile(in: controller.profiles),
               let index = controller.profiles.firstIndex(where: { $0.id == selectedProfile.id }) else {
             return
         }
         do {
-            try controller.move(id: selectedProfile.id, to: index + offset)
+            try await controller.move(id: selectedProfile.id, to: index + offset)
             operationError = nil
         } catch {
             operationError = ConnectionsSettingsErrorPresentation.operationMessage(
