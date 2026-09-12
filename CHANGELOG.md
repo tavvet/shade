@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.23] — 2026-09-12
+
 ### Fixed
 
 - Make `⌘K` clear previous visible text without executing pending shell input
@@ -514,7 +516,8 @@ First public release.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.22...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.23...HEAD
+[0.1.23]: https://github.com/tavvet/shade/releases/tag/v0.1.23
 [0.1.22]: https://github.com/tavvet/shade/releases/tag/v0.1.22
 [0.1.21]: https://github.com/tavvet/shade/releases/tag/v0.1.21
 [0.1.20]: https://github.com/tavvet/shade/releases/tag/v0.1.20
