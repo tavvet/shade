@@ -14,6 +14,7 @@ import SwiftTerm
 final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     weak var forward: TerminalViewDelegate?
     var onOpenLink: ((String) -> Void)?
+    var onSizeChanged: ((Int) -> Void)?
     /// Return true when Shade handled the bell and the default audible bell
     /// should be suppressed.
     var onBell: (() -> Bool)?
@@ -27,6 +28,10 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     }
 
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
+        // Observe every reflow, even before a shell is running (the forwarded
+        // LocalProcessTerminalView delegate suppresses those notifications).
+        let columns = MainActor.assumeIsolated { source.getTerminal().cols }
+        onSizeChanged?(columns)
         forward?.sizeChanged(source: source, newCols: newCols, newRows: newRows)
     }
 

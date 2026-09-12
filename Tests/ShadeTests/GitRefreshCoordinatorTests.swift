@@ -276,7 +276,125 @@ final class GitRefreshCoordinatorTests: XCTestCase {
         XCTAssertNil(applied.values[0])
     }
 
+    func testWeakEventsDoNotCancelSlowSamePathFetch() async {
+        let fetcher = ControlledStatusFetcher()
+        let applied = StatusApplyRecorder()
+        let dirty = GitStatus(filesChanged: 3, insertions: 4, deletions: 2)
+        let coord = GitRefreshCoordinator(
+            debounce: fastDebounce,
+            weakReasonCooldown: 0,
+            fetch: { await fetcher.fetch($0) },
+            apply: { applied.append($0) }
+        )
+
+        coord.schedule(path: "/repo", reason: .cwdChanged)
+        await waitForRequests(fetcher, count: 1)
+        let weakReasons: [GitRefreshCoordinator.Reason] = [.fallbackPoll, .tabActivated, .focusReturned]
+        for reason in weakReasons {
+            coord.schedule(path: "/repo", reason: reason)
+            // Let an incorrect replacement pass debounce and reach the fetcher.
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+
+        let requests = await fetcher.paths
+        XCTAssertEqual(requests, ["/repo"])
+        await fetcher.finishAll(with: .status(dirty))
+        await waitForApplyCount(applied, equals: 1)
+        let cancelled = await fetcher.cancelledRequests
+        XCTAssertTrue(cancelled.isEmpty)
+        XCTAssertEqual(applied.values, [dirty])
+    }
+
+    func testStrongEventReplacesInFlightFetchForSamePath() async {
+        let fetcher = ControlledStatusFetcher()
+        let applied = StatusApplyRecorder()
+        let stale = GitStatus(filesChanged: 9, insertions: 9, deletions: 9)
+        let fresh = GitStatus(filesChanged: 1, insertions: 2, deletions: 0)
+        let coord = GitRefreshCoordinator(
+            debounce: fastDebounce,
+            weakReasonCooldown: 0,
+            fetch: { await fetcher.fetch($0) },
+            apply: { applied.append($0) }
+        )
+
+        coord.schedule(path: "/repo", reason: .cwdChanged)
+        await waitForRequests(fetcher, count: 1)
+        coord.schedule(path: "/repo", reason: .commandFinished)
+        await waitForRequests(fetcher, count: 2)
+
+        // Complete the cancelled request while its replacement still runs.
+        // Its cleanup must not clear the replacement's coalescing state.
+        await fetcher.finish(0, with: .status(stale))
+        await waitForCancelledRequest(fetcher, index: 0)
+        coord.schedule(path: "/repo", reason: .fallbackPoll)
+        try? await Task.sleep(for: .milliseconds(100))
+        let requests = await fetcher.paths
+        XCTAssertEqual(requests, ["/repo", "/repo"])
+        XCTAssertTrue(applied.values.isEmpty)
+
+        await fetcher.finishAll(with: .status(fresh))
+        await waitForApplyCount(applied, equals: 1)
+        XCTAssertEqual(applied.values, [fresh])
+    }
+
+    func testWeakEventForDifferentPathReplacesInFlightFetch() async {
+        let fetcher = ControlledStatusFetcher()
+        let applied = StatusApplyRecorder()
+        let coord = GitRefreshCoordinator(
+            debounce: fastDebounce,
+            weakReasonCooldown: 60,
+            fetch: { await fetcher.fetch($0) },
+            apply: { applied.append($0) }
+        )
+
+        // Establish a cooldown for /repo-a, then start work in /repo-b.
+        coord.schedule(path: "/repo-a", reason: .cwdChanged)
+        await waitForRequests(fetcher, count: 1)
+        await fetcher.finish(0, with: .status(.empty))
+        await waitForApplyCount(applied, equals: 1)
+        coord.schedule(path: "/repo-b", reason: .cwdChanged)
+        await waitForRequests(fetcher, count: 2)
+
+        // Returning to A must replace B despite A's recent successful result.
+        coord.schedule(path: "/repo-a", reason: .tabActivated)
+        await waitForRequests(fetcher, count: 3)
+        await fetcher.finish(1, with: .status(GitStatus(filesChanged: 5, insertions: 0, deletions: 0)))
+        await waitForCancelledRequest(fetcher, index: 1)
+        await fetcher.finishAll(with: .status(.empty))
+        await waitForApplyCount(applied, equals: 2)
+
+        XCTAssertEqual(applied.values, [.empty, .empty])
+    }
+
     // MARK: - Helpers
+
+    private func waitForRequests(
+        _ fetcher: ControlledStatusFetcher,
+        count expected: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            if await fetcher.paths.count >= expected { return }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        XCTFail("Expected \(expected) fetch requests", file: file, line: line)
+    }
+
+    private func waitForCancelledRequest(
+        _ fetcher: ControlledStatusFetcher,
+        index: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            if await fetcher.cancelledRequests.contains(index) { return }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        XCTFail("Expected request \(index) to be cancelled", file: file, line: line)
+    }
 
     /// Polls the counter until it hits `expected` or the timeout elapses.
     /// Fails the test instead of hanging if the count never reaches it.
@@ -318,6 +436,34 @@ final class GitRefreshCoordinatorTests: XCTestCase {
 }
 
 // MARK: - Test fixtures
+
+/// Holds a fetch beyond any number of poll intervals and lets cancelled work
+/// complete out of order, without depending on real repository timing.
+private actor ControlledStatusFetcher {
+    private(set) var paths: [String] = []
+    private(set) var cancelledRequests: [Int] = []
+    private var continuations: [Int: CheckedContinuation<GitStatusRefreshResult, Never>] = [:]
+
+    func fetch(_ path: String) async -> GitStatusRefreshResult {
+        let index = paths.count
+        paths.append(path)
+        let result: GitStatusRefreshResult = await withCheckedContinuation { continuation in
+            continuations[index] = continuation
+        }
+        if Task.isCancelled { cancelledRequests.append(index) }
+        return result
+    }
+
+    func finish(_ index: Int, with result: GitStatusRefreshResult) {
+        continuations.removeValue(forKey: index)?.resume(returning: result)
+    }
+
+    func finishAll(with result: GitStatusRefreshResult) {
+        let pending = Array(continuations.values)
+        continuations.removeAll()
+        for continuation in pending { continuation.resume(returning: result) }
+    }
+}
 
 /// Sendable counter so tests can observe how often the injected fetcher ran
 /// from off-main detached tasks.

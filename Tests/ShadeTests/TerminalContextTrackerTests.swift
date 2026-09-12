@@ -77,6 +77,107 @@ final class TerminalContextTrackerTests: XCTestCase {
         XCTAssertTrue(scheduler.calls.isEmpty)
     }
 
+    func testCommandFinishDiscoversNewRepositoryWithoutCwdChange() throws {
+        let fixture = try RepositoryDiscoveryFixture()
+        defer { fixture.remove() }
+        let scheduler = RecordingGitRefresh()
+        let tracker = makeRepositoryTracker(scheduler: scheduler, cwd: fixture.directory)
+        tracker.refresh(shellPid: 7, foregroundProcessGroup: 7, isActive: true)
+        XCTAssertTrue(tracker.branch.isEmpty)
+        scheduler.calls.removeAll()
+
+        try fixture.addRepository(at: fixture.directory, branch: "new-main")
+        tracker.commandFinished(shellPid: 7)
+
+        XCTAssertEqual(tracker.cwd, fixture.directory.path)
+        XCTAssertEqual(tracker.branch, "new-main")
+        XCTAssertEqual(scheduler.calls, [
+            .init(path: fixture.directory.path, reason: .commandFinished),
+        ])
+    }
+
+    func testPollDiscoversNewRepositoryWithoutShellIntegrationOrCwdChange() throws {
+        let fixture = try RepositoryDiscoveryFixture()
+        defer { fixture.remove() }
+        let scheduler = RecordingGitRefresh()
+        let tracker = makeRepositoryTracker(scheduler: scheduler, cwd: fixture.directory)
+        tracker.refresh(shellPid: 7, foregroundProcessGroup: 7, isActive: true)
+        scheduler.calls.removeAll()
+
+        try fixture.addRepository(at: fixture.directory, branch: "new-main")
+        tracker.refresh(shellPid: 7, foregroundProcessGroup: 7, isActive: true)
+        tracker.fallbackRefreshGitStatusIfNeeded()
+
+        XCTAssertEqual(tracker.cwd, fixture.directory.path)
+        XCTAssertEqual(tracker.branch, "new-main")
+        XCTAssertEqual(scheduler.calls, [
+            .init(path: fixture.directory.path, reason: .cwdChanged),
+            .init(path: fixture.directory.path, reason: .fallbackPoll),
+        ])
+    }
+
+    func testNestedRepositoryReplacesParentWithAndWithoutShellIntegration() throws {
+        for usesShellIntegration in [true, false] {
+            let fixture = try RepositoryDiscoveryFixture()
+            defer { fixture.remove() }
+            let nested = fixture.directory.appendingPathComponent("nested")
+            try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+            try fixture.addRepository(at: fixture.directory, branch: "parent-main")
+            let scheduler = RecordingGitRefresh()
+            let tracker = makeRepositoryTracker(scheduler: scheduler, cwd: nested)
+            tracker.refresh(shellPid: 7, foregroundProcessGroup: 7, isActive: true)
+            scheduler.apply(GitStatus(filesChanged: 9, insertions: 8, deletions: 7))
+            XCTAssertEqual(tracker.branch, "parent-main")
+            scheduler.calls.removeAll()
+
+            try fixture.addRepository(at: nested, branch: "nested-main")
+            if usesShellIntegration {
+                tracker.commandFinished(shellPid: 7)
+            } else {
+                tracker.refresh(shellPid: 7, foregroundProcessGroup: 7, isActive: true)
+            }
+
+            XCTAssertEqual(tracker.cwd, nested.path)
+            XCTAssertEqual(tracker.branch, "nested-main")
+            XCTAssertNil(tracker.gitStatus, "Parent status must not be displayed for the nested repository")
+            XCTAssertEqual(scheduler.calls, [
+                .init(path: nested.path, reason: usesShellIntegration ? .commandFinished : .cwdChanged),
+            ])
+        }
+    }
+
+    func testRemovingRepositoryClearsBranchAndStatusWithoutCwdChange() throws {
+        let fixture = try RepositoryDiscoveryFixture()
+        defer { fixture.remove() }
+        try fixture.addRepository(at: fixture.directory, branch: "main")
+        let scheduler = RecordingGitRefresh()
+        let tracker = makeRepositoryTracker(scheduler: scheduler, cwd: fixture.directory)
+        tracker.refresh(shellPid: 7, foregroundProcessGroup: 7, isActive: true)
+        scheduler.apply(GitStatus(filesChanged: 2, insertions: 3, deletions: 4))
+        scheduler.calls.removeAll()
+
+        try FileManager.default.removeItem(at: fixture.directory.appendingPathComponent(".git"))
+        tracker.refresh(shellPid: 7, foregroundProcessGroup: 7, isActive: true)
+
+        XCTAssertTrue(tracker.branch.isEmpty)
+        XCTAssertNil(tracker.gitStatus)
+        XCTAssertEqual(scheduler.calls, [
+            .init(path: fixture.directory.path, reason: .cwdChanged),
+        ])
+    }
+
+    private func makeRepositoryTracker(
+        scheduler: RecordingGitRefresh,
+        cwd: URL
+    ) -> TerminalContextTracker {
+        makeTracker(
+            scheduler: scheduler,
+            readProcessCwd: { _ in cwd.path },
+            findGitDir: { GitRepository.findGitDir(from: $0) },
+            readBranch: { GitRepository.branchName(inGitDir: $0) }
+        )
+    }
+
     private func makeTracker(
         scheduler: RecordingGitRefresh,
         readProcessCwd: @escaping (Int32) -> String? = { _ in nil },
@@ -94,6 +195,30 @@ final class TerminalContextTrackerTests: XCTestCase {
                 return scheduler
             }
         )
+    }
+}
+
+/// The metadata read by repository discovery after `git init`; no subprocess
+/// or user's Git configuration is needed to exercise same-directory changes.
+private struct RepositoryDiscoveryFixture {
+    let directory: URL
+
+    init() throws {
+        directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("shade-repository-discovery-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+
+    func addRepository(at directory: URL, branch: String) throws {
+        let metadata = directory.appendingPathComponent(".git")
+        try FileManager.default.createDirectory(at: metadata, withIntermediateDirectories: true)
+        try "ref: refs/heads/\(branch)\n".write(
+            to: metadata.appendingPathComponent("HEAD"), atomically: true, encoding: .utf8
+        )
+    }
+
+    func remove() {
+        try? FileManager.default.removeItem(at: directory)
     }
 }
 

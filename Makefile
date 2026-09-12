@@ -2,7 +2,8 @@
 #   make            build/Shade.app (default)
 #   make run        build + relaunch
 #   make dmg        build/Shade.dmg with drag-to-Applications shortcut
-#   make verify-bundle  verify release metadata and bundled license notices
+#   make verify-bundle  verify signature, metadata and packaged resources
+#   make test-build     regression checks for app packaging and build failures
 #   make icon       regenerate Resources/AppIcon.icns from AppIcon.png
 #   make clean      remove build/
 #
@@ -29,6 +30,7 @@ MACOS_DIR := $(CONTENTS)/MacOS
 RESOURCES_DIR := $(CONTENTS)/Resources
 DMG_PATH := build/$(APP_NAME).dmg
 STAGE_DIR := build/dmg-stage
+RESOURCE_BUNDLES := KeyboardShortcuts_KeyboardShortcuts.bundle SwiftTerm_SwiftTerm.bundle
 
 ICON_SRC := Resources/AppIcon.png
 ICON_OUT := Resources/AppIcon.icns
@@ -45,12 +47,15 @@ ICON_SPECS := \
     1024:icon_512x512@2x.png
 
 .DEFAULT_GOAL := build
-.PHONY: build run dmg verify-bundle icon clean
+.PHONY: build run dmg verify-bundle test-build icon clean
 
 build: $(ICON_OUT)
 	@echo "→ swift build -c $(CONFIG)"
-	@swift build -c $(CONFIG)
-	@BIN_PATH="$$(swift build -c $(CONFIG) --show-bin-path)"; \
+	@set -eu; \
+	BIN_PATH="$$(swift build -c $(CONFIG) --show-bin-path)"; \
+	OVERLAY="$$(swift scripts/prepare-resource-overlay.swift "$${BIN_PATH}" build/resource-overlays)"; \
+	swift build -c $(CONFIG) -Xswiftc -vfsoverlay -Xswiftc "$${OVERLAY}"; \
+	swift scripts/prepare-resource-overlay.swift "$${BIN_PATH}" build/resource-overlays --verify-generated; \
 	EXECUTABLE="$${BIN_PATH}/$(APP_NAME)"; \
 	if [ ! -x "$${EXECUTABLE}" ]; then \
 	    echo "error: executable not found at $${EXECUTABLE}" >&2; \
@@ -67,6 +72,13 @@ build: $(ICON_OUT)
 	if [ -f Resources/MenubarIcon.png ]; then cp Resources/MenubarIcon.png "$(RESOURCES_DIR)/MenubarIcon.png"; fi; \
 	if [ -d integrations ]; then cp -R integrations "$(RESOURCES_DIR)/integrations"; fi; \
 	cp LICENSE THIRDPARTY.md "$(RESOURCES_DIR)/"; \
+	for RESOURCE_BUNDLE in $(RESOURCE_BUNDLES); do \
+	    if [ ! -d "$${BIN_PATH}/$${RESOURCE_BUNDLE}" ]; then \
+	        echo "error: missing SwiftPM resource bundle $${RESOURCE_BUNDLE}" >&2; \
+	        exit 1; \
+	    fi; \
+	    cp -R "$${BIN_PATH}/$${RESOURCE_BUNDLE}" "$(RESOURCES_DIR)/"; \
+	done; \
 	SIGN_IDENTITY="$${DEVELOPER_ID:--}"; \
 	if [ "$${SIGN_IDENTITY}" = "-" ]; then \
 	    echo "→ ad-hoc signing"; \
@@ -78,22 +90,17 @@ build: $(ICON_OUT)
 	echo "✓ built $(APP_DIR)"
 
 verify-bundle: build
-	@test -f "$(RESOURCES_DIR)/LICENSE"
-	@test -f "$(RESOURCES_DIR)/THIRDPARTY.md"
-	@BUNDLE_BUILD="$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$(CONTENTS)/Info.plist")"; \
-	case "$${BUNDLE_BUILD}" in ''|*[!0-9]*) \
-	    echo "error: invalid CFBundleVersion '$${BUNDLE_BUILD}'" >&2; \
-	    exit 1; \
-	esac; \
-	if [ "$${BUNDLE_BUILD}" -le 1 ]; then \
-	    echo "error: CFBundleVersion must be greater than 1" >&2; \
-	    exit 1; \
-	fi
-	@echo "✓ verified bundle metadata and license notices"
+	@sh scripts/verify-bundle.sh "$(APP_DIR)"
+
+test-build: verify-bundle
+	@sh scripts/test-build.sh "$(APP_DIR)" "$(CONFIG)"
 
 $(ICON_OUT): $(ICON_SRC)
 	@echo "→ generating $@"
-	@ICONSET="$$(mktemp -d)/AppIcon.iconset"; \
+	@set -eu; \
+	ICON_TMP="$$(mktemp -d)"; \
+	trap 'rm -rf "$${ICON_TMP}"' EXIT HUP INT TERM; \
+	ICONSET="$${ICON_TMP}/AppIcon.iconset"; \
 	mkdir -p "$${ICONSET}"; \
 	for spec in $(ICON_SPECS); do \
 	    SIZE=$${spec%%:*}; \

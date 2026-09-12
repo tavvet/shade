@@ -139,42 +139,12 @@ struct SSHConnectionPickerView: View {
     }
 
     private var connectionList: some View {
-        let resultIDs = matches.map(\.id)
-        return ScrollViewReader { proxy in
-            ScrollView {
-                // The saved-connection library is small, and an eager stack avoids
-                // stale macOS LazyVStack geometry while the filtered IDs change.
-                VStack(spacing: 4) {
-                    ForEach(matches) { profile in
-                        SSHConnectionPickerRow(
-                            profile: profile,
-                            quickSlot: quickSlot(for: profile),
-                            isSelected: selectedID == profile.id,
-                            onHover: { hovering in
-                                if hovering { selectedID = profile.id }
-                            },
-                            onConnect: { onConnect(profile.id) }
-                        )
-                        .id(profile.id)
-                    }
-                }
-                .padding(4)
-            }
-            .frame(minHeight: 150, idealHeight: 250, maxHeight: 300)
-            .background(
-                Color(nsColor: .controlBackgroundColor).opacity(0.45),
-                in: RoundedRectangle(cornerRadius: 10)
-            )
-            .onChange(of: selectedID) { id in
-                guard let id else { return }
-                // Selection repair and filtered-row layout happen in one SwiftUI
-                // transaction. Scroll only after the new subtree has been laid out.
-                DispatchQueue.main.async {
-                    proxy.scrollTo(id, anchor: .center)
-                }
-            }
-        }
-        .id(resultIDs)
+        SSHConnectionPickerList(
+            matches: matches,
+            selectedID: $selectedID,
+            quickSlot: quickSlot,
+            onConnect: onConnect
+        )
     }
 
     private func quickSlot(for profile: SSHProfile) -> Int? {

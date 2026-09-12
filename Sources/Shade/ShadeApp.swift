@@ -3,7 +3,12 @@ import KeyboardShortcuts
 
 @main
 enum ShadeApp {
+    @MainActor
     static func main() {
+        if CommandLine.arguments.contains("--verify-resource-bundles") {
+            exit(BundleVerification.run() ? EXIT_SUCCESS : EXIT_FAILURE)
+        }
+
         // LaunchServices starts GUI apps in "/". Shells should inherit $HOME.
         FileManager.default.changeCurrentDirectoryPath(NSHomeDirectory())
 

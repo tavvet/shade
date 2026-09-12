@@ -180,13 +180,18 @@ final class PanelKeyboardController: PanelKeyHandler {
         NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
     }
 
-    /// Erases the visible grid, parks the emulator cursor on its last row, and
-    /// sends CR to ask the shell to redraw its prompt there.
+    /// Clears previous output locally without submitting or rewriting shell input.
     private func clearVisibleScreen() {
         guard let session = terminals.activeSession else { return }
-        let rows = session.view.getTerminal().rows
-        let lastRow = max(1, rows)
-        session.view.feed(text: "\u{1B}[2J\u{1B}[\(lastRow);1H")
-        session.sendUserInput([0x0D])
+        let view = session.view
+        guard !view.hasMarkedText(),
+              TerminalScreenClear.clearPreviousOutput(
+                in: view.getTerminal(),
+                preservePrompt: !session.isCommandRunning
+              ) else { return }
+        session.invalidatePromptHistoryCoordinates()
+        view.selectNone()
+        view.scroll(toPosition: 1)
+        view.needsDisplay = true
     }
 }

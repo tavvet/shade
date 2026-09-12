@@ -95,7 +95,14 @@ final class TerminalContextTracker {
             updateCwd(path)
         }
         if isActive {
+            // Repository boundaries can change without a `cd`: `git init`
+            // may create a new (or nested) repository in the same directory.
+            // This filesystem-only check also covers shells without OSC 133.
+            let repositoryChanged = rediscoverRepository()
             setBranch(gitDir.flatMap(readBranch) ?? "")
+            if repositoryChanged, !cwd.isEmpty {
+                gitRefresh.schedule(path: cwd, reason: .cwdChanged)
+            }
         }
         return false
     }
@@ -108,6 +115,8 @@ final class TerminalContextTracker {
             updateCwd(path)
         }
         if !cwd.isEmpty {
+            _ = rediscoverRepository()
+            setBranch(gitDir.flatMap(readBranch) ?? "")
             gitRefresh.schedule(path: cwd, reason: .commandFinished)
         }
     }
@@ -128,6 +137,17 @@ final class TerminalContextTracker {
     private func scheduleIfPossible(reason: GitRefreshCoordinator.Reason) {
         guard !cwd.isEmpty else { return }
         gitRefresh.schedule(path: cwd, reason: reason)
+    }
+
+    @discardableResult
+    private func rediscoverRepository() -> Bool {
+        let discovered = cwd.isEmpty ? nil : findGitDir(cwd)
+        guard discovered != gitDir else { return false }
+        gitDir = discovered
+        // A snapshot of a parent/removed repository does not describe the new
+        // one. Do not display it while the replacement refresh is debouncing.
+        setGitStatus(nil)
+        return true
     }
 
     private func setBranch(_ value: String) {

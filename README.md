@@ -105,16 +105,20 @@ cd shade
 make            # produces build/Shade.app
 make run        # build + launch
 swift test      # unit tests
+make test-build # app resources, signing and packaging regression checks
 ```
 
-Shade's deployment target is macOS 13+. Building requires Xcode 16+ (Swift 6)
-on a macOS version supported by that Xcode; Xcode 16.0–16.2 require macOS 14.5+
+Shade's deployment target is macOS 13+. Building requires Xcode 16.3+ (Swift 6.1+)
+on a macOS version supported by that Xcode; Xcode 16.3 requires macOS 15.2+
 and newer Xcode releases can require newer hosts (see
 [Apple's compatibility table](https://developer.apple.com/xcode/system-requirements)).
 The build ad-hoc codesigns the bundle so the OS can prompt cleanly for any
 future entitlements / permissions. To sign with a real Developer ID for
 distribution: `DEVELOPER_ID="Developer ID Application: Name (TEAMID)"
 make build`.
+
+See [App packaging](docs/app-bundling.md) for SwiftPM resource handling and
+the checks performed on the signed application.
 
 Move it where you want it:
 
@@ -174,7 +178,7 @@ instructions in the terminal.
 | Copy / Paste         | `⌘C` / `⌘V` |
 | Cut                  | `⌘X` — copies the selection and sends N backspaces into the shell. Works cleanly when the selection runs from the cursor backward (e.g. `⌥⇧←` + `⌘X` cuts the last word); mid-line or multi-line selections delete N chars from the cursor instead of from the highlighted region — readline can't be repositioned from outside. Use `⌃W` / `⌃U` / `⌃K` for precise input editing. |
 | Select all           | `⌘A`        |
-| Clear screen         | `⌘K` (Guake-style — prompt lands at the bottom, unlike the builtin `clear` which leaves it at the top) |
+| Clear previous text output | `⌘K` — clears visible text above the current logical line, preserving input and cursor position; sends nothing to the shell. With OSC 133, a multiline prompt/input is preserved too. Inline images are left intact. Disabled in alternate-screen apps and during IME composition. |
 | Font size            | `⌘+` / `⌘−` to zoom in / out, `⌘0` to reset (8–32 pt, persisted) |
 | Delete word back     | `⌥⌫` (readline `backward-kill-word`) |
 | Beginning / end of line | `Home` / `End` (translated to `⌃A` / `⌃E` so they work regardless of shell config) |
@@ -283,6 +287,9 @@ With the terminal panel open:
 - press `⌘⇧1`…`⌘⇧9` to connect to the corresponding profile directly;
 - reorder profiles in Settings to choose which server occupies each quick slot.
 
+Filtering keeps the selected profile when it still matches and scrolls it into
+view, so `Return` always has a visible target after the results update.
+
 Each connection opens in a new tab pinned to the profile's display name. When
 SSH exits, the same tab continues as a local login shell. Profile fields are
 passed to OpenSSH as structured arguments rather than interpolated into a shell
@@ -359,8 +366,9 @@ Shade's 1-second poll), you can also add:
 precmd() { print -Pn "\e]7;file://${HOST}${PWD}\a\e]0;%~\a" }
 ```
 
-To make the shell builtin `clear` behave like Shade's `⌘K` (prompt at the
-bottom instead of the top), override it:
+To make the shell command `clear` put the next prompt at the bottom instead
+of the top, override it. Unlike Shade's input-preserving `⌘K`, this explicitly
+clears the screen and moves the cursor when the command executes:
 
 ```sh
 # In ~/.zshrc — clears screen and parks the cursor on the last row
@@ -405,6 +413,14 @@ If `⌘⇧↑` / `⌘⇧↓` does nothing, the shell isn't emitting marks yet �
 check by running `printf '\e]133;A\a'` a few times between commands and
 trying the shortcut. Note that the shortcuts only have a visible effect
 when there's scrollback to scroll into.
+
+Prompt navigation and output copying pause while a full-screen app uses the
+alternate buffer (for example, `vim` or `less`); returning to the shell retains
+the normal history. Changing the terminal's column count (window width, screen
+or font size) invalidates old mark coordinates because text reflows. Clearing
+previous output with `⌘K` also clears the recorded marks. New marks accumulate
+from subsequent prompts and commands; command timing and notifications continue
+across these operations.
 
 ---
 
@@ -479,6 +495,7 @@ Sources/Shade/
 ├── ApplicationMenuController.swift  Main menu + menu-bar status item
 ├── AboutWindow.swift        About window — version, links, donation addresses
 ├── BranchBadge.swift        Floating git branch + status pill (SwiftUI)
+├── BundleVerification.swift  Non-interactive packaged-resource smoke check
 ├── CommandNotifier.swift    Command-finished notifications (OSC 133 C→D timing)
 ├── CommandNotificationCoordinator.swift  Completion-event notification policy/wiring
 ├── ConnectionsSettingsComponents.swift  Saved-connection list, controls and status UI
@@ -517,6 +534,7 @@ Sources/Shade/
 ├── SSHCommandBuilder.swift  Validated OpenSSH invocation construction
 ├── SSHConnectionLaunch.swift  SSH profile → generic terminal launch configuration
 ├── SSHConnectionPickerComponents.swift  Quick-picker rows and supporting states
+├── SSHConnectionPickerList.swift  Filtered rows with selection-aware scrolling
 ├── SSHConnectionPickerNavigation.swift  Picker key routing and bounded selection movement
 ├── SSHConnectionPickerSearch.swift  Tokenized saved-connection filtering
 ├── SSHConnectionPickerView.swift  Searchable keyboard-first connection picker
@@ -540,6 +558,7 @@ Sources/Shade/
 ├── TerminalPresentationState.swift  Tab titles, activity and command-status state
 ├── TerminalProcessController.swift  SwiftTerm view, shell lifecycle and callback wiring
 ├── TerminalPromptHistory.swift  OSC 133 state, command timing, prompt navigation/output
+├── TerminalScreenClear.swift  Local text erasure that preserves shell input/cursor
 ├── TerminalPanelContentController.swift  Panel view hierarchy, tabs, badge and blur
 ├── TerminalSession.swift    Coordinator for one terminal tab
 ├── TerminalTabStore.swift   Pure multi-tab collection and selection state
@@ -625,6 +644,9 @@ shade/
 ├── Package.swift            SwiftPM manifest
 ├── Resources/Info.plist     LSUIElement = true, bundle metadata
 ├── Makefile                 swift build → wrap into Shade.app → codesign; `make run`, `make dmg`
+├── scripts/                 App resource overlay and packaging verification
+├── Tests/                   Unit/view tests and isolated packaging failure fixtures
+├── docs/                    App packaging and dependency maintenance notes
 ├── integrations/            Opt-in shell bits: OSC 133 snippets (zsh/bash/fish) + zsh ZDOTDIR shim
 ├── Sources/Shade/           Swift sources (see Architecture)
 └── README.md                this file

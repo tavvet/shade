@@ -28,6 +28,7 @@ final class TerminalSession {
     private let presentation: TerminalPresentationState
     private var promptHistory = TerminalPromptHistory()
     var promptMarks: [PromptMark] { promptHistory.marks }
+    var isCommandRunning: Bool { promptHistory.isCommandRunning }
 
     private lazy var contextTracker: TerminalContextTracker = {
         let tracker = TerminalContextTracker()
@@ -95,6 +96,9 @@ final class TerminalSession {
         process.onPromptMark = { [weak self] payload, row in
             self?.recordPromptMark(payload: payload, row: row)
         }
+        process.onTerminalResize = { [weak self] columns in
+            self?.promptHistory.terminalResized(columns: columns)
+        }
         process.onTitleChange = { [weak self] in self?.presentation.setOscTitle($0) }
         process.onCwdChange = { [weak self] in self?.contextTracker.updateCwd($0) }
         process.onUserInput = { [weak self] in self?.onUserInput?() }
@@ -117,6 +121,12 @@ final class TerminalSession {
         process.sendUserInput(bytes)
     }
 
+    /// A local clear changes buffer coordinates but does not complete the
+    /// shell's running command or reset its notification duration.
+    func invalidatePromptHistoryCoordinates() {
+        promptHistory.invalidateCoordinates()
+    }
+
     /// Keep the final, terminated tab visible when its automatic replacement
     /// exits before receiving user input. The notice gives the user a recovery
     /// path while avoiding another automatic process launch.
@@ -132,10 +142,15 @@ final class TerminalSession {
             in: view.getTerminal()
         ) else { return }
 
-        presentation.setLastExitCode(completion.exitCode)
-        contextTracker.commandFinished(shellPid: process.shellPid)
-        if let duration = completion.duration {
-            onCommandFinish?(duration, completion.exitCode, cwd)
+        // The history observes the parser's current buffer synchronously.
+        // Publish UI and context changes after the PTY feed has completed.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.presentation.setLastExitCode(completion.exitCode)
+            self.contextTracker.commandFinished(shellPid: self.process.shellPid)
+            if let duration = completion.duration {
+                self.onCommandFinish?(duration, completion.exitCode, self.cwd)
+            }
         }
     }
 

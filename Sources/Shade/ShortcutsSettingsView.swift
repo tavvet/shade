@@ -21,7 +21,7 @@ struct ShortcutsSettingsView: View {
         .init(action: "Copy / Paste",       keys: "⌘C / ⌘V"),
         .init(action: "Cut from input",     keys: "⌘X (best-effort, see README)"),
         .init(action: "Select all",         keys: "⌘A"),
-        .init(action: "Clear (prompt → bottom)", keys: "⌘K"),
+        .init(action: "Clear previous text output", keys: "⌘K"),
         .init(action: "Delete word back",   keys: "⌥⌫"),
         .init(action: "Beginning / end of line", keys: "Home / End"),
         .init(action: "Extend selection",   keys: "⇧← ⇧→ ⇧↑ ⇧↓"),

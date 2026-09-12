@@ -23,6 +23,7 @@ final class TerminalProcessController: NSObject {
     var onActivity: (() -> Void)?
     var onBell: (() -> Bool)?
     var onPromptMark: (([UInt8], Int) -> Void)?
+    var onTerminalResize: ((Int) -> Void)?
     var onTitleChange: ((String) -> Void)?
     var onCwdChange: ((String) -> Void)?
     var onUserInput: (() -> Void)?
@@ -71,6 +72,9 @@ final class TerminalProcessController: NSObject {
         delegateProxy.onBell = { [weak self] in
             MainActor.assumeIsolated { self?.onBell?() ?? false }
         }
+        delegateProxy.onSizeChanged = { [weak self] columns in
+            MainActor.assumeIsolated { self?.onTerminalResize?(columns) }
+        }
         activityView.onData = { [weak self] in
             MainActor.assumeIsolated { self?.onActivity?() }
         }
@@ -78,11 +82,11 @@ final class TerminalProcessController: NSObject {
             MainActor.assumeIsolated { self?.onUserInput?() }
         }
         activityView.onOSC133 = { [weak self] payload, row in
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated {
-                    self?.onPromptMark?(payload, row)
-                }
-            }
+            // LocalProcessTerminalView uses LocalProcess's default main
+            // dispatch queue. Record buffer coordinates immediately: more
+            // bytes in this very chunk may reflow or switch the active buffer.
+            // The session defers completion-driven UI effects separately.
+            MainActor.assumeIsolated { self?.onPromptMark?(payload, row) }
         }
 
         view.translatesAutoresizingMaskIntoConstraints = false

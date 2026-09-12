@@ -10,8 +10,8 @@ Requirements:
 
 - Deployment target: macOS 13 or later
 - Development host: a macOS version supported by the selected Xcode (Xcode
-  16.0–16.2 require macOS 14.5+; CI runs on macOS 15)
-- Xcode 16+ (Swift 6 toolchain); newer Xcode releases can require newer macOS
+  16.3 requires macOS 15.2+; CI runs on macOS 15)
+- Xcode 16.3+ (Swift 6.1+ toolchain); newer Xcode releases can require newer macOS
 
 ```sh
 git clone <fork-url>
@@ -22,6 +22,8 @@ make run        # build + launch
 
 The project uses Swift Package Manager — there is no `.xcodeproj`. You can
 open `Package.swift` directly in Xcode if you prefer the IDE.
+See [App packaging](docs/app-bundling.md) for the signed app's resource layout
+and the `make test-build` packaging checks.
 
 ## Development workflow
 
@@ -38,9 +40,9 @@ obvious fixes can skip straight to the implementation step.
    first, then simplification. Give extra scrutiny to anything touching the PTY,
    concurrency (`@MainActor` boundaries), or AppKit lifecycle, then apply the
    fixes.
-4. **Verify.** Run the automated checks (`swift test` plus a release build, both
-   enforced by CI) and exercise the new behavior in a real `Shade.app` — there are
-   no UI tests, so manual confirmation matters.
+4. **Verify.** Run the automated checks (`swift test` plus `make test-build`, both
+   enforced by CI) and exercise the new behavior in a real `Shade.app` — focused
+   view tests do not replace end-to-end keyboard, mouse and focus checks.
 5. **Update docs.** Keep documentation in step with the change: the
    [README](README.md) (feature list, Architecture tree, shortcut tables),
    `CHANGELOG.md` under `[Unreleased]`, any matching [ROADMAP](ROADMAP.md) entry,
@@ -53,9 +55,9 @@ obvious fixes can skip straight to the implementation step.
 
 - `swift test` passes (CI runs this on every push).
 - `swift build -c release` passes cleanly (no warnings introduced).
-- `make build` produces a working `Shade.app`.
+- `make test-build` produces and verifies a signed, self-contained `Shade.app`.
 - New behavior is exercised manually — describe what you tested in the PR
-  description (we don't have UI tests yet).
+  description (we don't have an end-to-end UI test suite yet).
 - One logical change per PR. Refactors that mix with feature work are hard
   to review; please split them.
 
@@ -63,7 +65,7 @@ obvious fixes can skip straight to the implementation step.
 
 1. Move the accumulated `[Unreleased]` notes into a dated version section and
    update the comparison links at the bottom of `CHANGELOG.md`.
-2. Run `swift test` and `make verify-bundle`, then manually exercise the built
+2. Run `swift test` and `make test-build`, then manually exercise the built
    `build/Shade.app`.
 3. Commit the release state, tag it as `vX.Y.Z`, and push both `main` and the
    tag. The tag workflow builds `Shade.dmg` and creates a **draft** GitHub
