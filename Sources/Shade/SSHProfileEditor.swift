@@ -96,23 +96,33 @@ struct SSHProfileEditorView: View {
 
             Form {
                 Section("Connection") {
-                    TextField("Name", text: $draft.name)
-                        .focused($focusedField, equals: .name)
-                    TextField("Host or SSH config alias", text: $draft.host)
-                        .font(.system(.body, design: .monospaced))
-                        .focused($focusedField, equals: .host)
-                    TextField("Username", text: $draft.username)
-                        .font(.system(.body, design: .monospaced))
-                    TextField("Port", text: $draft.port)
-                        .font(.system(.body, design: .monospaced))
-                        .frame(maxWidth: 120)
+                    editorRow("Name") {
+                        TextField("Name", text: $draft.name)
+                            .focused($focusedField, equals: .name)
+                    }
+                    editorRow("Host or SSH config alias") {
+                        TextField("Host or SSH config alias", text: $draft.host)
+                            .font(.system(.body, design: .monospaced))
+                            .focused($focusedField, equals: .host)
+                    }
+                    editorRow("Username") {
+                        TextField("Username", text: $draft.username)
+                            .font(.system(.body, design: .monospaced))
+                    }
+                    editorRow("Port") {
+                        TextField("Port", text: $draft.port)
+                            .font(.system(.body, design: .monospaced))
+                            .frame(width: 100)
+                    }
                 }
 
                 Section("Authentication") {
-                    LabeledContent("Identity file") {
+                    editorRow("Identity file") {
                         HStack(spacing: 8) {
-                            TextField("Optional", text: $draft.identityFile)
-                                .font(.system(.body, design: .monospaced))
+                            TextField(
+                                "Identity file", text: $draft.identityFile, prompt: Text("Optional")
+                            )
+                            .font(.system(.body, design: .monospaced))
                             Button("Choose…", action: chooseIdentityFile)
                             if !draft.identityFile.isEmpty {
                                 Button {
@@ -142,6 +152,8 @@ struct SSHProfileEditorView: View {
                 }
             }
             .formStyle(.grouped)
+            .textFieldStyle(.roundedBorder)
+            .multilineTextAlignment(.leading)
 
             Divider()
 
@@ -155,11 +167,24 @@ struct SSHProfileEditorView: View {
             }
             .padding(16)
         }
-        .frame(width: 520, height: 500)
+        .frame(width: 520, height: 540)
         .disabled(isSaving)
         .interactiveDismissDisabled(isSaving)
         .onAppear {
             focusedField = isNew ? .name : .host
+        }
+    }
+
+    private func editorRow<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .frame(width: 150, alignment: .leading)
+            content()
+                .labelsHidden()
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
