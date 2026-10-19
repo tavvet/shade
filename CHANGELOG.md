@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.24] — 2026-10-19
+
 ### Added
 
 - Add Settings → Storage for choosing a portable configuration folder containing
@@ -16,6 +18,13 @@ All notable changes to Shade are documented in this file. Format follows
   data with defaults; provide explicit reload and return-to-local actions.
 - Keep configuration file access off the UI thread, serialize pending saves,
   reject stale SSH editor drafts, and check file-size limits before writing.
+
+### Fixed
+
+- Align SSH connection inputs in a shared column with left-aligned text and
+  visible rounded borders; keep the form's help text fully visible.
+- Keep asynchronous test assertions on the main actor so the test suite builds
+  with Swift 6.1 in GitHub Actions.
 
 ## [0.1.23] — 2026-09-12
 
@@ -527,7 +536,8 @@ First public release.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.23...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.24...HEAD
+[0.1.24]: https://github.com/tavvet/shade/releases/tag/v0.1.24
 [0.1.23]: https://github.com/tavvet/shade/releases/tag/v0.1.23
 [0.1.22]: https://github.com/tavvet/shade/releases/tag/v0.1.22
 [0.1.21]: https://github.com/tavvet/shade/releases/tag/v0.1.21
