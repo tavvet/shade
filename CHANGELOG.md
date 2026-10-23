@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.25] — 2026-10-23
+
 ### Changed
 
 - Update SwiftTerm to v1.99.1 with four audited fork patches. Keep keyboard
@@ -555,7 +557,8 @@ First public release.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.24...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.25...HEAD
+[0.1.25]: https://github.com/tavvet/shade/releases/tag/v0.1.25
 [0.1.24]: https://github.com/tavvet/shade/releases/tag/v0.1.24
 [0.1.23]: https://github.com/tavvet/shade/releases/tag/v0.1.23
 [0.1.22]: https://github.com/tavvet/shade/releases/tag/v0.1.22
