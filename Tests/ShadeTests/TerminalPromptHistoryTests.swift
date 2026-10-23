@@ -215,8 +215,8 @@ final class TerminalPromptHistoryTests: XCTestCase {
         let view = try XCTUnwrap(process.view as? ActivityTerminalView)
         view.setFrameSize(NSSize(width: 640, height: 480))
         var history = TerminalPromptHistory()
-        process.onPromptMark = { payload, row in
-            _ = history.record(payload: payload, row: row, in: view.terminal)
+        process.onPromptMark = { event in
+            _ = history.record(event: event, currentState: view.terminalInputStateSnapshot()!)
         }
         let bytes = Array((
             "\u{1B}]133;C\u{07}result\r\n\u{1B}]133;D;0\u{07}"
@@ -224,12 +224,13 @@ final class TerminalPromptHistoryTests: XCTestCase {
         ).utf8)
 
         view.dataReceived(slice: bytes[...])
+        waitForCondition { history.marks.count == 2 }
 
-        XCTAssertTrue(view.terminal.isCurrentBufferAlternate)
+        XCTAssertTrue(view.terminalInputStateSnapshot()!.isAlternateBuffer)
         XCTAssertEqual(history.marks.map(\.kind), [.commandStart, .commandDone(exitCode: 0)])
-        XCTAssertNil(history.lastCommandOutput(in: view.terminal))
+        XCTAssertNil(history.lastCommandOutput(in: view.terminalContentSnapshot(region: .history(maximumScrollbackRows: 500))!))
         view.feed(text: "\u{1B}[?1049l")
-        XCTAssertEqual(history.lastCommandOutput(in: view.terminal), "result")
+        XCTAssertEqual(history.lastCommandOutput(in: view.terminalContentSnapshot(region: .history(maximumScrollbackRows: 500))!), "result")
     }
 
     @MainActor
@@ -237,9 +238,10 @@ final class TerminalPromptHistoryTests: XCTestCase {
         let session = TerminalSession()
         let view = try XCTUnwrap(session.view as? ActivityTerminalView)
         view.setFrameSize(NSSize(width: 640, height: 480))
-        let columns = view.terminal.cols
+        let columns = view.terminalDimensions.cols
         let mark = Array("\u{1B}]133;A\u{07}".utf8)
         view.dataReceived(slice: mark[...])
+        waitForCondition { session.promptMarks.count == 1 }
         XCTAssertEqual(session.promptMarks.count, 1)
 
         // Resizing while a full-screen app is active reflows the normal buffer
@@ -249,10 +251,39 @@ final class TerminalPromptHistoryTests: XCTestCase {
         view.setFrameSize(NSSize(width: 640, height: 480))
         view.feed(text: "\u{1B}[?1049l")
 
-        XCTAssertEqual(view.terminal.cols, columns)
+        XCTAssertEqual(view.terminalDimensions.cols, columns)
         XCTAssertTrue(session.promptMarks.isEmpty)
         view.dataReceived(slice: mark[...])
+        waitForCondition { session.promptMarks.count == 1 }
         XCTAssertEqual(session.promptMarks.count, 1)
+    }
+
+    func testDelayedEventsKeepTimingButCannotRestoreCoordinatesAfterWidthRoundTrip() {
+        let terminal = makeTerminal(cols: 12)
+        let state = terminal.inputStateSnapshot()
+        let context = TerminalOscContext(bufferCursor: Position(col: 0, row: 0),
+            firstRetainedRow: 0, isAlternateBuffer: false, dimensions: state.dimensions,
+            geometryGeneration: state.geometryGeneration, timestamp: 100)
+        let started = TerminalOscEvent(code: 133, payload: Array("C".utf8), context: context)
+        terminal.resize(cols: 6, rows: 24)
+        terminal.resize(cols: 12, rows: 24)
+        var history = TerminalPromptHistory()
+        _ = history.record(event: started, currentState: terminal.inputStateSnapshot())
+        XCTAssertTrue(history.marks.isEmpty)
+        let finished = TerminalOscEvent(code: 133, payload: Array("D;0".utf8), context: context)
+        let completion = history.record(event: finished, currentState: terminal.inputStateSnapshot(),
+                                        now: Date(timeIntervalSinceReferenceDate: 103))
+        XCTAssertEqual(completion?.duration, 3)
+        XCTAssertTrue(history.marks.isEmpty)
+    }
+
+    func testCopyKeepsSpacesAtSoftWrapBoundaries() {
+        let terminal = makeTerminal(cols: 5)
+        var history = TerminalPromptHistory()
+        _ = history.record(payload: Array("C".utf8), row: 0, in: terminal)
+        terminal.feed(text: "abc  def\r\n")
+        _ = history.record(payload: Array("D;0".utf8), row: 2, in: terminal)
+        XCTAssertEqual(history.lastCommandOutput(in: terminal), "abc  def")
     }
 
     private func makeTerminal(cols: Int = 80, rows: Int = 24) -> Terminal {
@@ -262,4 +293,39 @@ final class TerminalPromptHistoryTests: XCTestCase {
 
 private final class HistoryTerminalDelegate: TerminalDelegate {
     func send(source: Terminal, data: ArraySlice<UInt8>) {}
+}
+
+// These fixtures own a headless Terminal. Production receives only copied
+// events and snapshots; the same assertions now exercise that value boundary.
+private extension TerminalPromptHistory {
+    mutating func record(payload: [UInt8], row: Int, in terminal: Terminal,
+                         now: Date = Date()) -> CommandCompletion? {
+        let snapshot = terminal.contentSnapshot(region: .history(maximumScrollbackRows: 500))
+        let event = TerminalOscEvent(code: 133, payload: payload, context: TerminalOscContext(
+            bufferCursor: Position(col: 0, row: row),
+            firstRetainedRow: snapshot.capturedRange.lowerBound,
+            isAlternateBuffer: snapshot.inputState.isAlternateBuffer,
+            dimensions: snapshot.inputState.dimensions,
+            geometryGeneration: snapshot.inputState.geometryGeneration))
+        return record(event: event, currentState: snapshot.inputState, now: now)
+    }
+
+    mutating func lastCommandOutput(in terminal: Terminal) -> String? {
+        lastCommandOutput(in: terminal.contentSnapshot(region: .history(maximumScrollbackRows: 500)))
+    }
+
+    mutating func viewportRow(toward direction: NavigationDirection, in terminal: Terminal) -> Int? {
+        viewportRow(toward: direction,
+                    in: terminal.contentSnapshot(region: .history(maximumScrollbackRows: 500)),
+                    viewportRow: terminal.buffer.yDisp)
+    }
+}
+
+@MainActor
+func waitForCondition(timeout: TimeInterval = 2, _ condition: () -> Bool) {
+    let deadline = Date().addingTimeInterval(timeout)
+    while !condition(), Date() < deadline {
+        RunLoop.main.run(until: Date().addingTimeInterval(0.005))
+    }
+    XCTAssertTrue(condition(), "Timed out waiting for the terminal callback")
 }

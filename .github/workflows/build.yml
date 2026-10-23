@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Select Xcode
-        run: sudo xcode-select -switch /Applications/Xcode.app
+        run: sudo xcode-select -switch /Applications/Xcode_26.3.app
 
       - name: Show toolchain
         run: |
@@ -27,7 +27,10 @@ jobs:
           swift --version
 
       - name: Run unit tests
-        run: swift test
+        run: swift test --build-system native
+
+      - name: Run release unit tests
+        run: swift test --build-system native -c release
 
       - name: Build Shade.app (ad-hoc signed)
         run: make build

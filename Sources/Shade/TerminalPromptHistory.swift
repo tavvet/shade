@@ -1,115 +1,105 @@
 import Foundation
 import SwiftTerm
 
-/// Owns the OSC 133 history for one terminal: prompt marks, C→D command
-/// timing, prompt navigation targets, and extraction of the last output.
-/// UI and application side effects stay in `TerminalSession`.
+/// Owns prompt coordinates and command timing using copied SwiftTerm values.
 struct TerminalPromptHistory {
     struct CommandCompletion: Equatable {
         let exitCode: Int?
         let duration: TimeInterval?
     }
 
-    enum NavigationDirection {
-        case previous
-        case next
-    }
+    enum NavigationDirection { case previous, next }
 
     private(set) var marks: [PromptMark] = []
     private var commandStartedAt: Date?
     private var recordedColumns: Int?
+    private var geometryGeneration: UInt64?
     var isCommandRunning: Bool { commandStartedAt != nil }
 
-    /// Coordinates cannot survive SwiftTerm's reflow. Command timing is
-    /// independent of buffer geometry and must survive a resize or UI clear.
-    mutating func invalidateCoordinates() {
-        marks.removeAll()
-    }
+    mutating func invalidateCoordinates() { marks.removeAll() }
 
-    /// Called synchronously for every view resize, including a resize back to
-    /// the original width before the next OSC mark or history shortcut.
     mutating func terminalResized(columns: Int) {
-        if let recordedColumns, recordedColumns != columns {
-            invalidateCoordinates()
-        }
+        if let recordedColumns, recordedColumns != columns { invalidateCoordinates() }
         recordedColumns = columns
     }
 
-    /// Records one OSC 133 payload. A completion is returned for every valid
-    /// `D` mark; `duration` is nil when no preceding `C` mark was observed.
+    /// Events retain their parser-time geometry even if a later byte switches
+    /// buffers. Stale coordinates are discarded without losing command timing.
     mutating func record(
-        payload: [UInt8],
-        row: Int,
-        in terminal: Terminal,
-        now: Date = Date()
+        event: TerminalOscEvent,
+        currentState: TerminalInputStateSnapshot,
+        now: Date? = nil
     ) -> CommandCompletion? {
-        guard !terminal.isCurrentBufferAlternate else { return nil }
-        guard let mark = PromptMark.parse(payload: payload[...], row: row) else { return nil }
-        pruneStaleMarks(in: terminal)
-        marks.append(mark)
-
+        guard let context = event.context, !context.isAlternateBuffer,
+              let mark = PromptMark.parse(payload: event.payload[...], row: context.bufferCursor.row)
+        else { return nil }
+        synchronizeGeometry(currentState)
+        if context.geometryGeneration == currentState.geometryGeneration {
+            marks.removeAll { $0.row < context.firstRetainedRow }
+            marks.append(mark)
+        }
+        let time = now ?? context.timestamp.map(Date.init(timeIntervalSinceReferenceDate:)) ?? Date()
         switch mark.kind {
         case .commandStart:
-            commandStartedAt = now
+            commandStartedAt = time
             return nil
         case .commandDone(let exitCode):
-            let duration = commandStartedAt.map { now.timeIntervalSince($0) }
+            let duration = commandStartedAt.map { time.timeIntervalSince($0) }
             commandStartedAt = nil
             return CommandCompletion(exitCode: exitCode, duration: duration)
         case .promptStart, .promptEnd:
-            // A fresh prompt/input without D abandons an unmatched C. Do not
-            // later report the intervening idle time as a command duration.
             commandStartedAt = nil
             return nil
         }
     }
 
-    /// Returns the viewport-relative row for the adjacent prompt. SwiftTerm's
-    /// `scrollTo(row:)` performs the final clamp to the valid scrollback range.
     mutating func viewportRow(
         toward direction: NavigationDirection,
-        in terminal: Terminal
+        in snapshot: TerminalContentSnapshot,
+        viewportRow: Int
     ) -> Int? {
-        guard !terminal.isCurrentBufferAlternate else { return nil }
-        pruneStaleMarks(in: terminal)
-        let linesTop = terminal.buffer.totalLinesTrimmed
-        let viewportTopInvariant = linesTop + terminal.buffer.yDisp
+        guard !snapshot.inputState.isAlternateBuffer else { return nil }
+        pruneStaleMarks(in: snapshot)
+        let firstRow = snapshot.capturedRange.lowerBound
+        let viewportTop = firstRow + viewportRow
         let mark: PromptMark?
         switch direction {
         case .previous:
-            mark = PromptMark.previousPromptStart(before: viewportTopInvariant, in: marks)
+            mark = PromptMark.previousPromptStart(before: viewportTop, in: marks)
         case .next:
-            mark = PromptMark.nextPromptStart(after: viewportTopInvariant, in: marks)
+            mark = PromptMark.nextPromptStart(after: viewportTop, in: marks)
         }
-        guard let mark else { return nil }
-
-        return max(0, mark.row - linesTop)
+        return mark.map { max(0, $0.row - firstRow) }
     }
 
-    /// Returns the most recently completed command's output without coupling
-    /// history state to AppKit's pasteboard.
-    mutating func lastCommandOutput(in terminal: Terminal) -> String? {
-        guard !terminal.isCurrentBufferAlternate else { return nil }
-        pruneStaleMarks(in: terminal)
+    mutating func lastCommandOutput(in snapshot: TerminalContentSnapshot) -> String? {
+        guard !snapshot.inputState.isAlternateBuffer else { return nil }
+        pruneStaleMarks(in: snapshot)
         guard let range = PromptMark.lastCommandOutputRange(in: marks),
-              let firstRow = range.first,
-              let lastRow = range.last,
-              let lastLine = terminal.getScrollInvariantLine(row: lastRow) else { return nil }
-
-        // SwiftTerm's range extraction understands BufferLine.isWrapped: it
-        // joins visual soft wraps but retains real line feeds. Prompt marks use
-        // scroll-invariant rows, so translate them back into buffer indices.
-        let linesTop = terminal.buffer.totalLinesTrimmed
-        let text = terminal.getText(
-            start: Position(col: 0, row: firstRow - linesTop),
-            end: Position(col: lastLine.count, row: lastRow - linesTop)
-        )
+              let first = range.first, let last = range.last,
+              snapshot.capturedRange.contains(first), snapshot.capturedRange.contains(last)
+        else { return nil }
+        let rows = snapshot.rows.filter { range.contains($0.absoluteRow) }
+        var text = ""
+        for (index, row) in rows.enumerated() {
+            if index > 0, !row.isWrapped { text += "\n" }
+            text += row.text
+        }
+        // Match SwiftTerm's selection extraction: omit trailing blank rows.
+        while text.last == "\n" { text.removeLast() }
         return text.isEmpty ? nil : text
     }
 
-    private mutating func pruneStaleMarks(in terminal: Terminal) {
-        guard !terminal.isCurrentBufferAlternate else { return }
-        terminalResized(columns: terminal.cols)
-        marks.removeAll { terminal.getScrollInvariantLine(row: $0.row) == nil }
+    private mutating func synchronizeGeometry(_ state: TerminalInputStateSnapshot) {
+        if let geometryGeneration, geometryGeneration != state.geometryGeneration {
+            invalidateCoordinates()
+        }
+        geometryGeneration = state.geometryGeneration
+        terminalResized(columns: state.dimensions.cols)
+    }
+
+    private mutating func pruneStaleMarks(in snapshot: TerminalContentSnapshot) {
+        synchronizeGeometry(snapshot.inputState)
+        marks.removeAll { !snapshot.capturedRange.contains($0.row) }
     }
 }

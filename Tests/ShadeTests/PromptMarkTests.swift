@@ -269,25 +269,26 @@ final class PromptMarkTests: XCTestCase {
     @MainActor
     func testActivityViewObservesOsc133AfterSwiftTermDispatch() {
         let view = ActivityTerminalView(frame: .zero)
-        view.terminal.resize(cols: 80, rows: 24)
+        view.resize(cols: 80, rows: 24)
         var seenPayloads: [String] = []
         var seenRows: [Int] = []
-        view.onOSC133 = { data, row in
-            seenRows.append(row)
-            seenPayloads.append(String(bytes: data, encoding: .utf8) ?? "")
+        view.onOSC133 = { event in
+            seenRows.append(event.context!.bufferCursor.row)
+            seenPayloads.append(String(bytes: event.payload, encoding: .utf8) ?? "")
         }
 
         // Two linefeeds → cursor on row 2 (0-indexed). Then OSC 133 ; A BEL.
         let bytes = Array("hi\r\nthere\r\n\u{1B}]133;A\u{07}".utf8)
         view.dataReceived(slice: bytes[...])
+        waitForCondition { seenPayloads.count == 1 }
 
         XCTAssertEqual(seenPayloads, ["A"])
         XCTAssertEqual(seenRows, [2])
-        XCTAssertEqual(view.terminal.semanticPromptMarks(at: 2).map(\.kind), [.initial])
 
         // Now emit OSC 133 ; D ; 0 — different payload, same row.
         let oscDone: [UInt8] = [0x1B, 0x5D] + Array("133;D;0".utf8) + [0x07]
         view.dataReceived(slice: oscDone[...])
+        waitForCondition { seenPayloads.count == 2 }
         XCTAssertEqual(seenPayloads, ["A", "D;0"])
         XCTAssertEqual(seenRows.last, 2)
     }

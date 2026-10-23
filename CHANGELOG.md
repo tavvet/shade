@@ -6,6 +6,25 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Update SwiftTerm to v1.99.1 with four audited fork patches. Keep keyboard
+  selection, local clearing, link tint and OSC 133 history working with the
+  new background parser and copied-state API.
+- Require Swift 6.2+ to build; select Xcode 26.3 in CI and use native SwiftPM
+  consistently for tests and app packaging.
+- Package only KeyboardShortcuts' resource bundle: SwiftTerm now embeds its
+  shader source directly in the library.
+
+### Fixed
+
+- Load saved SSH connections in optimized builds without falsely reporting
+  control characters in ordinary names; run release unit tests in CI as well.
+- Do not signal PID zero when closing a terminal whose shell has exited while
+  SwiftTerm is still draining its output.
+- Draw the configured link background tint on default-background cells, while
+  leaving ordinary cells unchanged and removing the tint when disabled.
+
 ## [0.1.24] — 2026-10-19
 
 ### Added

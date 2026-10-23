@@ -9,9 +9,11 @@
 #
 # Variables:
 #   CONFIG=release|debug             swift build configuration (default: release)
+#   SWIFT_BUILD_FLAGS="…"            SwiftPM backend and optional scratch path
 #   DEVELOPER_ID="Developer ID …"    sign for distribution; otherwise ad-hoc
 
 CONFIG ?= release
+SWIFT_BUILD_FLAGS ?= --build-system native
 APP_NAME := Shade
 
 # Version stamping. CI builds tagged commits and gets a clean "0.1.3"; local
@@ -30,7 +32,7 @@ MACOS_DIR := $(CONTENTS)/MacOS
 RESOURCES_DIR := $(CONTENTS)/Resources
 DMG_PATH := build/$(APP_NAME).dmg
 STAGE_DIR := build/dmg-stage
-RESOURCE_BUNDLES := KeyboardShortcuts_KeyboardShortcuts.bundle SwiftTerm_SwiftTerm.bundle
+RESOURCE_BUNDLES := KeyboardShortcuts_KeyboardShortcuts.bundle
 
 ICON_SRC := Resources/AppIcon.png
 ICON_OUT := Resources/AppIcon.icns
@@ -52,9 +54,9 @@ ICON_SPECS := \
 build: $(ICON_OUT)
 	@echo "→ swift build -c $(CONFIG)"
 	@set -eu; \
-	BIN_PATH="$$(swift build -c $(CONFIG) --show-bin-path)"; \
+	BIN_PATH="$$(swift build $(SWIFT_BUILD_FLAGS) -c $(CONFIG) --show-bin-path)"; \
 	OVERLAY="$$(swift scripts/prepare-resource-overlay.swift "$${BIN_PATH}" build/resource-overlays)"; \
-	swift build -c $(CONFIG) -Xswiftc -vfsoverlay -Xswiftc "$${OVERLAY}"; \
+	swift build $(SWIFT_BUILD_FLAGS) -c $(CONFIG) -Xswiftc -vfsoverlay -Xswiftc "$${OVERLAY}"; \
 	swift scripts/prepare-resource-overlay.swift "$${BIN_PATH}" build/resource-overlays --verify-generated; \
 	EXECUTABLE="$${BIN_PATH}/$(APP_NAME)"; \
 	if [ ! -x "$${EXECUTABLE}" ]; then \

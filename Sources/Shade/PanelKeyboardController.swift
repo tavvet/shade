@@ -197,8 +197,7 @@ final class PanelKeyboardController: PanelKeyHandler {
         guard let session = terminals.activeSession else { return }
         let view = session.view
         guard !view.hasMarkedText(),
-              TerminalScreenClear.clearPreviousOutput(
-                in: view.getTerminal(),
+              view.clearPreviousOutput(
                 preservePrompt: !session.isCommandRunning
               ) else { return }
         session.invalidatePromptHistoryCoordinates()
