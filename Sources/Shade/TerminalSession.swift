@@ -93,8 +93,8 @@ final class TerminalSession {
             guard let self else { return false }
             return TerminalAppearance.flashBell(in: self.view)
         }
-        process.onPromptMark = { [weak self] payload, row in
-            self?.recordPromptMark(payload: payload, row: row)
+        process.onPromptMark = { [weak self] event in
+            self?.recordPromptMark(event)
         }
         process.onTerminalResize = { [weak self] columns in
             self?.promptHistory.terminalResized(columns: columns)
@@ -135,23 +135,23 @@ final class TerminalSession {
         process.showRespawnStoppedNotice()
     }
 
-    private func recordPromptMark(payload: [UInt8], row: Int) {
-        guard let completion = promptHistory.record(
-            payload: payload,
-            row: row,
-            in: view.getTerminal()
-        ) else { return }
-
-        // The history observes the parser's current buffer synchronously.
-        // Publish UI and context changes after the PTY feed has completed.
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.presentation.setLastExitCode(completion.exitCode)
-            self.contextTracker.commandFinished(shellPid: self.process.shellPid)
-            if let duration = completion.duration {
-                self.onCommandFinish?(duration, completion.exitCode, self.cwd)
-            }
+    private func recordPromptMark(_ event: TerminalOscEvent) {
+        guard let state = view.terminalInputStateSnapshot(),
+              let completion = promptHistory.record(event: event, currentState: state)
+        else { return }
+        presentation.setLastExitCode(completion.exitCode)
+        contextTracker.commandFinished(shellPid: process.shellPid)
+        if let duration = completion.duration {
+            onCommandFinish?(duration, completion.exitCode, cwd)
         }
+    }
+
+    private var historySnapshot: TerminalContentSnapshot? {
+        // Shade uses SwiftTerm's default scrollback capacity. Copy at most that
+        // many retained rows, only when a history shortcut needs their text.
+        view.terminalContentSnapshot(region: .history(
+            maximumScrollbackRows: TerminalOptions.default.scrollback
+        ))
     }
 
     /// Scroll the viewport up to the previous OSC 133 `A` (prompt-start) mark
@@ -175,15 +175,19 @@ final class TerminalSession {
     /// no output.
     @discardableResult
     func copyLastCommandOutput() -> Bool {
-        guard let text = promptHistory.lastCommandOutput(in: view.getTerminal()) else { return false }
+        guard let snapshot = historySnapshot,
+              let text = promptHistory.lastCommandOutput(in: snapshot) else { return false }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
         return true
     }
 
     private func jump(direction: TerminalPromptHistory.NavigationDirection) -> Bool {
-        let terminal = view.getTerminal()
-        guard let viewportRow = promptHistory.viewportRow(toward: direction, in: terminal) else {
+        guard let snapshot = historySnapshot,
+              let viewportRow = promptHistory.viewportRow(
+                toward: direction, in: snapshot,
+                viewportRow: view.terminalStateSnapshot().viewportRow
+              ) else {
             return false
         }
         view.scrollTo(row: viewportRow)

@@ -9,13 +9,7 @@ enum BundleVerification {
         guard let resources = Bundle.main.resourceURL,
               let shortcuts = Bundle(url: resources.appendingPathComponent(
                   "KeyboardShortcuts_KeyboardShortcuts.bundle"
-              )),
-              let terminal = Bundle(url: resources.appendingPathComponent(
-                  "SwiftTerm_SwiftTerm.bundle"
-              )),
-              let shader = terminal.url(forResource: "Shaders", withExtension: "metal"),
-              let shaderData = try? Data(contentsOf: shader),
-              !shaderData.isEmpty else {
+              )) else {
             return fail("Required SwiftPM resources are missing or unreadable")
         }
 

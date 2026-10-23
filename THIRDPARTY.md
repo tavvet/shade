@@ -10,19 +10,26 @@ permission notice.
 
 - **Repository:** https://github.com/migueldeicaza/SwiftTerm
 - **Distribution:** Swift Package Manager dependency on a
-  [rebase-tracked fork](https://github.com/tavvet/SwiftTerm) (`main`, pinned by
-  revision) that carries one local patch relative to its audited upstream base.
-  The exact base and pin are recorded in the fork-maintenance guide below;
-  `upstream/main` may advance between explicit syncs.
+  [rebase-tracked fork](https://github.com/tavvet/SwiftTerm), based on upstream
+  `v1.99.1` and published on branch `shade/update-1.99.1`. Shade pins revision
+  `850f6469329bada193981efa8a7e6ccd3920792e`, preserved by tag
+  `shade-pin-2026-10-23-r2`. The fork carries four approved feature patches
+  and a follow-up link-background rendering fix.
 - **Modifications:**
-  - Added a public `linkHighlightColor: NSColor?` on the macOS
-    `TerminalView`. When set, highlighted links use that color for their
-    underline and a subtle cell-background tint; `nil` preserves upstream
-    rendering.
+  - Preserved configurable link underline color and a 35% cell-background tint
+    through `linkHighlightColor`, without replacing the cell's foreground color.
+    `nil` preserves upstream rendering.
+  - Added atomic keyboard-selection commands that anchor at the live cursor
+    and return copied selection coordinates.
+  - Added a local clear-previous-output command that preserves pending input,
+    cursor position and parser state without sending bytes to the PTY.
+  - Extended copied OSC events with parser-time geometry, buffer identity,
+    geometry generation and timestamps.
 
-  Keyboard selection, cut and OSC 133 tracking are implemented in Shade using
-  SwiftTerm's public API or the open PTY view; they are not fork patches. The
-  complete current and historical patch inventory is documented in
+  Shell integration, shortcut routing, cut, prompt history and command timing
+  remain in Shade, using SwiftTerm's public copied-state APIs and the narrow
+  fork commands above. The complete current and historical patch inventory is
+  documented in
   [the fork-maintenance guide](https://github.com/tavvet/shade/blob/main/docs/swiftterm-fork-migration.md).
 - **License:** MIT
 - **Used for:** VT100 / xterm terminal emulation and local PTY shell hosting.

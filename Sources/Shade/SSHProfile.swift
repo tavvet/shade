@@ -89,7 +89,9 @@ struct SSHProfile: Codable, Equatable, Identifiable, Sendable {
         in value: String,
         field: SSHProfileField
     ) throws {
-        if value.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) {
+        // Keep the membership call inside the closure: passing the bound method
+        // directly misclassifies ordinary text in optimized builds.
+        if value.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) {
             throw SSHProfileValidationError.controlCharacters(field)
         }
     }

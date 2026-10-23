@@ -21,7 +21,6 @@ for tool in swift cp plutil codesign; do
 done
 cp "$app/Contents/MacOS/Shade" "$scratch/products/Shade"
 cp -R "$app/Contents/Resources/KeyboardShortcuts_KeyboardShortcuts.bundle" "$scratch/products/"
-cp -R "$app/Contents/Resources/SwiftTerm_SwiftTerm.bundle" "$scratch/products/"
 
 # Stub compilation only; use the real Makefile recipe, copy/plutil and signing.
 # The app under test always lives inside this fixture's temporary directory.

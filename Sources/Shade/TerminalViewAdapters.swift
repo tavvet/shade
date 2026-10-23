@@ -8,9 +8,8 @@ import SwiftTerm
 /// because witness-table dispatch still selects the original conformance, so
 /// the delegate must be wrapped instead.
 ///
-/// `TerminalViewDelegate` is not `@MainActor`-isolated upstream. SwiftTerm
-/// dispatches these callbacks on the main thread in practice; callers that
-/// enter actor-isolated state must make that assumption explicitly.
+/// SwiftTerm delivers view delegate callbacks on the main actor.
+@MainActor
 final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     weak var forward: TerminalViewDelegate?
     var onOpenLink: ((String) -> Void)?
@@ -30,7 +29,7 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
         // Observe every reflow, even before a shell is running (the forwarded
         // LocalProcessTerminalView delegate suppresses those notifications).
-        let columns = MainActor.assumeIsolated { source.getTerminal().cols }
+        let columns = source.terminalDimensions.cols
         onSizeChanged?(columns)
         forward?.sizeChanged(source: source, newCols: newCols, newRows: newRows)
     }
@@ -70,59 +69,35 @@ final class TerminalDelegateProxy: NSObject, TerminalViewDelegate {
     }
 }
 
-/// Taps PTY output for background-tab activity and accepts file drops without
-/// adding either concern to the shell-session coordinator. `dataReceived`
-/// runs for hidden sessions too, unlike display-driven delegate callbacks.
+/// Observes copied parser events and output activity, including hidden tabs.
+@MainActor
 final class ActivityTerminalView: LocalProcessTerminalView {
     var onData: (() -> Void)?
     var onUserInput: (() -> Void)?
-    var onOSC133: (([UInt8], Int) -> Void)?
+    var onOSC133: ((TerminalOscEvent) -> Void)?
+    private var oscObservation: TerminalOscObservation?
 
-    private var osc133Observer = OSC133StreamObserver()
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        configureObservations()
+    }
 
-    override func dataReceived(slice: ArraySlice<UInt8>) {
-        onData?()
-        guard !slice.isEmpty else {
-            super.dataReceived(slice: slice)
-            return
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configureObservations()
+    }
+
+    private func configureObservations() {
+        let reportActivity: @MainActor @Sendable () -> Void = { [weak self] in self?.onData?() }
+        let reportOSC: @MainActor @Sendable (TerminalOscEvent) -> Void = { [weak self] event in
+            self?.onOSC133?(event)
         }
-
-        // Forward bytes in larger contiguous segments, splitting only after a
-        // complete OSC 133 terminator. The callback therefore observes the
-        // exact terminal state produced by SwiftTerm's built-in handler even
-        // when one PTY chunk contains several marks and intervening output.
-        var segmentStart = slice.startIndex
-        var index = slice.startIndex
-        while index < slice.endIndex {
-            let payload = osc133Observer.consume(slice[index])
-            let nextIndex = slice.index(after: index)
-            if let payload {
-                if slice[index] == 0x9C {
-                    // SwiftTerm's OSC fast path can absorb C1 ST as payload
-                    // when it follows printable bytes in the same feed call.
-                    // End the payload feed first, then present ST as the first
-                    // byte of its own call so the built-in OSC 133 handler is
-                    // guaranteed to dispatch before Shade observes the mark.
-                    if segmentStart < index {
-                        super.dataReceived(slice: slice[segmentStart..<index])
-                    }
-                    super.dataReceived(slice: slice[index..<nextIndex])
-                } else {
-                    super.dataReceived(slice: slice[segmentStart..<nextIndex])
-                }
-                if !terminal.isCurrentBufferAlternate,
-                   let cursor = TerminalBufferGeometry.scrollInvariantCursorPosition(
-                       in: terminal
-                   ) {
-                    onOSC133?(payload, cursor.row)
-                }
-                segmentStart = nextIndex
-            }
-            index = nextIndex
+        setProcessOutputHandler {
+            DispatchQueue.main.async(execute: reportActivity)
         }
-
-        if segmentStart < slice.endIndex {
-            super.dataReceived(slice: slice[segmentStart..<slice.endIndex])
+        oscObservation = observeOscEvents { event in
+            guard event.code == 133 else { return }
+            DispatchQueue.main.async { reportOSC(event) }
         }
     }
 

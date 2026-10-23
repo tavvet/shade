@@ -11,7 +11,7 @@ guard CommandLine.arguments.count == 3 ||
 
 let products = URL(fileURLWithPath: CommandLine.arguments[1]).standardizedFileURL
 let output = URL(fileURLWithPath: CommandLine.arguments[2]).standardizedFileURL
-let modules = ["KeyboardShortcuts", "SwiftTerm"]
+let modules = ["KeyboardShortcuts"]
 
 func generatedAccessor(for module: String) -> URL {
     products.appendingPathComponent("\(module).build/DerivedSources/resource_bundle_accessor.swift")

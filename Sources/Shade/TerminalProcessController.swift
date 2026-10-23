@@ -14,6 +14,7 @@ final class TerminalProcessController: NSObject {
         _ execName: String?,
         _ currentDirectory: String?
     ) -> Bool
+    typealias SignalSender = @MainActor (Int32, Int32) -> Int32
 
     let view: LocalProcessTerminalView
     let shellName: String
@@ -22,7 +23,7 @@ final class TerminalProcessController: NSObject {
     var onOpenLink: ((String) -> Void)?
     var onActivity: (() -> Void)?
     var onBell: (() -> Bool)?
-    var onPromptMark: (([UInt8], Int) -> Void)?
+    var onPromptMark: ((TerminalOscEvent) -> Void)?
     var onTerminalResize: ((Int) -> Void)?
     var onTitleChange: ((String) -> Void)?
     var onCwdChange: ((String) -> Void)?
@@ -33,17 +34,20 @@ final class TerminalProcessController: NSObject {
     private let launchConfiguration: TerminalLaunchConfiguration
     private let shellPath: String
     private let processStarter: ProcessStarter
+    private let signalSender: SignalSender
     private var didPadInitialPrompt = false
     private var didStartProcess = false
 
     init(
         configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration(),
         shellPath: String = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh",
-        processStarter: ProcessStarter? = nil
+        processStarter: ProcessStarter? = nil,
+        signalSender: @escaping SignalSender = { kill($0, $1) }
     ) {
         self.shellPath = shellPath
         shellName = (shellPath as NSString).lastPathComponent
         launchConfiguration = configuration
+        self.signalSender = signalSender
         self.processStarter = processStarter ?? { view, executable, arguments, environment,
                                                    execName, currentDirectory in
             view.startProcess(
@@ -81,12 +85,8 @@ final class TerminalProcessController: NSObject {
         activityView.onUserInput = { [weak self] in
             MainActor.assumeIsolated { self?.onUserInput?() }
         }
-        activityView.onOSC133 = { [weak self] payload, row in
-            // LocalProcessTerminalView uses LocalProcess's default main
-            // dispatch queue. Record buffer coordinates immediately: more
-            // bytes in this very chunk may reflow or switch the active buffer.
-            // The session defers completion-driven UI effects separately.
-            MainActor.assumeIsolated { self?.onPromptMark?(payload, row) }
+        activityView.onOSC133 = { [weak self] event in
+            self?.onPromptMark?(event)
         }
 
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -156,14 +156,16 @@ final class TerminalProcessController: NSObject {
     }
 
     func terminate() {
-        if isRunning {
-            // forkpty makes the PTY owner its process-group leader. A configured
-            // command is a child of our wrapper, so terminate the complete group
-            // and prevent the wrapper from continuing into the login shell.
-            let pid = shellPid
-            if getpgid(pid) != pid || kill(-pid, SIGTERM) != 0 {
-                kill(pid, SIGTERM)
-            }
+        guard isRunning else { return }
+        // SwiftTerm keeps running true while draining an exited child's output,
+        // but clears shellPid first. Never interpret that zero as our own group.
+        let pid = shellPid
+        guard pid > 0 else { return }
+        // forkpty makes the PTY owner its process-group leader. A configured
+        // command is a child of our wrapper, so terminate the complete group
+        // and prevent the wrapper from continuing into the login shell.
+        if getpgid(pid) != pid || signalSender(-pid, SIGTERM) != 0 {
+            _ = signalSender(pid, SIGTERM)
         }
     }
 
@@ -179,7 +181,7 @@ final class TerminalProcessController: NSObject {
     }
 
     private func padCursorToBottom() {
-        let rows = view.getTerminal().rows
+        let rows = view.terminalDimensions.rows
         guard rows > 1 else { return }
         view.feed(text: String(repeating: "\n", count: rows - 1))
     }

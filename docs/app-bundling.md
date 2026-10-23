@@ -14,7 +14,7 @@ resources in `Contents/Resources`. Putting bundles at the app root, including
 symlinks, fails code signing with “unsealed contents present in the bundle root”.
 
 For app builds, `scripts/prepare-resource-overlay.swift` creates a compiler
-VFS overlay for the generated accessors of KeyboardShortcuts and SwiftTerm.
+VFS overlay for KeyboardShortcuts' generated accessor.
 The replacements look in `Bundle.main.resourceURL` first, then beside the
 executable for command-line use. They have no absolute build-machine fallback.
 The overlay affects generated build sources only: dependency checkouts and
@@ -22,19 +22,20 @@ the SwiftTerm fork remain unchanged. A content hash in the overlay path makes
 changed lookup logic invalidate cached compilation results.
 
 Normal `swift test` and `swift build` still use SwiftPM's standard accessors.
-The packaging invocation passes `-vfsoverlay` explicitly and copies both
-resource bundles into `Contents/Resources` before signing.
+The packaging invocation passes `-vfsoverlay` explicitly and copies the
+KeyboardShortcuts resource bundle into `Contents/Resources` before signing.
+SwiftTerm 1.99.1 embeds its Metal shader source in Swift code and no longer
+produces a separate resource bundle.
 
-SwiftPM's Xcode build backend generates an app-compatible accessor, but it
-currently cannot build this dependency graph: the pinned SwiftTerm build-tool
-plugin fails with a missing `SwiftTermBuildInfoPlugin` target. Keeping native
-SwiftPM also preserves the existing host-architecture build behavior.
+App builds and CI explicitly use native SwiftPM so they share the tested
+resource-accessor layout and host-architecture build behavior. `SWIFT_BUILD_FLAGS`
+defaults to `--build-system native` and can also supply an isolated scratch path.
 
 ## Verification
 
 The packaged executable supports a build-only `--verify-resource-bundles`
-smoke check. It reads the bundled shader source and resolves a localized
-KeyboardShortcuts key name through the library's real accessor. It exits
+smoke check. It resolves a localized KeyboardShortcuts key name through the
+library's real accessor. It exits
 before creating the application, terminals, hotkeys, menus or preferences.
 
 `make test-build` runs this check with `.build` inaccessible, then injects

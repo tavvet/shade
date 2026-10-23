@@ -8,7 +8,6 @@ resources="$contents/Resources"
 test -f "$resources/LICENSE"
 test -f "$resources/THIRDPARTY.md"
 test -d "$resources/KeyboardShortcuts_KeyboardShortcuts.bundle"
-test -d "$resources/SwiftTerm_SwiftTerm.bundle"
 
 bundle_build=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$contents/Info.plist")
 case "$bundle_build" in ''|*[!0-9]*)

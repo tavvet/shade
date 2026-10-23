@@ -104,12 +104,13 @@ git clone https://github.com/tavvet/shade.git
 cd shade
 make            # produces build/Shade.app
 make run        # build + launch
-swift test      # unit tests
+swift test --build-system native # unit tests
+swift test --build-system native -c release # verify optimized code too
 make test-build # app resources, signing and packaging regression checks
 ```
 
-Shade's deployment target is macOS 13+. Building requires Xcode 16.3+ (Swift 6.1+)
-on a macOS version supported by that Xcode; Xcode 16.3 requires macOS 15.2+
+Shade's deployment target is macOS 13+. Building requires Xcode 26+ (Swift 6.2+)
+on a macOS version supported by that Xcode; Xcode 26 requires macOS 15.6+
 and newer Xcode releases can require newer hosts (see
 [Apple's compatibility table](https://developer.apple.com/xcode/system-requirements)).
 The build ad-hoc codesigns the bundle so the OS can prompt cleanly for any
@@ -660,9 +661,10 @@ Key design choices:
 - [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) — VT100 / xterm
   terminal emulator + local PTY shell hosting. Shade depends on a
   [rebase-tracked fork](https://github.com/tavvet/SwiftTerm), pinned by
-  revision. The fork carries one local patch: configurable link-highlight
-  color and cell tint. Keyboard selection, cut and OSC 133 tracking live in
-  Shade and use SwiftTerm's public APIs or the open PTY view. Syncing upstream
+  revision on upstream v1.99.1. The fork carries four approved patches:
+  link-highlight color and cell tint, atomic keyboard selection, local output
+  clearing, and parser-time OSC geometry. Shade owns shortcut routing, cut,
+  command timing and prompt history using copied state and events. Syncing upstream
   requires a patch re-audit before bumping the pin — see
   [docs/swiftterm-fork-migration.md](./docs/swiftterm-fork-migration.md).
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —
