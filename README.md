@@ -15,7 +15,8 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
 - **Global hotkey** to toggle the panel (default `F12`, rebind in Settings).
 - **Slides** down from the top of the active screen and back up when hidden.
-- **Tabs** with `⌘T` / `⌘W` / `⌘1…9` / `⌃Tab` (macOS-standard).
+- **Tabs** with `⌘T` / `⌘W` / `⌘1…9` / `⌃Tab` (macOS-standard), larger
+  click targets and a configurable minimum width.
 - **Current input source (opt-in)** — a compact `EN` / `RU` / `FI` badge in
   the tab bar follows the keyboard source selected in macOS. It is off by
   default and needs no Accessibility or Input Monitoring permission.
@@ -155,10 +156,16 @@ Press `Esc` (or `F12` again) to hide.
 | Previous tab      | `⌃⇧Tab`            |
 
 The tab bar lives at the bottom of the panel. Click a chip to switch, click
-the `×` to close, click `+` for a new tab. Tab labels show the index and the
-abbreviated current working directory (e.g. `1 · ~/projects/shade`).
+the `×` (or right-click → Close Tab) to close it, click `+` for a new tab.
+Tab labels show the index and the abbreviated current working directory
+(e.g. `1 · ~/projects/shade`).
 Double-click a tab (or right-click → Rename) to pin a fixed name instead; an
 empty name or Reset Name restores the automatic title.
+
+Set **Settings → Appearance → Interface → Minimum tab width** to keep short
+titles such as `~` easy to click. The default is 120 pt, adjustable from 80 to
+240 pt, and changes apply immediately. Longer titles can use more space; the
+tab strip scrolls horizontally when needed.
 
 When **Settings → Appearance → Interface → Show current input source in
 tab bar** is enabled, a read-only language badge stays beside the `+` button.

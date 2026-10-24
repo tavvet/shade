@@ -1,6 +1,8 @@
 import SwiftUI
 
 enum TabBarLayout {
+    static let height: CGFloat = 36
+
     /// Ignores sub-point geometry noise so the native scroller does not flicker
     /// while SwiftUI settles the tab strip during a resize.
     private static let overflowTolerance: CGFloat = 1
@@ -15,6 +17,7 @@ enum TabBarLayout {
 struct TabBarView: View {
     @ObservedObject var tabs: TabsObservable
     @ObservedObject var inputSource: InputSourceMonitor
+    var minimumTabWidth: CGFloat
     var onSelect: (Int) -> Void
     var onClose: (Int) -> Void
     var onNew: () -> Void
@@ -42,6 +45,7 @@ struct TabBarView: View {
                                 editableName: tab.editableName,
                                 isActive: tab.index == tabs.activeIndex,
                                 indicator: tab.indicator,
+                                minimumWidth: minimumTabWidth,
                                 onClick: { onSelect(tab.index) },
                                 onClose: { onClose(tab.index) },
                                 onRename: { onRename(tab.index, $0) },
@@ -75,6 +79,9 @@ struct TabBarView: View {
                 .onChange(of: tabs.tabs.map(\.id)) { _ in
                     scrollToActiveTab(using: scrollProxy)
                 }
+                .onChange(of: minimumTabWidth) { _ in
+                    scrollToActiveTab(using: scrollProxy)
+                }
                 .onChange(of: needsHorizontalScrolling) { isNeeded in
                     if isNeeded { scrollToActiveTab(using: scrollProxy) }
                 }
@@ -87,16 +94,16 @@ struct TabBarView: View {
 
             Button(action: onNew) {
                 Image(systemName: "plus")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white.opacity(0.7))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
             }
             .buttonStyle(.plain)
             .help("New tab (⌘T)")
         }
         .padding(.horizontal, 8)
-        .frame(height: 28)
+        .frame(height: TabBarLayout.height)
         .background(Color.black.opacity(0.55))
     }
 
