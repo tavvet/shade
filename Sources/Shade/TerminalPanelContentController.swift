@@ -8,6 +8,7 @@ final class TerminalPanelContentController {
     private let tabs: TabsObservable
     private let inputSource: InputSourceMonitor
     private weak var blurView: NSVisualEffectView?
+    private weak var tabBarHost: NSHostingView<TabBarView>?
 
     init(
         terminals: TerminalsController,
@@ -20,9 +21,11 @@ final class TerminalPanelContentController {
     }
 
     func install(in panel: DropdownPanel) {
+        let prefs = PreferencesStore.standard.load()
         let tabBar = TabBarView(
             tabs: tabs,
             inputSource: inputSource,
+            minimumTabWidth: prefs.tabMinimumWidth,
             onSelect: { [weak self] in self?.terminals.select(at: $0) },
             onClose: { [weak self] in self?.terminals.close(at: $0) },
             onNew: { [weak self] in self?.terminals.newSession() },
@@ -30,6 +33,7 @@ final class TerminalPanelContentController {
             onEditEnd: { [weak self] in self?.focusActiveTerminal() }
         )
         let tabBarHost = NSHostingView(rootView: tabBar)
+        self.tabBarHost = tabBarHost
         tabBarHost.translatesAutoresizingMaskIntoConstraints = false
 
         let badgeHost = NSHostingView(rootView: BranchBadgeView(tabs: tabs))
@@ -56,14 +60,13 @@ final class TerminalPanelContentController {
         stack.addArrangedSubview(terminalOverlay)
         stack.addArrangedSubview(tabBarHost)
         NSLayoutConstraint.activate([
-            tabBarHost.heightAnchor.constraint(equalToConstant: 28),
+            tabBarHost.heightAnchor.constraint(equalToConstant: TabBarLayout.height),
             tabBarHost.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
             tabBarHost.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
             terminalOverlay.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
             terminalOverlay.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
         ])
 
-        let prefs = PreferencesStore.standard.load()
         let blur = NSVisualEffectView()
         blur.material = prefs.blurMaterial.nsMaterial
         blur.blendingMode = .behindWindow
@@ -92,6 +95,7 @@ final class TerminalPanelContentController {
     }
 
     func apply(_ prefs: Preferences) {
+        tabBarHost?.rootView.minimumTabWidth = prefs.tabMinimumWidth
         blurView?.isHidden = !prefs.backgroundBlur
         blurView?.material = prefs.blurMaterial.nsMaterial
         inputSource.setEnabled(prefs.showInputSourceIndicator)

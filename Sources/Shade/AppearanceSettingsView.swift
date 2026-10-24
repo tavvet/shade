@@ -22,6 +22,23 @@ struct AppearanceSettingsView: View {
                 Text("Displays the active keyboard input source next to the new-tab button.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                HStack {
+                    Text("Minimum tab width")
+                    Slider(
+                        value: $model.preferences.tabMinimumWidth,
+                        in: Preferences.minTabWidth...Preferences.maxTabWidth,
+                        step: 10
+                    )
+                    Text("\(Int(model.preferences.tabMinimumWidth)) pt")
+                        .monospacedDigit()
+                        .frame(width: 52, alignment: .trailing)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text("Keeps tabs with short titles easy to click.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Typography") {

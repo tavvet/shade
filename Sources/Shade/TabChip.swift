@@ -6,6 +6,7 @@ struct TabChip: View {
     let editableName: String
     let isActive: Bool
     let indicator: TabIndicator
+    let minimumWidth: CGFloat
     let onClick: () -> Void
     let onClose: () -> Void
     let onRename: (String) -> Void
@@ -21,21 +22,23 @@ struct TabChip: View {
             if editing {
                 TextField("Tab name", text: $draft)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(.white)
-                    .frame(width: 96)
+                    .frame(width: max(96, minimumWidth - 24))
                     .focused($fieldFocused)
                     .onSubmit(commit)
                     .onExitCommand(perform: cancel)
                     .onChange(of: fieldFocused) { focused in
                         if !focused { commit() }
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
             } else {
                 chipContent
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .frame(minWidth: minimumWidth)
+                    .fixedSize(horizontal: true, vertical: false)
                     .contentShape(Rectangle())
                     .onTapGesture(count: 2, perform: beginEditing)
                     .onTapGesture(perform: onClick)
@@ -45,18 +48,20 @@ struct TabChip: View {
                         if !editableName.isEmpty {
                             Button("Reset Name") { onRename("") }
                         }
+                        Divider()
+                        Button("Close Tab", role: .destructive, action: onClose)
                     }
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: 5)
                 .fill(isActive ? Color.white.opacity(0.18) : Color.white.opacity(hovering ? 0.08 : 0.0))
         )
         .onHover { hovering = $0 }
     }
 
     private var chipContent: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             if indicator != .none {
                 Circle()
                     .fill(indicator == .failed ? Color.red.opacity(0.9) : Color.white.opacity(0.55))
@@ -64,13 +69,14 @@ struct TabChip: View {
                     .help(indicator == .failed ? "Last command failed" : "New output")
             }
             Text(title)
-                .font(.system(size: 11, weight: isActive ? .semibold : .regular))
+                .font(.system(size: 12, weight: isActive ? .semibold : .regular))
                 .foregroundStyle(.white.opacity(isActive ? 1.0 : 0.7))
+            Spacer(minLength: 0)
             Button(action: onClose) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.white.opacity(hovering || isActive ? 0.8 : 0.0))
-                    .frame(width: 12, height: 12)
+                    .frame(width: 18, height: 18)
             }
             .buttonStyle(.plain)
             .help("Close tab")

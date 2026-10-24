@@ -72,6 +72,11 @@ struct PreferencesStore {
                 forKey: Key.showInputSourceIndicator
             )
         }
+        if userDefaults.object(forKey: Key.tabMinimumWidth) != nil {
+            preferences.tabMinimumWidth = Preferences.clampTabMinimumWidth(
+                CGFloat(userDefaults.double(forKey: Key.tabMinimumWidth))
+            )
+        }
         if userDefaults.object(forKey: Key.notifyOnCommandFinish) != nil {
             preferences.notifyOnCommandFinish = userDefaults.bool(forKey: Key.notifyOnCommandFinish)
         }
@@ -122,6 +127,7 @@ struct PreferencesStore {
             preferences.showInputSourceIndicator,
             forKey: Key.showInputSourceIndicator
         )
+        userDefaults.set(preferences.tabMinimumWidth, forKey: Key.tabMinimumWidth)
         userDefaults.set(preferences.notifyOnCommandFinish, forKey: Key.notifyOnCommandFinish)
         userDefaults.set(preferences.notifyThresholdSeconds, forKey: Key.notifyThresholdSeconds)
         userDefaults.set(preferences.hideOnFocusLoss, forKey: Key.hideOnFocusLoss)
@@ -151,6 +157,7 @@ struct PreferencesStore {
         static let linkHighlightHex = "linkHighlightHex"
         static let backgroundBlur = "backgroundBlur"
         static let showInputSourceIndicator = "showInputSourceIndicator"
+        static let tabMinimumWidth = "tabMinimumWidth"
         static let notifyOnCommandFinish = "notifyOnCommandFinish"
         static let notifyThresholdSeconds = "notifyThresholdSeconds"
         static let hideOnFocusLoss = "hideOnFocusLoss"

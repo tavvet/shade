@@ -14,6 +14,7 @@ struct Preferences: Codable, Equatable, Sendable {
     var linkHighlightHex: String      // 6-char RRGGBB; falls back to systemYellow if invalid
     var backgroundBlur: Bool          // frosted-glass backdrop behind the translucent terminal
     var showInputSourceIndicator: Bool // show the current keyboard input source in the tab bar
+    var tabMinimumWidth: CGFloat      // minimum clickable width of each tab, in points
     var notifyOnCommandFinish: Bool   // notify when a long command finishes while the panel is hidden
     var notifyThresholdSeconds: Double // minimum command duration (seconds) to notify
     var hideOnFocusLoss: Bool         // auto-hide the panel when Shade stops being the active app
@@ -71,6 +72,7 @@ struct Preferences: Codable, Equatable, Sendable {
         linkHighlightHex: "FFCC00",     // ≈ NSColor.systemYellow
         backgroundBlur: true,
         showInputSourceIndicator: false,
+        tabMinimumWidth: 120,
         notifyOnCommandFinish: false,
         notifyThresholdSeconds: 30,
         hideOnFocusLoss: false,
@@ -84,6 +86,13 @@ struct Preferences: Codable, Equatable, Sendable {
 
     static let minFontSize: CGFloat = 8
     static let maxFontSize: CGFloat = 32
+    static let minTabWidth: CGFloat = 80
+    static let maxTabWidth: CGFloat = 240
+
+    static func clampTabMinimumWidth(_ width: CGFloat) -> CGFloat {
+        guard width.isFinite else { return defaults.tabMinimumWidth }
+        return min(max(width, minTabWidth), maxTabWidth)
+    }
 
     /// Clamps a font size to the supported range (shared by `load` and zoom).
     static func clampFontSize(_ size: CGFloat) -> CGFloat {

@@ -10,11 +10,15 @@ defaults key, outside both portable documents.
 
 The portable folder contains two versioned JSON documents:
 
-- `settings.json`: `SettingsFileDocument` with version 1 and a typed `Preferences`
+- `settings.json`: `SettingsFileDocument` with version 2 and a typed `Preferences`
   snapshot. All fields are required; unknown enums and invalid ranges reject
   the document rather than silently normalizing someone else's file.
   Schema changes must version the document or provide an explicit migration;
   do not add required fields while leaving the version unchanged.
+  Version-1 documents load through an explicit migration that adds the default
+  `tabMinimumWidth` of 120 pt; all other fields remain required. Loading does
+  not rewrite the file. The next settings save writes version 2, including the
+  width (80–240 pt).
 - `connections.json`: the existing `SSHProfileStore` version-1 envelope. UUIDs
   and array order retain identity and quick-slot order. It contains connection
   metadata and identity-file paths, never passwords or private-key contents.

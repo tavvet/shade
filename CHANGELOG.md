@@ -6,6 +6,19 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Add Close Tab to each tab's context menu alongside the rename actions.
+- Add a minimum tab width setting under Appearance → Interface, applied live
+  and saved in both local and portable configuration (120 pt by default).
+
+### Changed
+
+- Make tabs easier to click with a 12 pt font, larger padding and close buttons,
+  and a 36 pt tab bar. Keep tab titles on the left and close buttons on the
+  right when the minimum width adds extra space. Migrate version-1 settings
+  to the version-2 schema with the default minimum tab width.
+
 ### Fixed
 
 - Wait for the PTY child's process group in termination tests to avoid a

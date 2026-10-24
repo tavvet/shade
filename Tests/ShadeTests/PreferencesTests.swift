@@ -19,6 +19,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.animationDuration, 0.16)
         XCTAssertTrue(prefs.backgroundBlur)
         XCTAssertFalse(prefs.showInputSourceIndicator)
+        XCTAssertEqual(prefs.tabMinimumWidth, 120)
         XCTAssertFalse(prefs.hideOnFocusLoss)
         XCTAssertEqual(prefs.blurMaterial, .hud)
         XCTAssertFalse(prefs.newTabInheritsCwd)
@@ -57,6 +58,7 @@ final class PreferencesTests: XCTestCase {
         prefs.linkHighlightHex = "123ABC"
         prefs.backgroundBlur = false
         prefs.showInputSourceIndicator = true
+        prefs.tabMinimumWidth = 180
         prefs.notifyOnCommandFinish = true
         prefs.notifyThresholdSeconds = 90
         prefs.hideOnFocusLoss = true
@@ -100,6 +102,16 @@ final class PreferencesTests: XCTestCase {
         store.set(true, forKey: PreferencesStore.Key.showInputSourceIndicator)
 
         XCTAssertTrue(PreferencesStore(userDefaults: store).load().showInputSourceIndicator)
+    }
+
+    func testTabMinimumWidthLoadsAndClampsStoredValues() {
+        let store = freshStore()
+        for (stored, expected) in [(160.0, 160.0), (30, 80), (400, 240)] {
+            store.set(stored, forKey: PreferencesStore.Key.tabMinimumWidth)
+            XCTAssertEqual(PreferencesStore(userDefaults: store).load().tabMinimumWidth, expected)
+        }
+        XCTAssertEqual(Preferences.clampTabMinimumWidth(.nan), 120)
+        XCTAssertEqual(Preferences.clampTabMinimumWidth(.infinity), 120)
     }
 
     func testHideOnFocusLossReadsStoredValue() {
