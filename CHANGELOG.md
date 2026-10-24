@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.26] — 2026-10-24
+
 ### Added
 
 - Add Close Tab to each tab's context menu alongside the rename actions.
@@ -575,7 +577,8 @@ First public release.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.25...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.26...HEAD
+[0.1.26]: https://github.com/tavvet/shade/releases/tag/v0.1.26
 [0.1.25]: https://github.com/tavvet/shade/releases/tag/v0.1.25
 [0.1.24]: https://github.com/tavvet/shade/releases/tag/v0.1.24
 [0.1.23]: https://github.com/tavvet/shade/releases/tag/v0.1.23
