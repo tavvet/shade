@@ -41,6 +41,8 @@ final class TerminalProcessTerminationTests: XCTestCase {
         defer { view.process.terminate() }
         let pid = controller.shellPid
         XCTAssertGreaterThan(pid, 0)
+        // forkpty can return to the parent before the child creates its group.
+        waitForCondition { getpgid(pid) == pid }
         XCTAssertEqual(getpgid(pid), pid)
 
         controller.terminate()
@@ -60,6 +62,7 @@ final class TerminalProcessTerminationTests: XCTestCase {
         defer { view.process.terminate() }
         let pid = controller.shellPid
         XCTAssertGreaterThan(pid, 0)
+        waitForCondition { getpgid(pid) == pid }
 
         controller.terminate()
 
