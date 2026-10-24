@@ -6,6 +6,11 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Wait for the PTY child's process group in termination tests to avoid a
+  startup race on GitHub Actions runners.
+
 ## [0.1.25] — 2026-10-23
 
 ### Changed
