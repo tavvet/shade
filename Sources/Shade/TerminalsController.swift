@@ -12,12 +12,14 @@ final class TerminalsController {
     var sessions: [TerminalSession] { tabs.sessions }
     var activeIndex: Int { tabs.activeIndex }
 
-    /// Consumed by the notification coordinator; forwarded from each session's
-    /// `onCommandFinish`.
-    var commandFinishHandler: ((TimeInterval, Int?, String) -> Void)?
+    /// Forwarded from each session's `onCommandFinish`; the notification
+    /// coordinator posts the user notification.
+    var onCommandFinish: ((TimeInterval, Int?, String) -> Void)?
 
-    /// Posted whenever the tab set or selection changes (the tab bar observes it via TabsObservable).
-    static let tabsChanged = Notification.Name("ShadeTerminalsTabsChanged")
+    /// Invoked when the tab set or selection changes, or when anything a tab
+    /// shows changes (title, status dot, git badge). TabsObservable uses it to
+    /// refresh the SwiftUI projection; it replaces a global notification.
+    var onTabsChanged: (() -> Void)?
 
     private lazy var contextPoller = TerminalContextPoller { [weak self] in
         self?.pollOnce()
@@ -103,7 +105,10 @@ final class TerminalsController {
             self.sessionDidExit(session)
         }
         session.onCommandFinish = { [weak self] duration, exitCode, cwd in
-            self?.commandFinishHandler?(duration, exitCode, cwd)
+            self?.onCommandFinish?(duration, exitCode, cwd)
+        }
+        session.onPresentationChange = { [weak self] in
+            self?.onTabsChanged?()
         }
         session.shouldFlashBell = { [weak self] in
             self?.preferences.load().visualBell ?? false
@@ -168,7 +173,7 @@ final class TerminalsController {
         // cooldown → skip).
         session.tabActivated()
         viewHost.focus(v)
-        NotificationCenter.default.post(name: Self.tabsChanged, object: self)
+        onTabsChanged?()
     }
 
     func focusActiveSession() {
@@ -187,7 +192,7 @@ final class TerminalsController {
     }
 
     /// Assigns (or clears, when `name` is empty/whitespace) the user title of the
-    /// tab at `index`. The session posts `titleDidChange`, refreshing the bar.
+    /// tab at `index`. The session reports the change through `onTabsChanged`.
     func renameSession(at index: Int, to name: String) {
         tabs.session(at: index)?.setUserTitle(name)
     }

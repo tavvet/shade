@@ -27,7 +27,7 @@ final class CommandNotificationCoordinator {
     func start() {
         notifier.start()
         notifier.onActivate = { [weak self] in self?.panel.show() }
-        terminals.commandFinishHandler = { [weak self] duration, exitCode, cwd in
+        terminals.onCommandFinish = { [weak self] duration, exitCode, cwd in
             self?.handleCommandFinish(duration: duration, exitCode: exitCode, cwd: cwd)
         }
     }

@@ -3,18 +3,40 @@ import XCTest
 
 @MainActor
 final class TabsObservableTests: XCTestCase {
-    func testObserversAreRemovedWhenObservableIsReleased() {
-        let center = TrackingNotificationCenter()
+    func testControllerDoesNotKeepReleasedObservableAlive() {
+        let controller = TerminalsController(preferences: StaticPreferences())
         weak var observable: TabsObservable?
 
         do {
-            let controller = TerminalsController(preferences: StaticPreferences())
-            let value = TabsObservable(controller: controller, notificationCenter: center)
+            let value = TabsObservable(controller: controller)
             observable = value
         }
 
         XCTAssertNil(observable)
-        XCTAssertEqual(center.removedObserverCount, 2)
+        controller.onTabsChanged?()  // a stale callback is harmless
+    }
+
+    func testTabSetSelectionAndRenameReachTheObservableDirectly() {
+        let controller = TerminalsController(preferences: StaticPreferences())
+        let observable = TabsObservable(controller: controller)
+        let first = controller.newSession(configuration: .waitingForTermination)
+        let second = controller.newSession(configuration: .waitingForTermination)
+        defer {
+            for session in [first, second] {
+                session.onExit = nil
+                session.terminate()
+            }
+        }
+
+        XCTAssertEqual(observable.tabs.map(\.id), [first.id, second.id])
+        XCTAssertEqual(observable.activeIndex, 1)
+
+        controller.select(at: 0)
+        XCTAssertEqual(observable.activeIndex, 0)
+
+        controller.renameSession(at: 1, to: "Production")
+        XCTAssertEqual(observable.tabs[1].label, "2 · Production")
+        XCTAssertEqual(observable.tabs[1].editableName, "Production")
     }
 
     func testTabBarScrollingStaysDisabledUntilViewportIsMeasured() {
@@ -75,14 +97,5 @@ final class TabsObservableTests: XCTestCase {
 
     func testIndicatorFailureWinsOverActivity() {
         XCTAssertEqual(TabsObservable.indicator(lastExitCode: 127, hasUnseenActivity: true), .failed)
-    }
-}
-
-private final class TrackingNotificationCenter: NotificationCenter, @unchecked Sendable {
-    private(set) var removedObserverCount = 0
-
-    override func removeObserver(_ observer: Any) {
-        removedObserverCount += 1
-        super.removeObserver(observer)
     }
 }

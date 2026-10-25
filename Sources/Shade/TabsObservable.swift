@@ -25,34 +25,13 @@ final class TabsObservable: ObservableObject {
     @Published private(set) var activeStatus: GitStatus? = nil
 
     private weak var controller: TerminalsController?
-    private let observations: NotificationObservationBag
 
-    init(
-        controller: TerminalsController,
-        notificationCenter: NotificationCenter = .default
-    ) {
+    /// Takes the controller's `onTabsChanged` slot: it is the only consumer of
+    /// tab changes and refreshes synchronously on the main actor.
+    init(controller: TerminalsController) {
         self.controller = controller
-        let observations = NotificationObservationBag(center: notificationCenter)
-        self.observations = observations
         sync()
-        observations.add(
-            notificationCenter.addObserver(
-                forName: TerminalsController.tabsChanged,
-                object: controller,
-                queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated { self?.sync() }
-            }
-        )
-        observations.add(
-            notificationCenter.addObserver(
-                forName: TerminalSession.titleDidChange,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated { self?.sync() }
-            }
-        )
+        controller.onTabsChanged = { [weak self] in self?.sync() }
     }
 
     private func sync() {
@@ -97,27 +76,5 @@ final class TabsObservable: ObservableObject {
         if let code = lastExitCode, code != 0 { return .failed }
         if hasUnseenActivity { return .activity }
         return .none
-    }
-}
-
-/// Owns Objective-C notification tokens outside MainActor isolation. Tokens
-/// are only appended during TabsObservable initialization, then removed when
-/// the bag follows its owner out of scope.
-private final class NotificationObservationBag: @unchecked Sendable {
-    private let center: NotificationCenter
-    private var tokens: [NSObjectProtocol] = []
-
-    init(center: NotificationCenter) {
-        self.center = center
-    }
-
-    func add(_ token: NSObjectProtocol) {
-        tokens.append(token)
-    }
-
-    deinit {
-        for token in tokens {
-            center.removeObserver(token)
-        }
     }
 }

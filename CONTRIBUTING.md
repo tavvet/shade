@@ -81,6 +81,11 @@ obvious fixes can skip straight to the implementation step.
   (a hidden constraint, an Apple-API quirk, a workaround for a specific bug).
 - `@MainActor` everywhere AppKit / SwiftUI is touched. Concurrency boundaries
   use `nonisolated` + `MainActor.assumeIsolated` (see existing examples).
+- Components report events to the object that owns them through `on…`
+  closure callbacks that the owner installs (for example `TerminalSession` →
+  `TerminalsController` → `TabsObservable`). `NotificationCenter` is reserved
+  for `ConfigurationStore`'s announcements, posted with the store as the object
+  and observed by that object, and for system notifications.
 - Scalar user-facing settings extend the `Preferences` value model and get a
   control on the appropriate settings page. Runtime persistence goes through
   `ConfigurationStore` / `PreferencesStoring`; `PreferencesStore` remains the

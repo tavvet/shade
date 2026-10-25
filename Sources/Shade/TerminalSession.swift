@@ -5,16 +5,22 @@ import SwiftTerm
 /// that make up one terminal tab.
 @MainActor
 final class TerminalSession {
-    static let titleDidChange = Notification.Name("ShadeTerminalSessionTitleDidChange")
     let id = UUID()
+
+    // The owning TerminalsController installs these callbacks on each new
+    // session; components inside the terminal subsystem talk through such
+    // direct callbacks rather than NotificationCenter.
 
     /// Invoked when the underlying shell process exits — whether via Ctrl-D
     /// on an empty prompt, an explicit `exit`, or a crash. The controller
-    /// installs this on each new session to close the corresponding tab
-    /// (its "always keep at least one tab" rule handles the last-tab case).
-    /// Closure callback rather than a notification because `Notification`
-    /// isn't Sendable across the parser → main hop under strict concurrency.
+    /// closes the corresponding tab (its "always keep at least one tab" rule
+    /// handles the last-tab case).
     var onExit: (@MainActor () -> Void)?
+
+    /// Invoked when anything the tab bar or git badge shows for this session
+    /// changes: title, activity or exit-status dot, branch, git status or the
+    /// remote-session indicator.
+    var onPresentationChange: (() -> Void)?
 
     /// Invoked when a command completes (OSC 133 C→D): duration, exit code, cwd.
     /// The notification coordinator uses it to post while Shade is hidden.
@@ -65,15 +71,15 @@ final class TerminalSession {
         presentation.displayTitle(remoteIndicator: remoteIndicator, cwd: cwd)
     }
 
-    private func notifyTitleChanged() {
-        NotificationCenter.default.post(name: Self.titleDidChange, object: self)
+    private func notifyPresentationChanged() {
+        onPresentationChange?()
     }
 
     private func contextDidChange(_ change: TerminalContextTracker.Change) {
         // CWD only participates in the automatic title when the shell has not
         // supplied an OSC title. Git and remote changes always affect tab/badge UI.
         if change == .cwd, !presentation.oscTitle.isEmpty { return }
-        notifyTitleChanged()
+        notifyPresentationChanged()
     }
 
     /// Sets or clears the user-assigned tab name. Whitespace is trimmed; an empty
@@ -95,7 +101,7 @@ final class TerminalSession {
         cursorStyle = TerminalCursorStyleTracker(applied: options.cursorStyle)
         scrollbackRows = options.scrollback
         presentation = TerminalPresentationState(shellName: processController.shellName)
-        presentation.onChange = { [weak self] in self?.notifyTitleChanged() }
+        presentation.onChange = { [weak self] in self?.notifyPresentationChanged() }
         if let title = configuration.title {
             presentation.setUserTitle(title)
         }
