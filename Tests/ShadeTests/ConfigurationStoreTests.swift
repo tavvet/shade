@@ -27,7 +27,7 @@ final class ConfigurationStoreTests: XCTestCase {
                                                name: .shadePreferencesChanged, object: configuration)
         defer { NotificationCenter.default.removeObserver(spy) }
 
-        try await configuration.saveFontSize(20)
+        try await configuration.updateFontSize { _ in 20 }
         await configuration.waitForPendingAnnouncement()
         XCTAssertEqual(spy.count, 1)
         XCTAssertEqual(configuration.load().fontSize, 20)
@@ -35,7 +35,7 @@ final class ConfigurationStoreTests: XCTestCase {
         try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
         await configuration.waitForPendingAnnouncement()
         let beforePortableSave = spy.count
-        try await configuration.saveFontSize(22)
+        try await configuration.updateFontSize { _ in 22 }
         await configuration.waitForPendingAnnouncement()
         XCTAssertEqual(spy.count, beforePortableSave + 1)
         XCTAssertEqual(configuration.load().fontSize, 22)
@@ -115,6 +115,37 @@ final class ConfigurationStoreTests: XCTestCase {
 
         XCTAssertEqual(stored, 20)
         XCTAssertEqual(configuration.load().fontSize, 20)
+    }
+
+    func testZoomIsClampedToTheSupportedRangeInBothModes() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+
+        let local = try await configuration.updateFontSize { _ in 99 }
+        XCTAssertEqual(local, Preferences.maxFontSize)
+        XCTAssertEqual(fixture.defaults.double(forKey: PreferencesStore.Key.fontSize), Preferences.maxFontSize)
+
+        try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+        let portable = try await configuration.updateFontSize { _ in 2 }
+        XCTAssertEqual(portable, Preferences.minFontSize)
+        XCTAssertEqual(configuration.load().fontSize, Preferences.minFontSize)
+    }
+
+    func testPortableZoomIsBlockedWhileConnectionsFileIsInvalid() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+        let directory = try XCTUnwrap(configuration.directory)
+        let settingsURL = directory.appendingPathComponent("settings.json")
+        let settingsBefore = try Data(contentsOf: settingsURL)
+        try Data("invalid json".utf8).write(to: directory.appendingPathComponent("connections.json"))
+
+        await assertThrowsAsync { try await configuration.updateFontSize { $0 + 1 } }
+
+        XCTAssertEqual(try Data(contentsOf: settingsURL), settingsBefore)
+        XCTAssertNotNil(configuration.problem)
     }
 
     func testZoomWithoutChangeIsNotAnnounced() async throws {
@@ -197,7 +228,7 @@ final class ConfigurationStoreTests: XCTestCase {
                                                name: .shadePreferencesChanged, object: configuration)
         defer { NotificationCenter.default.removeObserver(spy) }
 
-        try await configuration.saveFontSize(20)
+        try await configuration.updateFontSize { _ in 20 }
         await configuration.waitForPendingAnnouncement()
         _ = await configuration.reload()
         _ = try await configuration.loadProfiles()
@@ -370,7 +401,7 @@ final class ConfigurationStoreTests: XCTestCase {
         XCTAssertEqual(configuration.load().fontSize, 17)
         XCTAssertNotNil(configuration.problem)
         await assertThrowsAsync { try await configuration.loadProfiles() }
-        await assertThrowsAsync { try await configuration.saveFontSize(20) }
+        await assertThrowsAsync { try await configuration.updateFontSize { _ in 20 } }
         await assertThrowsAsync { try await configuration.saveProfiles([], replacing: fixture.profiles) }
         XCTAssertEqual(configuration.directory, folder)
         XCTAssertFalse(FileManager.default.fileExists(atPath: files.settingsURL.path))
@@ -380,7 +411,7 @@ final class ConfigurationStoreTests: XCTestCase {
         try settings.write(to: files.settingsURL)
         await configuration.reloadFromDisk()
         XCTAssertNil(configuration.problem)
-        try await configuration.saveFontSize(20)
+        try await configuration.updateFontSize { _ in 20 }
         XCTAssertEqual(configuration.load().fontSize, 20)
     }
 
@@ -395,7 +426,7 @@ final class ConfigurationStoreTests: XCTestCase {
         _ = await restarted.reload()
         XCTAssertEqual(restarted.directory, folder)
         XCTAssertNotNil(restarted.problem)
-        await assertThrowsAsync { try await restarted.saveFontSize(20) }
+        await assertThrowsAsync { try await restarted.updateFontSize { _ in 20 } }
         await assertThrowsAsync { try await restarted.loadProfiles() }
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path))
         XCTAssertEqual(fixture.defaults.double(forKey: PreferencesStore.Key.fontSize), 17)
@@ -440,7 +471,7 @@ final class ConfigurationStoreTests: XCTestCase {
         let files = ConfigurationFiles(directory: folder)
         try SettingsFileDocument.encode(external).write(to: files.settingsURL)
 
-        try await configuration.saveFontSize(21)
+        try await configuration.updateFontSize { _ in 21 }
 
         XCTAssertFalse(try files.load().preferences.backgroundBlur)
         XCTAssertEqual(try files.load().preferences.fontSize, 21)

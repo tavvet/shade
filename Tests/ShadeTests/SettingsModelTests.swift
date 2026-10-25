@@ -34,7 +34,7 @@ final class SettingsModelTests: XCTestCase {
 
         // A change visible in this model's store, but announced by another one.
         fixture.defaults.set(19, forKey: PreferencesStore.Key.fontSize)
-        try await otherConfiguration.saveFontSize(21)
+        try await otherConfiguration.updateFontSize { _ in 21 }
         await otherConfiguration.waitForPendingAnnouncement()
 
         XCTAssertEqual(model.preferences, shown)

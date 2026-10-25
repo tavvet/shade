@@ -24,6 +24,34 @@ final class SSHConnectionRequestTests: XCTestCase {
         XCTAssertEqual(fixture.completedCount, 1)
     }
 
+    func testRequestIsDroppedWhenNoLongerWantedAfterRefresh() async {
+        let fixture = Fixture()
+        await fixture.controller.reload()
+        fixture.store.suspendNextLoad = true
+        let wanted = Flag()
+
+        let request = fixture.requests.connect(
+            .quickSlot(1),
+            onConnected: { fixture.didConnect() },
+            onlyIf: { wanted.value }
+        )
+        await fixture.store.waitForLoad()
+        wanted.value = false  // e.g. the panel disappeared during the refresh
+        fixture.store.finishLoad(with: .success([fixture.first, fixture.second]))
+        await request.value
+
+        XCTAssertTrue(fixture.connected.isEmpty)
+        XCTAssertEqual(fixture.completedCount, 0)
+    }
+
+    func testCompletionIsOptional() async {
+        let fixture = Fixture()
+
+        await fixture.requests.connect(.quickSlot(2)).value
+
+        XCTAssertEqual(fixture.connected, [fixture.second])
+    }
+
     func testProfileRequestRefreshesLibraryAndKeepsSelectedIdentity() async {
         let fixture = Fixture()
         await fixture.controller.reload()
@@ -139,6 +167,11 @@ private final class Fixture {
 }
 
 private enum TestFailure: Error { case load }
+
+@MainActor
+private final class Flag {
+    var value = true
+}
 
 @MainActor
 private final class SuspendedProfileStore: SSHProfileStoring {

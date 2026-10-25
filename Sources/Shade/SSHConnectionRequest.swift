@@ -19,17 +19,20 @@ final class SSHConnectionRequest {
         self.controller = controller
     }
 
+    /// Refreshes the library, then connects to `target` unless the request was
+    /// cancelled or `isStillWanted` — checked after the refresh — returns false.
     @discardableResult
     func connect(
         _ target: Target,
-        onConnected: @escaping @MainActor () -> Void
+        onConnected: @escaping @MainActor () -> Void = {},
+        onlyIf isStillWanted: @escaping @MainActor () -> Bool = { true }
     ) -> Task<Void, Never> {
         cancel()
         let controller = controller
         let task = Task { @MainActor in
             guard !Task.isCancelled else { return }
             await controller.reload()
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, isStillWanted() else { return }
 
             // A failed refresh intentionally leaves the controller's cached
             // library usable. Never use it before that refresh has finished.

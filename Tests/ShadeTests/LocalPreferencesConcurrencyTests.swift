@@ -41,7 +41,7 @@ final class LocalPreferencesConcurrencyTests: XCTestCase {
         var candidate = previous
         candidate.visualBell.toggle()
         let zoomedFontSize = Preferences.zoomedFontSize(from: previous.fontSize, delta: 1)
-        try await configuration.saveFontSize(zoomedFontSize)
+        try await configuration.updateFontSize { _ in zoomedFontSize }
 
         do {
             try await configuration.save(candidate, replacing: previous)
@@ -85,7 +85,7 @@ final class LocalPreferencesConcurrencyTests: XCTestCase {
                 let edit = Task { @MainActor in
                     model.preferences.visualBell = desiredVisualBell
                 }
-                try await configuration.saveFontSize(target)
+                try await configuration.updateFontSize { _ in target }
                 await edit.value
             }
             try await zoom.value

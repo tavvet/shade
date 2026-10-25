@@ -22,6 +22,34 @@ final class PanelKeyboardZoomTests: XCTestCase {
         XCTAssertEqual(store.load().fontSize, start + 1)
     }
 
+    func testRapidZoomKeysAreSavedInOrderThroughTheConfigurationStore() async throws {
+        for portable in [false, true] {
+            let fixture = try ConfigurationFixture()
+            defer { fixture.cleanup() }
+            let configuration = fixture.store()
+            if portable {
+                try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+            }
+            let keyboard = PanelKeyboardController(
+                terminals: TerminalsController(preferences: StaticPreferences()),
+                preferences: configuration
+            )
+            let start = configuration.load().fontSize
+
+            for (keyCode, character) in [
+                (KeyCodes.equal, "="), (KeyCodes.equal, "="), (KeyCodes.minus, "-"),
+                (KeyCodes.equal, "="),
+            ] {
+                XCTAssertTrue(keyboard.panelHandleKey(try commandKey(keyCode, character)))
+            }
+            await keyboard.waitForPendingSave()
+
+            XCTAssertEqual(configuration.load().fontSize, start + 2, "portable: \(portable)")
+            _ = await configuration.reload()
+            XCTAssertEqual(configuration.load().fontSize, start + 2, "stored, portable: \(portable)")
+        }
+    }
+
     func testResetZoomRestoresTheDefaultSize() async throws {
         let store = isolatedPreferencesStore()
         store.saveFontSize(20)

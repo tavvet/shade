@@ -198,8 +198,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func connectQuickSlot(_ number: Int) {
-        // The connection action itself shows the panel and new tab.
-        quickSlotRequest.connect(.quickSlot(number)) {}
+        // Hiding the panel cancels the request; the visibility check also covers
+        // a panel that disappeared while the library was refreshing. The
+        // connection action itself shows the panel and the new tab.
+        quickSlotRequest.connect(.quickSlot(number), onlyIf: { [weak self] in
+            self?.panel.isVisible == true
+        })
     }
 
     private func prepareForAuxiliaryWindow() {

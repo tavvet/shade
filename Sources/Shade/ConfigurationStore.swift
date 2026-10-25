@@ -88,10 +88,10 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
             do {
                 if let directory = self.directory {
                     let loaded = try await ConfigurationDisk.run {
-                        let files = ConfigurationFiles(directory: directory)
-                        let current = try files.load()
-                        try Self.writeSettings(preferences, replacing: previous, in: files)
-                        return ConfigurationFiles.Snapshot(preferences: preferences, profiles: current.profiles)
+                        try Self.updateSettings(in: ConfigurationFiles(directory: directory)) { stored in
+                            guard stored == previous else { throw ConfigurationError.changedExternally }
+                            return preferences
+                        }
                     }
                     self.accept(loaded)
                 } else {
@@ -105,9 +105,10 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         }
     }
 
-    /// Reads the stored font size, applies `transform` and saves the result in
-    /// one storage transaction, so keyboard zoom never computes from a value
-    /// read in an earlier transaction. Returns the stored size afterwards.
+    /// Reads the stored font size, applies `transform`, clamps the result to the
+    /// supported range and saves it in one storage transaction, so keyboard zoom
+    /// never computes from a value read in an earlier transaction. Returns the
+    /// stored size afterwards.
     @discardableResult
     func updateFontSize(
         _ transform: @escaping @Sendable (CGFloat) -> CGFloat
@@ -118,20 +119,16 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
             do {
                 if let directory = self.directory {
                     let loaded = try await ConfigurationDisk.run {
-                        let files = ConfigurationFiles(directory: directory)
-                        let current = try files.load()
-                        var updated = current.preferences
-                        updated.fontSize = transform(current.preferences.fontSize)
-                        guard updated != current.preferences else { return current }
-                        try Self.writeSettings(updated, replacing: current.preferences, in: files)
-                        return ConfigurationFiles.Snapshot(preferences: updated, profiles: current.profiles)
+                        try Self.updateSettings(in: ConfigurationFiles(directory: directory)) { stored in
+                            var updated = stored
+                            updated.fontSize = Preferences.clampFontSize(transform(stored.fontSize))
+                            return updated
+                        }
                     }
                     self.accept(loaded)
                     return loaded.preferences.fontSize
                 }
-                let current = self.localPreferences.load().fontSize
-                let target = transform(current)
-                if target != current { self.localPreferences.saveFontSize(target) }
+                let target = self.localPreferences.updateFontSize(transform)
                 self.accept(.init(preferences: self.localPreferences.load(), profiles: self.snapshot.profiles))
                 return target
             } catch {
@@ -141,23 +138,23 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         }
     }
 
-    func saveFontSize(_ fontSize: CGFloat) async throws {
-        try await updateFontSize { _ in fontSize }
-    }
-
-    /// Replaces settings.json under file coordination, only if it still holds
-    /// `previous`; otherwise another writer changed it and the save is rejected.
-    nonisolated private static func writeSettings(
-        _ preferences: Preferences,
-        replacing previous: Preferences,
-        in files: ConfigurationFiles
-    ) throws {
-        let data = try SettingsFileDocument.encode(preferences)
-        try ConfigurationFileIO.update(at: files.settingsURL) { url in
+    /// Applies `change` to settings.json inside one coordinated write: the
+    /// stored document is read, changed and replaced only if the result differs.
+    /// The portable pair must stay valid, so connections.json is decoded first
+    /// and a missing or invalid file blocks the write. Returns the new snapshot.
+    nonisolated private static func updateSettings(
+        in files: ConfigurationFiles,
+        _ change: (Preferences) throws -> Preferences
+    ) throws -> ConfigurationFiles.Snapshot {
+        let profiles = try SSHProfileStore.decode(ConfigurationFileIO.read(at: files.connectionsURL))
+        let preferences = try ConfigurationFileIO.update(at: files.settingsURL) { url in
             let stored = try SettingsFileDocument.decode(ConfigurationFileIO.readUncoordinated(at: url))
-            guard stored == previous else { throw ConfigurationError.changedExternally }
-            try ConfigurationFileIO.replace(data, at: url)
+            let updated = try change(stored)
+            guard updated != stored else { return stored }
+            try ConfigurationFileIO.replace(SettingsFileDocument.encode(updated), at: url)
+            return updated
         }
+        return ConfigurationFiles.Snapshot(preferences: preferences, profiles: profiles)
     }
 
     func saveProfiles(_ profiles: [SSHProfile], replacing previous: [SSHProfile]) async throws {
