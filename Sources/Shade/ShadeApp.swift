@@ -58,7 +58,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         inputSource: inputSource
     )
     private var connectionPicker: SSHConnectionPickerPresenter?
-    private var quickSlotTask: Task<Void, Never>?
+    /// Panel quick slots (⌘⇧1…9); hiding the panel cancels a pending one.
+    private lazy var quickSlotRequest = SSHConnectionRequest(controller: connections)
     private var settingsWerePresented = false
 
     private lazy var panel: DropdownPanel = {
@@ -82,7 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         panel.onShow = { [weak self] in self?.terminals.resumePolling() }
         panel.onHide = { [weak self] in
-            self?.quickSlotTask?.cancel()
+            self?.quickSlotRequest.cancel()
             self?.connectionPicker?.dismiss()
             self?.terminals.pausePolling()
         }
@@ -197,12 +198,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func connectQuickSlot(_ number: Int) {
-        quickSlotTask?.cancel()
-        quickSlotTask = Task { @MainActor in
-            await connections.reload()
-            guard !Task.isCancelled, panel.isVisible else { return }
-            _ = connections.connectQuickSlot(number)
-        }
+        // The connection action itself shows the panel and new tab.
+        quickSlotRequest.connect(.quickSlot(number)) {}
     }
 
     private func prepareForAuxiliaryWindow() {
@@ -217,7 +214,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        quickSlotTask?.cancel()
+        quickSlotRequest.cancel()
         Task { @MainActor in
             // Let tasks accepted by the last button/key action enter their queues.
             await Task.yield()

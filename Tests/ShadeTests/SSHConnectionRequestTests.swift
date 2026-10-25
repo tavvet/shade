@@ -2,7 +2,7 @@ import XCTest
 @testable import Shade
 
 @MainActor
-final class SSHConnectionPickerConnectionRequestTests: XCTestCase {
+final class SSHConnectionRequestTests: XCTestCase {
     func testQuickSlotWaitsForPendingReloadAndUsesRefreshedOrderAndHost() async {
         let fixture = Fixture()
         await fixture.controller.reload()
@@ -131,7 +131,7 @@ private final class Fixture {
     lazy var controller = SSHConnectionsController(store: store) { [unowned self] in
         connected.append($0)
     }
-    lazy var requests = SSHConnectionPickerConnectionRequest(controller: controller)
+    lazy var requests = SSHConnectionRequest(controller: controller)
     var connected: [SSHProfile] = []
     var completedCount = 0
 

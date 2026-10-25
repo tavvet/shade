@@ -88,7 +88,9 @@ final class PanelKeyboardController: PanelKeyHandler {
     private let preferences: any PreferencesStoring
     private let showConnections: @MainActor () -> Void
     private let connectQuickSlot: @MainActor (Int) -> Void
-    private let zoomOperations = ConfigurationTaskQueue()
+    /// The latest zoom; each one is a single store transaction, and the store
+    /// runs them in the order the key presses arrived.
+    private var lastZoom: Task<Void, Never>?
 
     init(
         terminals: TerminalsController,
@@ -106,7 +108,7 @@ final class PanelKeyboardController: PanelKeyHandler {
         terminals.noteUserInput()
     }
 
-    func waitForPendingSave() async { await zoomOperations.waitForAll() }
+    func waitForPendingSave() async { await lastZoom?.value }
 
     func panelHandleKey(_ event: NSEvent) -> Bool {
         guard let shortcut = PanelShortcutResolver.resolve(
@@ -178,16 +180,12 @@ final class PanelKeyboardController: PanelKeyHandler {
     }
 
     private func adjustFontSize(by delta: CGFloat?) {
-        Task { @MainActor in
+        let store = preferences
+        lastZoom = Task { @MainActor in
             do {
-                try await zoomOperations.run {
-                    let store = self.preferences
-                    let current = await store.reload().fontSize
-                    let target = Preferences.zoomedFontSize(from: current, delta: delta)
-                    guard target != current else { return }
-                    // The store announces the change to its observers.
-                    try await store.saveFontSize(target)
-                }
+                // Read, zoom and save happen in one store transaction; the
+                // store announces the new size to its observers.
+                try await store.updateFontSize { Preferences.zoomedFontSize(from: $0, delta: delta) }
             } catch {
                 NSLog("Shade: cannot save font size: %@", error.localizedDescription)
                 NSSound.beep()

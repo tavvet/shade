@@ -601,12 +601,12 @@ Sources/Shade/
 ├── SSHCommandBuilder.swift  Validated OpenSSH invocation construction
 ├── SSHConnectionLaunch.swift  SSH profile → generic terminal launch configuration
 ├── SSHConnectionPickerComponents.swift  Quick-picker rows and supporting states
-├── SSHConnectionPickerConnectionRequest.swift  Cancellable refresh-then-connect picker action
 ├── SSHConnectionPickerList.swift  Filtered rows with selection-aware scrolling
 ├── SSHConnectionPickerNavigation.swift  Picker key routing and bounded selection movement
 ├── SSHConnectionPickerSearch.swift  Tokenized saved-connection filtering
 ├── SSHConnectionPickerView.swift  Searchable keyboard-first connection picker
 ├── SSHConnectionPickerWindow.swift  Lazy child-panel presentation, focus and key routing
+├── SSHConnectionRequest.swift  Cancellable refresh-then-connect for picker and quick slots
 ├── SSHConnectionsController.swift  Shared connection library state and actions
 ├── SSHProfile.swift         Saved SSH profile model and validation
 ├── SSHProfileDisplay.swift  Shared saved-connection destination formatting

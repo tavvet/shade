@@ -95,6 +95,10 @@ An unrelated Settings edit therefore cannot silently undo a queued keyboard
 font zoom. A conflict rejects the stale edit; Settings shows the error and
 reloads the current values so the user can retry. This is an in-app stale-write
 check, not a cross-process transaction for UserDefaults.
+Keyboard zoom uses `updateFontSize`, which reads the stored size, applies the
+zoom step and saves inside one serialized write, so it always steps from the
+size currently in UserDefaults or `settings.json` and keeps other fields that
+another writer changed. A zoom that does not change the size writes nothing.
 The SSH editor and deletion confirmation additionally retain the original
 profile: reloading the controller does not authorize overwriting that profile's
 newer values with an older draft. Cancel and reopen a stale editor to retry.

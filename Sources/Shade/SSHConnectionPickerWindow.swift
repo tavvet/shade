@@ -9,7 +9,7 @@ import SwiftUI
 final class SSHConnectionPickerPresenter {
     private let controller: SSHConnectionsController
     private let openConnectionSettings: @MainActor () -> Void
-    private let connectionRequest: SSHConnectionPickerConnectionRequest
+    private let connectionRequest: SSHConnectionRequest
 
     private weak var parentPanel: DropdownPanel?
     private var pickerPanel: SSHConnectionPickerPanel?
@@ -20,7 +20,7 @@ final class SSHConnectionPickerPresenter {
     ) {
         self.controller = controller
         self.openConnectionSettings = openConnectionSettings
-        connectionRequest = SSHConnectionPickerConnectionRequest(controller: controller)
+        connectionRequest = SSHConnectionRequest(controller: controller)
     }
 
     func present(over parent: DropdownPanel) {

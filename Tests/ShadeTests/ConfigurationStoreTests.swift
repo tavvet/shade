@@ -76,6 +76,65 @@ final class ConfigurationStoreTests: XCTestCase {
         }
     }
 
+    func testPortableZoomReadsTheStoredSizeInItsOwnTransaction() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+        await configuration.waitForPendingAnnouncement()
+        let spy = ConfigurationChangeSpy()
+        NotificationCenter.default.addObserver(spy, selector: #selector(ConfigurationChangeSpy.changed),
+                                               name: .shadePreferencesChanged, object: configuration)
+        defer { NotificationCenter.default.removeObserver(spy) }
+
+        // Another Mac edits the file; this store has not reloaded it yet.
+        let settingsURL = try XCTUnwrap(configuration.directory).appendingPathComponent("settings.json")
+        var external = configuration.load()
+        external.fontSize = 25
+        external.visualBell.toggle()
+        try SettingsFileDocument.encode(external).write(to: settingsURL)
+
+        let stored = try await configuration.updateFontSize { $0 + 1 }
+        await configuration.waitForPendingAnnouncement()
+
+        XCTAssertEqual(stored, 26)
+        var expected = external
+        expected.fontSize = 26
+        XCTAssertEqual(try SettingsFileDocument.decode(Data(contentsOf: settingsURL)), expected)
+        XCTAssertEqual(configuration.load(), expected)
+        XCTAssertEqual(spy.count, 1)
+    }
+
+    func testLocalZoomReadsTheStoredSize() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        fixture.defaults.set(19, forKey: PreferencesStore.Key.fontSize)
+
+        let stored = try await configuration.updateFontSize { $0 + 1 }
+
+        XCTAssertEqual(stored, 20)
+        XCTAssertEqual(configuration.load().fontSize, 20)
+    }
+
+    func testZoomWithoutChangeIsNotAnnounced() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+        await configuration.waitForPendingAnnouncement()
+        let spy = ConfigurationChangeSpy()
+        NotificationCenter.default.addObserver(spy, selector: #selector(ConfigurationChangeSpy.changed),
+                                               name: .shadePreferencesChanged, object: configuration)
+        defer { NotificationCenter.default.removeObserver(spy) }
+
+        let stored = try await configuration.updateFontSize { $0 }
+        await configuration.waitForPendingAnnouncement()
+
+        XCTAssertEqual(stored, 17)
+        XCTAssertEqual(spy.count, 0)
+    }
+
     func testRejectedSaveIsNotAnnounced() async throws {
         let fixture = try ConfigurationFixture()
         defer { fixture.cleanup() }

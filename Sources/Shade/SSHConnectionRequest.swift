@@ -1,10 +1,12 @@
 import Foundation
 
-/// Resolves a picker action against the latest library, without tying its
-/// asynchronous lifetime to an AppKit window. Dismissal cancels the action,
-/// while the controller's shared reload may still finish for other consumers.
+/// Resolves a connection action — a picker selection or a panel quick slot —
+/// against the latest library, without tying its asynchronous lifetime to an
+/// AppKit window. A newer request or `cancel()` (picker dismissal, panel hide)
+/// drops the pending action, while the controller's shared reload may still
+/// finish for other consumers.
 @MainActor
-final class SSHConnectionPickerConnectionRequest {
+final class SSHConnectionRequest {
     enum Target {
         case profile(UUID)
         case quickSlot(Int)

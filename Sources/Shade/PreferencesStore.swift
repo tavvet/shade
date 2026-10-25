@@ -11,7 +11,10 @@ protocol PreferencesProviding {
 protocol PreferencesStoring: PreferencesProviding {
     func reload() async -> Preferences
     func save(_ preferences: Preferences, replacing previous: Preferences) async throws
-    func saveFontSize(_ fontSize: CGFloat) async throws
+    /// Reads the stored font size, applies `transform` and saves the result as
+    /// one operation; returns the stored size afterwards.
+    @discardableResult
+    func updateFontSize(_ transform: @escaping @Sendable (CGFloat) -> CGFloat) async throws -> CGFloat
     /// The object this store posts `.shadePreferencesChanged` with, or nil
     /// when it does not announce changes.
     var preferencesChangeSender: AnyObject? { get }
@@ -151,6 +154,14 @@ struct PreferencesStore {
     /// have been changed concurrently through `defaults` or another process.
     func saveFontSize(_ fontSize: CGFloat) {
         userDefaults.set(fontSize, forKey: Key.fontSize)
+    }
+
+    @discardableResult
+    func updateFontSize(_ transform: @escaping @Sendable (CGFloat) -> CGFloat) -> CGFloat {
+        let current = load().fontSize
+        let target = transform(current)
+        if target != current { saveFontSize(target) }
+        return target
     }
 
     enum Key {

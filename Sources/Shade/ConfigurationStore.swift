@@ -90,12 +90,7 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
                     let loaded = try await ConfigurationDisk.run {
                         let files = ConfigurationFiles(directory: directory)
                         let current = try files.load()
-                        let data = try SettingsFileDocument.encode(preferences)
-                        try ConfigurationFileIO.update(at: files.settingsURL) { url in
-                            let stored = try SettingsFileDocument.decode(ConfigurationFileIO.readUncoordinated(at: url))
-                            guard stored == previous else { throw ConfigurationError.changedExternally }
-                            try ConfigurationFileIO.replace(data, at: url)
-                        }
+                        try Self.writeSettings(preferences, replacing: previous, in: files)
                         return ConfigurationFiles.Snapshot(preferences: preferences, profiles: current.profiles)
                     }
                     self.accept(loaded)
@@ -110,21 +105,59 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         }
     }
 
-    func saveFontSize(_ fontSize: CGFloat) async throws {
+    /// Reads the stored font size, applies `transform` and saves the result in
+    /// one storage transaction, so keyboard zoom never computes from a value
+    /// read in an earlier transaction. Returns the stored size afterwards.
+    @discardableResult
+    func updateFontSize(
+        _ transform: @escaping @Sendable (CGFloat) -> CGFloat
+    ) async throws -> CGFloat {
         let revision = locationRevision
-        if directory == nil {
-            try await write {
-                guard revision == self.locationRevision else { throw ConfigurationError.changedExternally }
-                self.localPreferences.saveFontSize(fontSize)
+        return try await write {
+            guard revision == self.locationRevision else { throw ConfigurationError.changedExternally }
+            do {
+                if let directory = self.directory {
+                    let loaded = try await ConfigurationDisk.run {
+                        let files = ConfigurationFiles(directory: directory)
+                        let current = try files.load()
+                        var updated = current.preferences
+                        updated.fontSize = transform(current.preferences.fontSize)
+                        guard updated != current.preferences else { return current }
+                        try Self.writeSettings(updated, replacing: current.preferences, in: files)
+                        return ConfigurationFiles.Snapshot(preferences: updated, profiles: current.profiles)
+                    }
+                    self.accept(loaded)
+                    return loaded.preferences.fontSize
+                }
+                let current = self.localPreferences.load().fontSize
+                let target = transform(current)
+                if target != current { self.localPreferences.saveFontSize(target) }
                 self.accept(.init(preferences: self.localPreferences.load(), profiles: self.snapshot.profiles))
+                return target
+            } catch {
+                self.setProblem(error.localizedDescription)
+                throw error
             }
-            return
         }
-        let previous = await reload()
-        guard revision == locationRevision else { throw ConfigurationError.changedExternally }
-        var updated = previous
-        updated.fontSize = fontSize
-        try await save(updated, replacing: previous)
+    }
+
+    func saveFontSize(_ fontSize: CGFloat) async throws {
+        try await updateFontSize { _ in fontSize }
+    }
+
+    /// Replaces settings.json under file coordination, only if it still holds
+    /// `previous`; otherwise another writer changed it and the save is rejected.
+    nonisolated private static func writeSettings(
+        _ preferences: Preferences,
+        replacing previous: Preferences,
+        in files: ConfigurationFiles
+    ) throws {
+        let data = try SettingsFileDocument.encode(preferences)
+        try ConfigurationFileIO.update(at: files.settingsURL) { url in
+            let stored = try SettingsFileDocument.decode(ConfigurationFileIO.readUncoordinated(at: url))
+            guard stored == previous else { throw ConfigurationError.changedExternally }
+            try ConfigurationFileIO.replace(data, at: url)
+        }
     }
 
     func saveProfiles(_ profiles: [SSHProfile], replacing previous: [SSHProfile]) async throws {
@@ -231,10 +264,12 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         await lastWrite?.value
     }
 
-    private func write(_ operation: @escaping @MainActor () async throws -> Void) async throws {
+    private func write<Value: Sendable>(
+        _ operation: @escaping @MainActor () async throws -> Value
+    ) async throws -> Value {
         let task = operations.enqueue(operation)
         lastWrite = Task { _ = await task.result }
-        try await task.value
+        return try await task.value
     }
 
     private func readCurrent() async throws -> ConfigurationFiles.Snapshot {
