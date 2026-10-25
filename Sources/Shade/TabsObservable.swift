@@ -26,12 +26,12 @@ final class TabsObservable: ObservableObject {
 
     private weak var controller: TerminalsController?
 
-    /// Takes the controller's `onTabsChanged` slot: it is the only consumer of
-    /// tab changes and refreshes synchronously on the main actor.
+    /// Refreshes synchronously on every tab change until this projection is
+    /// released; other observers of the same controller are unaffected.
     init(controller: TerminalsController) {
         self.controller = controller
         sync()
-        controller.onTabsChanged = { [weak self] in self?.sync() }
+        controller.observeTabs(by: self) { $0.sync() }
     }
 
     private func sync() {

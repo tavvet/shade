@@ -71,15 +71,11 @@ final class TerminalSession {
         presentation.displayTitle(remoteIndicator: remoteIndicator, cwd: cwd)
     }
 
-    private func notifyPresentationChanged() {
-        onPresentationChange?()
-    }
-
     private func contextDidChange(_ change: TerminalContextTracker.Change) {
         // CWD only participates in the automatic title when the shell has not
         // supplied an OSC title. Git and remote changes always affect tab/badge UI.
         if change == .cwd, !presentation.oscTitle.isEmpty { return }
-        notifyPresentationChanged()
+        onPresentationChange?()
     }
 
     /// Sets or clears the user-assigned tab name. Whitespace is trimmed; an empty
@@ -101,7 +97,7 @@ final class TerminalSession {
         cursorStyle = TerminalCursorStyleTracker(applied: options.cursorStyle)
         scrollbackRows = options.scrollback
         presentation = TerminalPresentationState(shellName: processController.shellName)
-        presentation.onChange = { [weak self] in self?.notifyPresentationChanged() }
+        presentation.onChange = { [weak self] in self?.onPresentationChange?() }
         if let title = configuration.title {
             presentation.setUserTitle(title)
         }

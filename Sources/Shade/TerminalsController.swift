@@ -16,10 +16,10 @@ final class TerminalsController {
     /// coordinator posts the user notification.
     var onCommandFinish: ((TimeInterval, Int?, String) -> Void)?
 
-    /// Invoked when the tab set or selection changes, or when anything a tab
-    /// shows changes (title, status dot, git badge). TabsObservable uses it to
-    /// refresh the SwiftUI projection; it replaces a global notification.
-    var onTabsChanged: (() -> Void)?
+    /// Called after the tab set or selection changes, or when anything a tab
+    /// shows changes (title, status dot, git badge). Each entry returns false
+    /// once its owner is gone, so it is dropped on the next change.
+    private var tabsObservers: [() -> Bool] = []
 
     private lazy var contextPoller = TerminalContextPoller { [weak self] in
         self?.pollOnce()
@@ -108,7 +108,7 @@ final class TerminalsController {
             self?.onCommandFinish?(duration, exitCode, cwd)
         }
         session.onPresentationChange = { [weak self] in
-            self?.onTabsChanged?()
+            self?.notifyTabsObservers()
         }
         session.shouldFlashBell = { [weak self] in
             self?.preferences.load().visualBell ?? false
@@ -173,7 +173,28 @@ final class TerminalsController {
         // cooldown → skip).
         session.tabActivated()
         viewHost.focus(v)
-        onTabsChanged?()
+        notifyTabsObservers()
+    }
+
+    /// Calls `handler` with `owner` after every tab change for as long as
+    /// `owner` is alive. Several observers can register; none replaces another.
+    /// The handler receives the owner, so it need not capture it.
+    func observeTabs<Owner: AnyObject>(
+        by owner: Owner,
+        _ handler: @escaping (Owner) -> Void
+    ) {
+        tabsObservers.append { [weak owner] in
+            guard let owner else { return false }
+            handler(owner)
+            return true
+        }
+    }
+
+    private func notifyTabsObservers() {
+        // Observers registered while this change is delivered keep their place.
+        let current = tabsObservers
+        tabsObservers = []
+        tabsObservers = current.filter { $0() } + tabsObservers
     }
 
     func focusActiveSession() {
@@ -192,7 +213,7 @@ final class TerminalsController {
     }
 
     /// Assigns (or clears, when `name` is empty/whitespace) the user title of the
-    /// tab at `index`. The session reports the change through `onTabsChanged`.
+    /// tab at `index`. The session reports the change to the tab observers.
     func renameSession(at index: Int, to name: String) {
         tabs.session(at: index)?.setUserTitle(name)
     }
