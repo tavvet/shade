@@ -1,5 +1,6 @@
 import AppKit
 import SwiftTerm
+import ShadeCore
 
 /// Coordinates the process, context, presentation and prompt-history components
 /// that make up one terminal tab.

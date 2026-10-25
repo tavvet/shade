@@ -1,4 +1,5 @@
 import SwiftUI
+import ShadeCore
 
 struct SSHConnectionPickerView: View {
     @ObservedObject var controller: SSHConnectionsController

@@ -1,8 +1,8 @@
 import Foundation
 
 /// Adapts a validated SSH profile to the generic terminal-launch contract.
-enum SSHConnectionLaunch {
-    static func configuration(
+public enum SSHConnectionLaunch {
+    public static func configuration(
         for profile: SSHProfile,
         homeDirectory: String = NSHomeDirectory()
     ) throws -> TerminalLaunchConfiguration {

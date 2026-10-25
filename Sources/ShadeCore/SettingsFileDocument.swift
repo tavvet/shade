@@ -1,10 +1,11 @@
 import Foundation
 
-struct SettingsFileDocument: Codable {
+/// The versioned `settings.json` document holding a `Preferences` snapshot.
+public struct SettingsFileDocument: Codable {
     let version: Int
     let preferences: Preferences
 
-    static func decode(_ data: Data) throws -> Preferences {
+    public static func decode(_ data: Data) throws -> Preferences {
         let decoder = JSONDecoder()
         let header = try decoder.decode(Header.self, from: data)
         let migrated: Data
@@ -28,7 +29,7 @@ struct SettingsFileDocument: Codable {
         return document.preferences
     }
 
-    static func encode(_ preferences: Preferences) throws -> Data {
+    public static func encode(_ preferences: Preferences) throws -> Data {
         try validate(preferences)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

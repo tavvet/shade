@@ -1,5 +1,6 @@
 import AppKit
 import SwiftTerm
+import ShadeCore
 
 /// Applies user appearance preferences and transient visual effects to a
 /// SwiftTerm view without making the session coordinator own rendering details.

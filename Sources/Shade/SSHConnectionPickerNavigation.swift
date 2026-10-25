@@ -1,4 +1,5 @@
 import AppKit
+import ShadeCore
 
 enum SSHConnectionPickerSelectionDirection: Equatable {
     case up

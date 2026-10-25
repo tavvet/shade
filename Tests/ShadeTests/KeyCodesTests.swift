@@ -1,6 +1,7 @@
 import XCTest
 import Carbon.HIToolbox
 @testable import Shade
+@testable import ShadeCore
 
 final class KeyCodesTests: XCTestCase {
     func testControlMaskedByteForR() {

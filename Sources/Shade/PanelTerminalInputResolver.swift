@@ -1,4 +1,5 @@
 import AppKit
+import ShadeCore
 
 enum PanelSelectionDirection: Equatable {
     case left

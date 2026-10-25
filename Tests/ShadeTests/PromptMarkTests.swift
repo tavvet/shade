@@ -1,6 +1,7 @@
 import XCTest
 import SwiftTerm
 @testable import Shade
+@testable import ShadeCore
 
 final class PromptMarkTests: XCTestCase {
     // MARK: - Pure payload parsing

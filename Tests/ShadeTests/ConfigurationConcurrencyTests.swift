@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 @MainActor
 final class ConfigurationConcurrencyTests: XCTestCase {

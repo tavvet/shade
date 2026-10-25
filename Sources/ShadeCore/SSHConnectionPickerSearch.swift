@@ -1,10 +1,10 @@
 import Foundation
 
 /// Stable token matching for the quick connection picker.
-enum SSHConnectionPickerSearch {
+public enum SSHConnectionPickerSearch {
     private static let invariantLocale = Locale(identifier: "en_US_POSIX")
 
-    static func matches(
+    public static func matches(
         _ profiles: [SSHProfile],
         query: String,
         locale: Locale = .current

@@ -13,9 +13,17 @@ let package = Package(
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.4.0"),
     ],
     targets: [
+        // UI-free logic: models, parsers, process/SSH command construction and
+        // settings documents. It must not import AppKit, SwiftUI or SwiftTerm,
+        // so the compiler enforces that boundary.
+        .target(
+            name: "ShadeCore",
+            path: "Sources/ShadeCore"
+        ),
         .executableTarget(
             name: "Shade",
             dependencies: [
+                "ShadeCore",
                 .product(name: "SwiftTerm", package: "SwiftTerm"),
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ],
@@ -23,7 +31,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ShadeTests",
-            dependencies: ["Shade"],
+            dependencies: ["Shade", "ShadeCore"],
             path: "Tests/ShadeTests"
         ),
     ]

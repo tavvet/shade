@@ -1,5 +1,6 @@
 import Foundation
 @testable import Shade
+@testable import ShadeCore
 
 /// Fixed preferences for tests, so no test reads the app's own configuration.
 @MainActor

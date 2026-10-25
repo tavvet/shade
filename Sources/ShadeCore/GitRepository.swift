@@ -3,17 +3,17 @@ import Foundation
 /// Locates Git repository metadata and reads the current branch without
 /// spawning a subprocess. Keeping these filesystem-only operations together
 /// lets status refreshes reuse a known `.git` directory.
-enum GitRepository {
+public enum GitRepository {
     /// Returns the branch name, or a 7-character SHA prefix for detached HEAD,
     /// or nil when the working directory is not inside a Git repository.
-    static func branch(forCwd cwd: String) -> String? {
+    public static func branch(forCwd cwd: String) -> String? {
         guard let gitDir = findGitDir(from: cwd) else { return nil }
         return branchName(inGitDir: gitDir)
     }
 
     /// Reads the current branch from `<gitDir>/HEAD` for callers that already
     /// know the repository metadata directory.
-    static func branchName(inGitDir gitDir: String) -> String? {
+    public static func branchName(inGitDir gitDir: String) -> String? {
         let head = (gitDir as NSString).appendingPathComponent("HEAD")
         guard let content = try? String(contentsOfFile: head, encoding: .utf8) else { return nil }
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -29,7 +29,7 @@ enum GitRepository {
 
     /// Walks up from `path` looking for a `.git` directory or worktree pointer
     /// file and returns the resolved metadata directory.
-    static func findGitDir(from path: String) -> String? {
+    public static func findGitDir(from path: String) -> String? {
         let fileManager = FileManager.default
         var current = (path as NSString).standardizingPath
         while !current.isEmpty, current != "/" {

@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 @MainActor
 final class PanelKeyboardZoomTests: XCTestCase {

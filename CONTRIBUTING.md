@@ -97,8 +97,12 @@ obvious fixes can skip straight to the implementation step.
   `ConfigurationStore.shared` themselves. Update the portable document version/migration when
   changing its schema; see [Configuration storage](docs/configuration-storage.md).
   Structured collections such as SSH profiles retain their own model and codec.
-- Pure logic (parsers, models, layout math) belongs in a module that's already
-  covered by `Tests/ShadeTests/` — add a test alongside the change.
+- Pure logic (parsers, models, command construction, settings documents)
+  belongs in the `ShadeCore` library target, which must not import AppKit,
+  SwiftUI, Cocoa, SwiftTerm or KeyboardShortcuts; `ShadeCoreBoundaryTests`
+  enforces this. Declarations the app uses are `public`, and AppKit
+  projections of core models (for example `Preferences+AppKit.swift`) stay in
+  the app target. Add a test in `Tests/ShadeTests/` alongside the change.
 
 ## Reporting bugs
 

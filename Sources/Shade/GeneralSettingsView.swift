@@ -1,4 +1,5 @@
 import SwiftUI
+import ShadeCore
 
 struct GeneralSettingsView: View {
     @ObservedObject var model: SettingsModel

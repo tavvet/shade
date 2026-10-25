@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ShadeCore
 
 struct ConfigurationSettingsView: View {
     @ObservedObject var configuration: ConfigurationStore

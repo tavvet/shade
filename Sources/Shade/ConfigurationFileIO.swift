@@ -1,4 +1,5 @@
 import Foundation
+import ShadeCore
 
 enum ConfigurationFileIO {
     static let maximumFileSize = 5 * 1_024 * 1_024

@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import ShadeCore
 
 /// Owns the transient interaction state for the Connections settings page.
 /// Persisted profiles remain the responsibility of `SSHConnectionsController`;

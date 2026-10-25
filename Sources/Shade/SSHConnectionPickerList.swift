@@ -1,4 +1,5 @@
 import SwiftUI
+import ShadeCore
 
 struct SSHConnectionPickerList: View {
     let matches: [SSHProfile]

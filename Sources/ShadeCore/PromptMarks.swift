@@ -7,7 +7,7 @@ import Foundation
 ///   ESC ] 133 ; D [;exit] ST — command finished
 /// The row is stored in scroll-invariant coordinates so the mark remains
 /// addressable after the buffer rotates old lines out of scrollback.
-struct PromptMark: Equatable {
+public struct PromptMark: Equatable {
     private enum SemanticPromptKind: Equatable {
         case initial
         case right
@@ -15,14 +15,14 @@ struct PromptMark: Equatable {
         case secondary
     }
 
-    enum Kind: Equatable {
+    public enum Kind: Equatable {
         case promptStart
         case promptEnd
         case commandStart
         case commandDone(exitCode: Int?)
     }
-    let kind: Kind
-    let row: Int
+    public let kind: Kind
+    public let row: Int
 
     /// Parse a single OSC 133 payload — the bytes between `OSC 133 ;` and
     /// the terminator. First semicolon-separated token must be `A`/`B`/`C`/`D`;
@@ -30,7 +30,7 @@ struct PromptMark: Equatable {
     /// understood by SwiftTerm are validated here too, so Shade never records
     /// a sequence that the terminal deliberately ignored. Unknown extension
     /// options remain forward-compatible and are skipped.
-    static func parse(payload: ArraySlice<UInt8>, row: Int) -> PromptMark? {
+    public static func parse(payload: ArraySlice<UInt8>, row: Int) -> PromptMark? {
         guard !payload.isEmpty,
               let text = String(bytes: payload, encoding: .utf8) else { return nil }
         let parts = text.split(separator: ";", omittingEmptySubsequences: false)
@@ -91,7 +91,7 @@ extension PromptMark {
     /// command (CSI 2J + cursor home) can record new marks at lower row
     /// numbers than older entries, so chronological order isn't always
     /// row-sorted.
-    static func previousPromptStart(before cutoff: Int, in marks: [PromptMark]) -> PromptMark? {
+    public static func previousPromptStart(before cutoff: Int, in marks: [PromptMark]) -> PromptMark? {
         marks
             .filter { mark in
                 guard case .promptStart = mark.kind else { return false }
@@ -102,7 +102,7 @@ extension PromptMark {
 
     /// Lowest-row `.promptStart` mark with `row > cutoff`. Returns nil if no
     /// such mark exists.
-    static func nextPromptStart(after cutoff: Int, in marks: [PromptMark]) -> PromptMark? {
+    public static func nextPromptStart(after cutoff: Int, in marks: [PromptMark]) -> PromptMark? {
         marks
             .filter { mark in
                 guard case .promptStart = mark.kind else { return false }
@@ -120,7 +120,7 @@ extension PromptMark {
     /// confuse the picker. An unmatched D (e.g. empty Enter in zsh) does not
     /// change the previous completed pair. Returns nil if there's no completed
     /// pair or the latest completed command produced no output (C.row == D.row).
-    static func lastCommandOutputRange(in marks: [PromptMark]) -> Range<Int>? {
+    public static func lastCommandOutputRange(in marks: [PromptMark]) -> Range<Int>? {
         var commandStart: Int?
         var completedOutput: Range<Int>?
         for mark in marks {

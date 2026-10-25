@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 @MainActor
 final class SSHConnectionPickerScrollingTests: XCTestCase {

@@ -1,5 +1,6 @@
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 final class CommandNotificationCoordinatorTests: XCTestCase {
     func testPanelShowRequestsAuthorizationOnlyWhenNotificationsAreEnabled() async {

@@ -2,12 +2,12 @@ import Foundation
 
 /// Describes how a new terminal tab should begin without coupling terminal
 /// lifecycle code to a particular feature such as SSH or session restore.
-struct TerminalLaunchConfiguration: Equatable, Sendable {
-    var startupDirectory: String?
-    var title: String?
-    var initialCommand: ProcessInvocation?
+public struct TerminalLaunchConfiguration: Equatable, Sendable {
+    public var startupDirectory: String?
+    public var title: String?
+    public var initialCommand: ProcessInvocation?
 
-    init(
+    public init(
         startupDirectory: String? = nil,
         title: String? = nil,
         initialCommand: ProcessInvocation? = nil

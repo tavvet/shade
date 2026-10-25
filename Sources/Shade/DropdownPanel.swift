@@ -1,4 +1,5 @@
 import AppKit
+import ShadeCore
 
 /// Borderless panel that slides down from the top of the screen.
 /// Becomes the key window when shown so keyboard shortcuts route to us.

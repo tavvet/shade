@@ -1,5 +1,6 @@
 import Foundation
 import SwiftTerm
+import ShadeCore
 
 /// Owns prompt coordinates and command timing using copied SwiftTerm values.
 struct TerminalPromptHistory {

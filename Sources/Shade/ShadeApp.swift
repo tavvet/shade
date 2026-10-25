@@ -1,5 +1,6 @@
 import AppKit
 import KeyboardShortcuts
+import ShadeCore
 
 @main
 enum ShadeApp {

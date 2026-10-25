@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import ShadeCore
 
 /// The device-local location selects a backend. Runtime readers use the last
 /// valid snapshot; explicit refreshes and mutations perform disk I/O off-main.

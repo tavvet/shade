@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 final class PanelShortcutResolverTests: XCTestCase {
     func testZoomShortcutsUsePhysicalKeys() {

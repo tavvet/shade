@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ShadeCore
 
 /// String-backed editor state keeps partially entered values out of the domain
 /// model until Save, where the same normalization rules used by persistence run.

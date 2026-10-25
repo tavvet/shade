@@ -1,42 +1,41 @@
-import AppKit
 import Carbon.HIToolbox
 
 /// Maps macOS virtual key codes for letter rows on a US-ANSI layout to lowercase ASCII.
 /// Used so that Control+R always sends 0x12 to the shell regardless of the user's input source
 /// (SwiftTerm otherwise applies the control mask to whatever character the current layout
 /// produces, which yields garbage on Cyrillic/Greek/etc).
-enum KeyCodes {
+public enum KeyCodes {
     // Named physical keyCodes for the non-letter keys Shade handles. Values
     // come from Carbon's HIToolbox so they stay authoritative; we just wrap
     // them in `UInt16` (the type `NSEvent.keyCode` exposes) and a clearer
     // name. Letter keys go through `asciiLetterForKeyCode` below — letters
     // matter only when paired with a modifier, and the dict already handles
     // the layout-agnostic lookup we need at those call sites.
-    static let tab: UInt16 = UInt16(kVK_Tab)
-    static let delete: UInt16 = UInt16(kVK_Delete)
-    static let home: UInt16 = UInt16(kVK_Home)
-    static let end: UInt16 = UInt16(kVK_End)
-    static let leftArrow: UInt16 = UInt16(kVK_LeftArrow)
-    static let rightArrow: UInt16 = UInt16(kVK_RightArrow)
-    static let upArrow: UInt16 = UInt16(kVK_UpArrow)
-    static let downArrow: UInt16 = UInt16(kVK_DownArrow)
-    static let pageUp: UInt16 = UInt16(kVK_PageUp)
-    static let pageDown: UInt16 = UInt16(kVK_PageDown)
+    public static let tab: UInt16 = UInt16(kVK_Tab)
+    public static let delete: UInt16 = UInt16(kVK_Delete)
+    public static let home: UInt16 = UInt16(kVK_Home)
+    public static let end: UInt16 = UInt16(kVK_End)
+    public static let leftArrow: UInt16 = UInt16(kVK_LeftArrow)
+    public static let rightArrow: UInt16 = UInt16(kVK_RightArrow)
+    public static let upArrow: UInt16 = UInt16(kVK_UpArrow)
+    public static let downArrow: UInt16 = UInt16(kVK_DownArrow)
+    public static let pageUp: UInt16 = UInt16(kVK_PageUp)
+    public static let pageDown: UInt16 = UInt16(kVK_PageDown)
     // Number-row keys for font zoom (⌘= / ⌘− / ⌘0). Matched by physical
     // position so they work on any layout.
-    static let equal: UInt16 = UInt16(kVK_ANSI_Equal)
-    static let minus: UInt16 = UInt16(kVK_ANSI_Minus)
-    static let zero: UInt16 = UInt16(kVK_ANSI_0)
+    public static let equal: UInt16 = UInt16(kVK_ANSI_Equal)
+    public static let minus: UInt16 = UInt16(kVK_ANSI_Minus)
+    public static let zero: UInt16 = UInt16(kVK_ANSI_0)
 
     /// Number-row quick slots stay stable across keyboard layouts, just like
     /// Shade's letter shortcuts below.
-    static let digitForKeyCode: [UInt16: Int] = [
+    public static let digitForKeyCode: [UInt16: Int] = [
         UInt16(kVK_ANSI_1): 1, UInt16(kVK_ANSI_2): 2, UInt16(kVK_ANSI_3): 3,
         UInt16(kVK_ANSI_4): 4, UInt16(kVK_ANSI_5): 5, UInt16(kVK_ANSI_6): 6,
         UInt16(kVK_ANSI_7): 7, UInt16(kVK_ANSI_8): 8, UInt16(kVK_ANSI_9): 9,
     ]
 
-    static let asciiLetterForKeyCode: [UInt16: Character] = [
+    public static let asciiLetterForKeyCode: [UInt16: Character] = [
         UInt16(kVK_ANSI_A): "a", UInt16(kVK_ANSI_B): "b", UInt16(kVK_ANSI_C): "c",
         UInt16(kVK_ANSI_D): "d", UInt16(kVK_ANSI_E): "e", UInt16(kVK_ANSI_F): "f",
         UInt16(kVK_ANSI_G): "g", UInt16(kVK_ANSI_H): "h", UInt16(kVK_ANSI_I): "i",
@@ -50,7 +49,7 @@ enum KeyCodes {
 
     /// Translate a letter keyCode under the Control modifier into the canonical control byte
     /// (Ctrl+A = 0x01, Ctrl+R = 0x12, etc).
-    static func controlByte(forKeyCode keyCode: UInt16) -> UInt8? {
+    public static func controlByte(forKeyCode keyCode: UInt16) -> UInt8? {
         guard let letter = asciiLetterForKeyCode[keyCode],
               let ascii = letter.asciiValue else { return nil }
         return ascii - 0x60

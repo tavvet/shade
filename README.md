@@ -569,68 +569,73 @@ Sources/Shade/
 ├── ConnectionsSettingsViewState.swift  Selection, editor and operation presentation state
 ├── DiagnosticsWindow.swift  Read-only state snapshot, copy-paste for bug reports
 ├── DropdownPanel.swift      NSPanel lifecycle, slide animation and event dispatch
-├── GitInfo.swift            Git working-tree status aggregation and parsing
-├── GitProcessRunner.swift   Cancellation-aware asynchronous Git subprocesses
 ├── GitRefreshCoordinator.swift  Event-driven, debounced git-status scheduler
-├── GitRepository.swift      Filesystem-only repository discovery and HEAD reading
 ├── Hotkeys.swift            KeyboardShortcuts.Name declarations (toggleShade)
 ├── InputSourceBadge.swift   Compact read-only tab-bar input-source marker
 ├── InputSourceMonitor.swift Event-driven macOS input-source observation and projection
-├── KeyCodes.swift           Layout-agnostic keyCode → ASCII mapping
 ├── PanelInputRouting.swift  Responder-chain guard + panel input contract
 ├── PanelKeyboardController.swift  Panel shortcuts, terminal input forwarding, cut/clear
 ├── PanelTerminalInputResolver.swift  Pure physical-key → terminal input translation
-├── Preferences.swift        Settings value model + appearance/layout projections
+├── Preferences+AppKit.swift  Screen, frame, font, color and blur projections of Preferences
 ├── PreferencesChangeAnnouncer.swift  Coalesced, post-transaction preference-change notices
 ├── PreferencesStore.swift   UserDefaults keys, validation, loading and persistence
 ├── ProcessCwd.swift         libproc-based CWD lookup for shell processes
 ├── ProcessTree.swift        Finds foreground ssh/mosh clients in the shell's process tree
-├── PromptMarks.swift        OSC 133 prompt-mark parsing + jump/copy helpers
 ├── AppearanceSettingsView.swift  Appearance settings form
 ├── GeneralSettingsView.swift  Window, startup and behavior settings form
 ├── NotificationSettingsView.swift  Command-notification settings form
 ├── SettingsModel.swift      Observable settings snapshot + live-apply coordination
-├── SettingsFileDocument.swift  Versioned portable preferences JSON and validation
 ├── SettingsSystemServices.swift  Login-item and notification authorization adapters
 ├── SettingsView.swift       Settings sidebar navigation and page switching
 ├── SettingsWindow.swift     Settings NSWindowController
 ├── ShortcutsSettingsView.swift  Global hotkey and keyboard reference form
-├── ProcessInvocation.swift  Structured executable and argument boundaries
 ├── TerminalSettingsView.swift  Shell, cursor and feedback settings form
 ├── ShellIntegration.swift   Opt-in ZDOTDIR injection — richer zsh completion + OSC 133
-├── SSHCommandBuilder.swift  Validated OpenSSH invocation construction
-├── SSHConnectionLaunch.swift  SSH profile → generic terminal launch configuration
 ├── SSHConnectionPickerComponents.swift  Quick-picker rows and supporting states
 ├── SSHConnectionPickerList.swift  Filtered rows with selection-aware scrolling
 ├── SSHConnectionPickerNavigation.swift  Picker key routing and bounded selection movement
-├── SSHConnectionPickerSearch.swift  Tokenized saved-connection filtering
 ├── SSHConnectionPickerView.swift  Searchable keyboard-first connection picker
 ├── SSHConnectionPickerWindow.swift  Lazy child-panel presentation, focus and key routing
 ├── SSHConnectionRequest.swift  Cancellable refresh-then-connect for picker and quick slots
 ├── SSHConnectionsController.swift  Shared connection library state and actions
-├── SSHProfile.swift         Saved SSH profile model and validation
-├── SSHProfileDisplay.swift  Shared saved-connection destination formatting
 ├── SSHProfileEditor.swift   Add/edit connection sheet and draft parsing
 ├── SSHProfileStore.swift    Private versioned JSON persistence
 ├── TabBar.swift             Tab-strip layout, scrolling, input source and new-tab action
 ├── TabChip.swift            Individual tab rendering and inline rename state
 ├── TabsObservable.swift     Observable tab/session projection for SwiftUI
 ├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering
-├── TerminalCommandSequence.swift  One-PTY command → login-shell wrapper
 ├── TerminalContextPoller.swift  Visibility-scoped repeating context refresh
 ├── TerminalContextTracker.swift  CWD, Git status/branch and remote-session masking
 ├── TerminalKeyboardSelection.swift  Keyboard-driven buffer selection
 ├── TerminalLinkOpener.swift  Testable link/path resolution + system opening
-├── TerminalLaunchConfiguration.swift  Generic startup directory/title/command descriptor
 ├── TerminalPresentationState.swift  Tab titles, activity and command-status state
 ├── TerminalProcessController.swift  SwiftTerm view, shell lifecycle and callback wiring
 ├── TerminalPromptHistory.swift  OSC 133 state, command timing, prompt navigation/output
 ├── TerminalPanelContentController.swift  Panel view hierarchy, tabs, badge and blur
 ├── TerminalSession.swift    Coordinator for one terminal tab
-├── TerminalTabStore.swift   Pure multi-tab collection and selection state
 ├── TerminalViewAdapters.swift   SwiftTerm delegate proxy + activity/drop-enabled view
 ├── TerminalViewHost.swift   Active terminal view hosting, constraints and focus
 └── TerminalsController.swift Coordinates multi-tab session lifecycle and side effects
+
+Sources/ShadeCore/         UI-free library: no AppKit, SwiftUI or SwiftTerm imports
+├── CoalescedMainSignal.swift Lock-protected coalescing of background signals into main-actor calls
+├── ConfigurationError.swift  Configuration document and storage errors
+├── GitInfo.swift             Git working-tree status aggregation and parsing
+├── GitProcessRunner.swift    Cancellation-aware asynchronous Git subprocesses
+├── GitRepository.swift       Filesystem-only repository discovery and HEAD reading
+├── KeyCodes.swift            Layout-agnostic keyCode → ASCII mapping
+├── Preferences.swift         Settings value model, ranges, zoom steps and RRGGBB colors
+├── ProcessInvocation.swift   Structured executable and argument boundaries
+├── PromptMarks.swift         OSC 133 prompt-mark parsing + jump/copy helpers
+├── SSHCommandBuilder.swift   Validated OpenSSH invocation construction
+├── SSHConnectionLaunch.swift SSH profile → generic terminal launch configuration
+├── SSHConnectionPickerSearch.swift Tokenized saved-connection filtering
+├── SSHProfile.swift          Saved SSH profile model and validation
+├── SSHProfileDisplay.swift   Shared saved-connection destination formatting
+├── SettingsFileDocument.swift Versioned portable preferences JSON and validation
+├── TerminalCommandSequence.swift One-PTY command → login-shell wrapper
+├── TerminalLaunchConfiguration.swift Generic startup directory/title/command descriptor
+└── TerminalTabStore.swift    Pure multi-tab collection and selection state
 ```
 
 Key design choices:
@@ -638,6 +643,10 @@ Key design choices:
 - **SwiftPM, not Xcode project.** Sources, `Package.swift`, `Resources/Info.plist`,
   and a small `Makefile` package everything into a bundle. Source-only,
   plain text, easy to grep / diff.
+- **UI-free core library.** `ShadeCore` holds models, parsers, SSH/process
+  command construction and settings documents without AppKit, SwiftUI or
+  SwiftTerm, so the compiler keeps UI code out of that logic. The app target
+  links it statically and adds the AppKit projections.
 - **Borderless `NSPanel`**, no `.nonactivatingPanel`. The app activates fully
   when the panel is shown so that `⌘`-shortcuts route to us instead of
   leaking to whichever browser was last focused.
@@ -718,6 +727,7 @@ shade/
 ├── Tests/                   Unit/view tests and isolated packaging failure fixtures
 ├── docs/                    App packaging and dependency maintenance notes
 ├── integrations/            Opt-in shell bits: OSC 133 snippets (zsh/bash/fish) + zsh ZDOTDIR shim
-├── Sources/Shade/           Swift sources (see Architecture)
+├── Sources/Shade/           App target: AppKit/SwiftUI/SwiftTerm code (see Architecture)
+├── Sources/ShadeCore/       UI-free library: models, parsers, SSH/process commands
 └── README.md                this file
 ```

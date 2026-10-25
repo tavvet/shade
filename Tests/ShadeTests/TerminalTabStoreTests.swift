@@ -1,5 +1,6 @@
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 final class TerminalTabStoreTests: XCTestCase {
     func testAppendAndSelectExposeActiveSession() {

@@ -1,5 +1,6 @@
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 final class SSHProfileEditorTests: XCTestCase {
     func testDraftRoundTripParsesPortAndNormalizesFields() throws {

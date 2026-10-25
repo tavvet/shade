@@ -1,4 +1,5 @@
 import SwiftUI
+import ShadeCore
 
 struct TerminalSettingsView: View {
     @ObservedObject var model: SettingsModel

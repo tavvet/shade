@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ShadeCore
 
 struct ConnectionsSettingsList: View {
     let profiles: [SSHProfile]

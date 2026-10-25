@@ -1,18 +1,18 @@
 import Foundation
 
-struct GitStatus: Equatable, Sendable {
-    var filesChanged: Int
-    var insertions: Int
-    var deletions: Int
+public struct GitStatus: Equatable, Sendable {
+    public var filesChanged: Int
+    public var insertions: Int
+    public var deletions: Int
 
-    static let empty = GitStatus(filesChanged: 0, insertions: 0, deletions: 0)
-    var isClean: Bool { filesChanged == 0 && insertions == 0 && deletions == 0 }
+    public static let empty = GitStatus(filesChanged: 0, insertions: 0, deletions: 0)
+    public var isClean: Bool { filesChanged == 0 && insertions == 0 && deletions == 0 }
 }
 
 /// Distinguishes an authoritative Git result from a transient command failure.
 /// A failed refresh must not make the UI replace its last good status with a
 /// clean or missing state.
-enum GitStatusRefreshResult: Equatable, Sendable {
+public enum GitStatusRefreshResult: Equatable, Sendable {
     case status(GitStatus)
     case notRepository
     case failed
@@ -20,18 +20,18 @@ enum GitStatusRefreshResult: Equatable, Sendable {
 
 /// Builds a working-tree status from Git porcelain output. Repository discovery
 /// and process execution live in dedicated collaborators.
-enum GitInfo {
-    typealias CommandRunner = @Sendable ([String]) async -> String?
+public enum GitInfo {
+    public typealias CommandRunner = @Sendable ([String]) async -> String?
 
     /// Async variant used by the UI refresh coordinator. Cancellation terminates
     /// any in-flight `git` subprocess so rapid tab/cwd changes do not pile up work.
-    static func statusCancellable(forCwd cwd: String) async -> GitStatusRefreshResult {
+    public static func statusCancellable(forCwd cwd: String) async -> GitStatusRefreshResult {
         await statusCancellable(forCwd: cwd, runGit: GitProcessRunner.run)
     }
 
     /// Runner-injected variant keeps command-failure classification directly
     /// testable without depending on mutable global Git configuration.
-    static func statusCancellable(
+    public static func statusCancellable(
         forCwd cwd: String,
         runGit: CommandRunner
     ) async -> GitStatusRefreshResult {
@@ -68,7 +68,7 @@ enum GitInfo {
     }
 
     /// Pulls the integer that immediately precedes `keyword` in a shortstat-like line.
-    static func firstNumber(in text: String, before keyword: String) -> Int? {
+    public static func firstNumber(in text: String, before keyword: String) -> Int? {
         guard let kwRange = text.range(of: keyword) else { return nil }
         let prefix = text[..<kwRange.lowerBound]
         var digits = ""

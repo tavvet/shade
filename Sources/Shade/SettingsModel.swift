@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ShadeCore
 
 /// Observable editing state for the settings window.
 ///

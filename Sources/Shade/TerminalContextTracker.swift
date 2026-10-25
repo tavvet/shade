@@ -1,4 +1,5 @@
 import Foundation
+import ShadeCore
 
 /// Minimal scheduling surface used by terminal context tracking. Keeping the
 /// policy behind a protocol makes CWD/Git/remote state transitions testable

@@ -1,9 +1,9 @@
 import Foundation
 
-enum SSHCommandBuilder {
-    static let executable = "/usr/bin/ssh"
+public enum SSHCommandBuilder {
+    public static let executable = "/usr/bin/ssh"
 
-    static func invocation(
+    public static func invocation(
         for profile: SSHProfile,
         homeDirectory: String = NSHomeDirectory()
     ) throws -> ProcessInvocation {

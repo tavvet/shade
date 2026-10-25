@@ -5,15 +5,15 @@ import Foundation
 /// `host` may be either a hostname/IP address or an alias from `~/.ssh/config`.
 /// Optional values override the corresponding OpenSSH configuration only for
 /// this connection. Passwords and private-key contents never belong here.
-struct SSHProfile: Codable, Equatable, Identifiable, Sendable {
-    let id: UUID
-    var name: String
-    var host: String
-    var username: String?
-    var port: Int?
-    var identityFile: String?
+public struct SSHProfile: Codable, Equatable, Identifiable, Sendable {
+    public let id: UUID
+    public var name: String
+    public var host: String
+    public var username: String?
+    public var port: Int?
+    public var identityFile: String?
 
-    init(
+    public init(
         id: UUID = UUID(),
         name: String,
         host: String,
@@ -32,7 +32,7 @@ struct SSHProfile: Codable, Equatable, Identifiable, Sendable {
     /// Returns the canonical persisted form or throws before invalid input can
     /// reach OpenSSH. Trimming optional blank values to nil keeps the JSON and
     /// command builder deterministic.
-    func normalized() throws -> SSHProfile {
+    public func normalized() throws -> SSHProfile {
         let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedUsername = Self.normalizedOptional(username)
@@ -97,14 +97,14 @@ struct SSHProfile: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-enum SSHProfileField: String, Equatable, Sendable {
+public enum SSHProfileField: String, Equatable, Sendable {
     case name
     case host
     case username
     case identityFile
 }
 
-enum SSHProfileValidationError: Error, Equatable, LocalizedError {
+public enum SSHProfileValidationError: Error, Equatable, LocalizedError {
     case nameRequired
     case hostRequired
     case hostStartsWithDash
@@ -113,7 +113,7 @@ enum SSHProfileValidationError: Error, Equatable, LocalizedError {
     case invalidPort(Int)
     case controlCharacters(SSHProfileField)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .nameRequired:
             return "Connection name is required."

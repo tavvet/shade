@@ -2,8 +2,8 @@ import Foundation
 
 /// Runs Git commands asynchronously and terminates the subprocess when the
 /// surrounding Swift task is cancelled.
-enum GitProcessRunner {
-    static func run(_ arguments: [String]) async -> String? {
+public enum GitProcessRunner {
+    public static func run(_ arguments: [String]) async -> String? {
         let process = CancellableGitProcess(arguments: arguments)
         return await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in

@@ -1,4 +1,5 @@
 import Foundation
+import ShadeCore
 
 /// Read access to the active preferences. The application passes
 /// `ConfigurationStore.shared` to its controllers; tests pass isolated stores.

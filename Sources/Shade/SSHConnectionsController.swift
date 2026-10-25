@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import ShadeCore
 
 /// Shared application state for the saved-connection library.
 ///

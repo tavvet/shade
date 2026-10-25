@@ -1,4 +1,5 @@
 import Foundation
+import ShadeCore
 
 protocol SSHProfileStoring {
     @MainActor

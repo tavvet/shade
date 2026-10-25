@@ -1,5 +1,6 @@
 import AppKit
 import SwiftTerm
+import ShadeCore
 
 /// Sits between `LocalProcessTerminalView` and SwiftTerm so Shade can intercept
 /// link activation and bell events while forwarding the rest unchanged.
@@ -93,13 +94,16 @@ final class ActivityTerminalView: LocalProcessTerminalView {
     }
 
     private func configureObservations() {
-        let reportActivity: @MainActor @Sendable () -> Void = { [weak self] in self?.onData?() }
+        // Output chunks arriving before the main actor runs share one call;
+        // the activity dot only needs to know that output happened.
+        let activity = CoalescedMainSignal { [weak self] in self?.onData?() }
         let reportOSC: @MainActor @Sendable (TerminalOscEvent) -> Void = { [weak self] event in
             self?.onOSC133?(event)
         }
         setProcessOutputHandler {
-            DispatchQueue.main.async(execute: reportActivity)
+            activity.signal()
         }
+        // OSC events keep one call each: their order and payloads matter.
         oscObservation = observeOscEvents { event in
             guard event.code == 133 else { return }
             DispatchQueue.main.async { reportOSC(event) }

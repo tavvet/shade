@@ -1,4 +1,5 @@
 import AppKit
+import ShadeCore
 
 /// Owns the collection of terminal sessions inside the dropdown panel.
 /// Knows the active tab and is the single entry point for tab operations.

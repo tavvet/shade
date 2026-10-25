@@ -1,5 +1,6 @@
 import AppKit
 import SwiftTerm
+import ShadeCore
 
 enum PanelShortcut: Equatable {
     case zoomIn

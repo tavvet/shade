@@ -3,9 +3,9 @@ import Foundation
 /// Runs a configured command and the tab's login shell under one PTY-owning
 /// process. The static wrapper script receives every executable and argument
 /// positionally, so profile values never become shell syntax.
-enum TerminalCommandSequence {
-    static let wrapperExecutable = "/bin/sh"
-    static let defaultExecutablePath = "/usr/bin:/bin:/usr/sbin:/sbin"
+public enum TerminalCommandSequence {
+    public static let wrapperExecutable = "/bin/sh"
+    public static let defaultExecutablePath = "/usr/bin:/bin:/usr/sbin:/sbin"
     private static let integrationMarker = "SHADE_SEQUENCE_HAS_INTEGRATION"
     private static let integrationKeys: Set<String> = [
         "ZDOTDIR",
@@ -20,7 +20,7 @@ enum TerminalCommandSequence {
     /// shell begins at `$1`, followed by the fully structured command invocation.
     /// Shell-integration variables are hidden from the configured command and
     /// restored only when the wrapper becomes the local login shell.
-    static let wrapperScript = """
+    public static let wrapperScript = """
     login_shell=$1
     shift
 
@@ -58,7 +58,7 @@ enum TerminalCommandSequence {
     exec "$login_shell" -l
     """
 
-    static func invocation(
+    public static func invocation(
         initialCommand: ProcessInvocation,
         loginShellPath: String
     ) -> ProcessInvocation {
@@ -78,7 +78,7 @@ enum TerminalCommandSequence {
     /// but a directly launched SSH client must inherit PATH, SSH_AUTH_SOCK and
     /// the rest of the app environment. Integration keys are overlaid for the
     /// wrapper and hidden from SSH by `wrapperScript` until the local shell starts.
-    static func environment(
+    public static func environment(
         inheritedEnvironment: [String: String] = ProcessInfo.processInfo.environment,
         shellIntegrationEnvironment: [String]?,
         homeDirectory: String = NSHomeDirectory()

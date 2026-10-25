@@ -1,5 +1,6 @@
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 final class SSHConnectionPickerSearchTests: XCTestCase {
     private let profiles = [

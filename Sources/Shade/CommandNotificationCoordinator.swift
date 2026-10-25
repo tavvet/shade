@@ -1,4 +1,5 @@
 import Foundation
+import ShadeCore
 
 /// Bridges terminal command-completion events to user notifications.
 @MainActor

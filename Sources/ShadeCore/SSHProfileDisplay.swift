@@ -1,5 +1,5 @@
-enum SSHProfileDisplay {
-    static func destinationLabel(_ profile: SSHProfile) -> String {
+public enum SSHProfileDisplay {
+    public static func destinationLabel(_ profile: SSHProfile) -> String {
         var host = profile.host
         if profile.port != nil, host.contains(":"), !host.hasPrefix("[") {
             host = "[\(host)]"

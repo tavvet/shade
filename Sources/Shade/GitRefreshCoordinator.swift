@@ -1,4 +1,5 @@
 import Foundation
+import ShadeCore
 
 /// Event-driven `git status` scheduler for a single terminal session.
 ///

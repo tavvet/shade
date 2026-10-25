@@ -1,6 +1,7 @@
 import XCTest
 import AppKit
 @testable import Shade
+@testable import ShadeCore
 
 final class PreferencesTests: XCTestCase {
     private func freshStore() -> UserDefaults {
@@ -224,15 +225,28 @@ final class PreferencesTests: XCTestCase {
         let a = Preferences.parseHex("FFCC00")
         let b = Preferences.parseHex("#ffcc00")
         XCTAssertNotNil(a)
-        XCTAssertNotNil(b)
-        let target = NSColor(red: 1, green: 0.8, blue: 0, alpha: 1)
-        for color in [a!, b!] {
-            let srgb = color.usingColorSpace(.sRGB)!
-            XCTAssertEqual(Double(srgb.redComponent),   1.0, accuracy: 0.01)
-            XCTAssertEqual(Double(srgb.greenComponent), 0.8, accuracy: 0.01)
-            XCTAssertEqual(Double(srgb.blueComponent),  0.0, accuracy: 0.01)
-            _ = target  // silence unused
-        }
+        XCTAssertEqual(a, b)
+        let color = try! XCTUnwrap(a)
+        XCTAssertEqual(color.red, 1.0, accuracy: 0.01)
+        XCTAssertEqual(color.green, 0.8, accuracy: 0.01)
+        XCTAssertEqual(color.blue, 0.0, accuracy: 0.01)
+    }
+
+    func testHexStringRoundTripsAndClampsComponents() {
+        XCTAssertEqual(Preferences.hexString(for: .init(red: 1, green: 0.8, blue: 0)), "FFCC00")
+        XCTAssertEqual(Preferences.hexString(for: .init(red: 2, green: -1, blue: 0.5)), "FF0080")
+        XCTAssertEqual(Preferences.parseHex("00CCFF").map(Preferences.hexString(for:)), "00CCFF")
+    }
+
+    func testLinkHighlightColorRoundTripsThroughNSColor() {
+        var prefs = Preferences.defaults
+        prefs.setLinkHighlightColor(NSColor(srgbRed: 0, green: 0.8, blue: 1, alpha: 1))
+        XCTAssertEqual(prefs.linkHighlightHex, "00CCFF")
+
+        let srgb = prefs.linkHighlightColor().usingColorSpace(.sRGB)!
+        XCTAssertEqual(Double(srgb.greenComponent), 0.8, accuracy: 0.01)
+        prefs.linkHighlightHex = "invalid"
+        XCTAssertEqual(prefs.linkHighlightColor(), .systemYellow)
     }
 
     func testParseHexRejectsBadInput() {

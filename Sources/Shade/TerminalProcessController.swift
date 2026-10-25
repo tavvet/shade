@@ -1,5 +1,6 @@
 import AppKit
 import SwiftTerm
+import ShadeCore
 
 /// Owns SwiftTerm's view and process lifecycle for one tab. It converts
 /// delegate/parser callbacks into main-actor closures so the session layer does

@@ -1,6 +1,7 @@
 import SwiftTerm
 import XCTest
 @testable import Shade
+@testable import ShadeCore
 
 @MainActor
 final class TerminalCursorStyleTests: XCTestCase {

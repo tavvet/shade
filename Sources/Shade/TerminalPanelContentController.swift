@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ShadeCore
 
 /// Builds and updates the visual hierarchy hosted by the dropdown panel.
 @MainActor

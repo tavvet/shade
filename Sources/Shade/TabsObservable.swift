@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import ShadeCore
 
 /// What the small status dot on a tab chip signals.
 enum TabIndicator: Equatable {
