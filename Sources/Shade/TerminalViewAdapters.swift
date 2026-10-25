@@ -82,6 +82,11 @@ final class ActivityTerminalView: LocalProcessTerminalView {
         configureObservations()
     }
 
+    override init(frame: CGRect, font: NSFont? = nil, options: TerminalOptions) {
+        super.init(frame: frame, font: font, options: options)
+        configureObservations()
+    }
+
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         configureObservations()

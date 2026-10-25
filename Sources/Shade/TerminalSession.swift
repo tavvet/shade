@@ -27,6 +27,7 @@ final class TerminalSession {
     private let process: TerminalProcessController
     private let presentation: TerminalPresentationState
     private var promptHistory = TerminalPromptHistory()
+    private var cursorStyle: TerminalCursorStyleTracker
     var promptMarks: [PromptMark] { promptHistory.marks }
     var isCommandRunning: Bool { promptHistory.isCommandRunning }
 
@@ -75,9 +76,17 @@ final class TerminalSession {
         presentation.setUserTitle(raw)
     }
 
-    init(configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration()) {
-        let processController = TerminalProcessController(configuration: configuration)
+    init(
+        configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration(),
+        preferences: Preferences? = nil
+    ) {
+        let prefs = preferences ?? PreferencesStore.standard.load()
+        let processController = TerminalProcessController(
+            configuration: configuration,
+            terminalOptions: TerminalAppearance.terminalOptions(for: prefs)
+        )
         process = processController
+        cursorStyle = TerminalCursorStyleTracker(applied: TerminalAppearance.cursorStyle(for: prefs))
         presentation = TerminalPresentationState(shellName: processController.shellName)
         presentation.onChange = { [weak self] in self?.notifyTitleChanged() }
         if let title = configuration.title {
@@ -102,7 +111,7 @@ final class TerminalSession {
         process.onTitleChange = { [weak self] in self?.presentation.setOscTitle($0) }
         process.onCwdChange = { [weak self] in self?.contextTracker.updateCwd($0) }
         process.onUserInput = { [weak self] in self?.onUserInput?() }
-        apply(PreferencesStore.standard.load())
+        apply(prefs)
     }
 
     func start() {
@@ -111,6 +120,11 @@ final class TerminalSession {
 
     func apply(_ prefs: Preferences) {
         TerminalAppearance.apply(prefs, to: view)
+        // Send the cursor only for a changed preference: it would otherwise
+        // override a shape the running program chose itself.
+        if let sequence = cursorStyle.sequenceToApply(for: prefs) {
+            view.feed(text: sequence)
+        }
     }
 
     func terminate() {

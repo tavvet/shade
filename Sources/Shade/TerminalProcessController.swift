@@ -40,6 +40,7 @@ final class TerminalProcessController: NSObject {
 
     init(
         configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration(),
+        terminalOptions: TerminalOptions = .default,
         shellPath: String = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh",
         processStarter: ProcessStarter? = nil,
         signalSender: @escaping SignalSender = { kill($0, $1) }
@@ -62,7 +63,7 @@ final class TerminalProcessController: NSObject {
             return view.process.shellPid > 0
         }
 
-        let activityView = ActivityTerminalView(frame: .zero)
+        let activityView = ActivityTerminalView(frame: .zero, options: terminalOptions)
         self.activityView = activityView
         view = activityView
         delegateProxy = TerminalDelegateProxy(forward: activityView.terminalDelegate)

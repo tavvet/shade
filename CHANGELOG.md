@@ -8,6 +8,10 @@ All notable changes to Shade are documented in this file. Format follows
 
 ### Fixed
 
+- Keep the cursor shape chosen by programs such as vim or zsh vi-mode when the
+  panel is shown or settings reload; Shade now sends its cursor preference only
+  when that preference changes. A program's request for the default cursor
+  restores the configured shape.
 - Correct the documented build requirement to Xcode 26+ / Swift 6.2+, list the
   current source files in the README architecture tree, and mark the SwiftTerm
   1.99.1 migration as released.
