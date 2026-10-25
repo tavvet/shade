@@ -147,18 +147,6 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(PreferencesStore(userDefaults: store).load().linkHighlightHex, "FFCC00")
     }
 
-    func testCursorDECSCUSR() {
-        var p = Preferences.defaults
-        p.cursorShape = .block; p.cursorBlink = false
-        XCTAssertEqual(p.cursorDECSCUSR, "\u{1B}[2 q")
-        p.cursorBlink = true
-        XCTAssertEqual(p.cursorDECSCUSR, "\u{1B}[1 q")
-        p.cursorShape = .bar; p.cursorBlink = false
-        XCTAssertEqual(p.cursorDECSCUSR, "\u{1B}[6 q")
-        p.cursorShape = .underline; p.cursorBlink = true
-        XCTAssertEqual(p.cursorDECSCUSR, "\u{1B}[3 q")
-    }
-
     func testFractionsAreClampedToValidRange() {
         let store = freshStore()
         store.set(5.0, forKey: PreferencesStore.Key.widthFraction)      // > 1.0

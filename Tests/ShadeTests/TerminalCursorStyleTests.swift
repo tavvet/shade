@@ -18,15 +18,56 @@ final class TerminalCursorStyleTests: XCTestCase {
         }
     }
 
+    func testDECSCUSRSequenceForEveryStyle() {
+        let expected: [(CursorStyle, String)] = [
+            (.blinkBlock, "\u{1B}[1 q"),
+            (.steadyBlock, "\u{1B}[2 q"),
+            (.blinkUnderline, "\u{1B}[3 q"),
+            (.steadyUnderline, "\u{1B}[4 q"),
+            (.blinkBar, "\u{1B}[5 q"),
+            (.steadyBar, "\u{1B}[6 q"),
+        ]
+        for (style, sequence) in expected {
+            XCTAssertEqual(TerminalAppearance.decscusrSequence(for: style), sequence)
+        }
+    }
+
     func testTrackerSendsOnlyChangedPreferences() {
         let block = prefs(.block, blink: false)
         let bar = prefs(.bar, blink: false)
         var tracker = TerminalCursorStyleTracker(applied: .steadyBlock)
 
-        XCTAssertNil(tracker.sequenceToApply(for: block))
-        XCTAssertEqual(tracker.sequenceToApply(for: bar), "\u{1B}[6 q")
-        XCTAssertNil(tracker.sequenceToApply(for: bar))
+        XCTAssertNil(tracker.sequenceToApply(for: block, isAlternateScreen: false))
+        XCTAssertEqual(tracker.sequenceToApply(for: bar, isAlternateScreen: false), "\u{1B}[6 q")
+        XCTAssertNil(tracker.sequenceToApply(for: bar, isAlternateScreen: false))
         XCTAssertEqual(tracker.applied, .steadyBar)
+    }
+
+    func testTrackerDefersChangeWhileAlternateScreenIsActive() {
+        let bar = prefs(.bar, blink: false)
+        var tracker = TerminalCursorStyleTracker(applied: .steadyBlock)
+
+        XCTAssertNil(tracker.sequenceToApply(for: bar, isAlternateScreen: true))
+        XCTAssertEqual(tracker.applied, .steadyBlock)
+        XCTAssertEqual(tracker.preferred, .steadyBar)
+        XCTAssertEqual(tracker.sequenceToApply(for: bar, isAlternateScreen: false), "\u{1B}[6 q")
+    }
+
+    func testSessionDefersCursorChangeUntilProgramLeavesAlternateScreen() {
+        let session = TerminalSession(preferences: prefs(.block, blink: false))
+        let underline = prefs(.underline, blink: false)
+        session.view.feed(text: "\u{1B}[?1049h\u{1B}[6 q")
+        waitForCursorStyle(.steadyBar, in: session)
+
+        session.apply(underline)
+        flushParser(of: session)
+        XCTAssertEqual(session.view.terminalStateSnapshot().cursorStyle, .steadyBar)
+
+        session.view.feed(text: "\u{1B}[?1049l")
+        waitForCondition { session.view.terminalInputStateSnapshot()?.isAlternateBuffer == false }
+        session.apply(underline)
+
+        waitForCursorStyle(.steadyUnderline, in: session)
     }
 
     func testNewSessionStartsWithPreferredCursorStyle() {

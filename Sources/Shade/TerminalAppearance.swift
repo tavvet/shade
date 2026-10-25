@@ -5,10 +5,24 @@ import SwiftTerm
 /// SwiftTerm view without making the session coordinator own rendering details.
 @MainActor
 enum TerminalAppearance {
-    static func apply(_ prefs: Preferences, to view: LocalProcessTerminalView) {
-        view.font = prefs.terminalFont()
-        view.nativeBackgroundColor = NSColor(white: 0.08, alpha: prefs.backgroundOpacity)
-        view.linkHighlightColor = prefs.linkHighlightColor()
+    /// Applies the preferences that differ from `previous`, or all of them when
+    /// `previous` is nil. SwiftTerm setters have side effects even for equal
+    /// values: assigning a font clears the selection and recomputes cell
+    /// metrics, and color changes force a full redraw.
+    static func apply(
+        _ prefs: Preferences,
+        replacing previous: Preferences?,
+        to view: LocalProcessTerminalView
+    ) {
+        if previous?.fontName != prefs.fontName || previous?.fontSize != prefs.fontSize {
+            view.font = prefs.terminalFont()
+        }
+        if previous?.backgroundOpacity != prefs.backgroundOpacity {
+            view.nativeBackgroundColor = NSColor(white: 0.08, alpha: prefs.backgroundOpacity)
+        }
+        if previous?.linkHighlightHex != prefs.linkHighlightHex {
+            view.linkHighlightColor = prefs.linkHighlightColor()
+        }
         view.wantsLayer = true
         view.layer?.isOpaque = false
         view.layer?.backgroundColor = NSColor.clear.cgColor
@@ -31,6 +45,20 @@ enum TerminalAppearance {
         case (.bar, true): return .blinkBar
         case (.bar, false): return .steadyBar
         }
+    }
+
+    /// DECSCUSR (`CSI Ps SP q`) that selects `style`.
+    nonisolated static func decscusrSequence(for style: CursorStyle) -> String {
+        let parameter: Int
+        switch style {
+        case .blinkBlock: parameter = 1
+        case .steadyBlock: parameter = 2
+        case .blinkUnderline: parameter = 3
+        case .steadyUnderline: parameter = 4
+        case .blinkBar: parameter = 5
+        case .steadyBar: parameter = 6
+        }
+        return "\u{1B}[\(parameter) q"
     }
 
     @discardableResult
@@ -56,13 +84,24 @@ enum TerminalAppearance {
 /// preference must not be sent again when the panel shows or settings reload.
 struct TerminalCursorStyleTracker {
     private(set) var applied: CursorStyle
+    private(set) var preferred: CursorStyle
 
-    /// Returns the DECSCUSR sequence to send, or nil when the preferred style
-    /// has not changed since it was last applied.
-    mutating func sequenceToApply(for prefs: Preferences) -> String? {
-        let style = TerminalAppearance.cursorStyle(for: prefs)
-        guard style != applied else { return nil }
-        applied = style
-        return prefs.cursorDECSCUSR
+    init(applied: CursorStyle) {
+        self.applied = applied
+        preferred = applied
+    }
+
+    /// Records the preferred style and returns the DECSCUSR sequence to send
+    /// now, or nil when it is already applied. A full-screen program owns the
+    /// cursor while the alternate screen is active, so a changed preference
+    /// stays pending until a later call made from the normal screen.
+    mutating func sequenceToApply(
+        for prefs: Preferences,
+        isAlternateScreen: Bool
+    ) -> String? {
+        preferred = TerminalAppearance.cursorStyle(for: prefs)
+        guard preferred != applied, !isAlternateScreen else { return nil }
+        applied = preferred
+        return TerminalAppearance.decscusrSequence(for: preferred)
     }
 }

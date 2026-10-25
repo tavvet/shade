@@ -6,12 +6,23 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Stop resetting the cursor to the configured shape on every panel show. A
+  shape left by a program (for example a block after quitting vim) now stays
+  until the program or a changed cursor preference replaces it.
+
 ### Fixed
 
-- Keep the cursor shape chosen by programs such as vim or zsh vi-mode when the
-  panel is shown or settings reload; Shade now sends its cursor preference only
-  when that preference changes. A program's request for the default cursor
-  restores the configured shape.
+- Keep the terminal selection and the cursor shape chosen by programs such as
+  vim or zsh vi-mode when the panel is shown or settings reload. Each tab now
+  applies only the appearance preferences that changed.
+- Hold back a changed cursor preference while a tab runs a full-screen
+  program, and apply it on a later panel show or settings reload once the tab
+  is back in its shell.
+- Make a program's request for the default cursor restore the configured shape
+  in tabs opened after that shape was chosen. Older tabs restore the shape they
+  were opened with.
 - Correct the documented build requirement to Xcode 26+ / Swift 6.2+, list the
   current source files in the README architecture tree, and mark the SwiftTerm
   1.99.1 migration as released.

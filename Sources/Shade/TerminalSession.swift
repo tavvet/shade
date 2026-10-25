@@ -28,6 +28,8 @@ final class TerminalSession {
     private let presentation: TerminalPresentationState
     private var promptHistory = TerminalPromptHistory()
     private var cursorStyle: TerminalCursorStyleTracker
+    private var appliedPreferences: Preferences?
+    private let scrollbackRows: Int
     var promptMarks: [PromptMark] { promptHistory.marks }
     var isCommandRunning: Bool { promptHistory.isCommandRunning }
 
@@ -81,12 +83,14 @@ final class TerminalSession {
         preferences: Preferences? = nil
     ) {
         let prefs = preferences ?? PreferencesStore.standard.load()
+        let options = TerminalAppearance.terminalOptions(for: prefs)
         let processController = TerminalProcessController(
             configuration: configuration,
-            terminalOptions: TerminalAppearance.terminalOptions(for: prefs)
+            terminalOptions: options
         )
         process = processController
-        cursorStyle = TerminalCursorStyleTracker(applied: TerminalAppearance.cursorStyle(for: prefs))
+        cursorStyle = TerminalCursorStyleTracker(applied: options.cursorStyle)
+        scrollbackRows = options.scrollback
         presentation = TerminalPresentationState(shellName: processController.shellName)
         presentation.onChange = { [weak self] in self?.notifyTitleChanged() }
         if let title = configuration.title {
@@ -118,11 +122,21 @@ final class TerminalSession {
         process.start()
     }
 
+    /// Applies only preferences that changed since the previous call, so a panel
+    /// show or unrelated settings edit keeps the selection, font metrics and the
+    /// cursor shape chosen by the running program.
     func apply(_ prefs: Preferences) {
-        TerminalAppearance.apply(prefs, to: view)
-        // Send the cursor only for a changed preference: it would otherwise
-        // override a shape the running program chose itself.
-        if let sequence = cursorStyle.sequenceToApply(for: prefs) {
+        if prefs != appliedPreferences {
+            TerminalAppearance.apply(prefs, replacing: appliedPreferences, to: view)
+            appliedPreferences = prefs
+        }
+        // Checked on every call: a change deferred while a full-screen program
+        // used the alternate screen is sent once the tab is back in its shell.
+        let isAlternateScreen = view.terminalInputStateSnapshot()?.isAlternateBuffer ?? false
+        if let sequence = cursorStyle.sequenceToApply(
+            for: prefs,
+            isAlternateScreen: isAlternateScreen
+        ) {
             view.feed(text: sequence)
         }
     }
@@ -161,10 +175,10 @@ final class TerminalSession {
     }
 
     private var historySnapshot: TerminalContentSnapshot? {
-        // Shade uses SwiftTerm's default scrollback capacity. Copy at most that
-        // many retained rows, only when a history shortcut needs their text.
+        // Copy at most the scrollback this terminal was created with, only when
+        // a history shortcut needs the text.
         view.terminalContentSnapshot(region: .history(
-            maximumScrollbackRows: TerminalOptions.default.scrollback
+            maximumScrollbackRows: scrollbackRows
         ))
     }
 

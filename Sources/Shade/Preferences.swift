@@ -49,15 +49,6 @@ struct Preferences: Codable, Equatable, Sendable {
 
     enum CursorShape: String, Codable, Sendable {
         case block, bar, underline
-
-        /// Steady DECSCUSR parameter (CSI Ps SP q); the blinking variant is this minus one.
-        var decscusrSteady: Int {
-            switch self {
-            case .block:     return 2
-            case .underline: return 4
-            case .bar:       return 6
-            }
-        }
     }
 
     static let defaults = Preferences(
@@ -164,12 +155,6 @@ extension Preferences {
         let green = Int(round(srgb.greenComponent * 255))
         let blue = Int(round(srgb.blueComponent * 255))
         linkHighlightHex = String(format: "%02X%02X%02X", red, green, blue)
-    }
-
-    /// DECSCUSR escape (CSI Ps SP q) that sets the configured cursor shape + blink.
-    var cursorDECSCUSR: String {
-        let steady = cursorShape.decscusrSteady
-        return "\u{1B}[\(cursorBlink ? steady - 1 : steady) q"
     }
 }
 
