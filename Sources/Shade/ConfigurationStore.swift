@@ -19,10 +19,15 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
     private let localPreferences: PreferencesStore
     private let operations = ConfigurationTaskQueue()
     private var locationRevision = 0
+    /// The preferences last announced to observers, plus the cached profiles.
     private var snapshot: ConfigurationFiles.Snapshot
+    private var announcer: PreferencesChangeAnnouncer!
 
+    /// `announcementInterval` spaces announcements during bursts such as
+    /// slider drags; a single change is still announced immediately.
     init(userDefaults: UserDefaults = .standard,
-         localConnectionsURL: URL = SSHProfileStore.defaultFileURL()) {
+         localConnectionsURL: URL = SSHProfileStore.defaultFileURL(),
+         announcementInterval: Duration = .milliseconds(120)) {
         self.userDefaults = userDefaults
         self.localConnectionsURL = localConnectionsURL
         localPreferences = PreferencesStore(userDefaults: userDefaults)
@@ -30,6 +35,18 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         if let path = userDefaults.string(forKey: Self.directoryKey) {
             directory = URL(fileURLWithPath: path, isDirectory: true)
         }
+        announcer = PreferencesChangeAnnouncer(interval: announcementInterval) { [weak self] in
+            guard let self else { return }
+            NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
+        }
+    }
+
+    /// Lets observers tell this store's announcements apart from others'.
+    var preferencesChangeSender: AnyObject? { self }
+
+    /// Waits until a scheduled `.shadePreferencesChanged` has been posted.
+    func waitForPendingAnnouncement() async {
+        await announcer.waitForPending()
     }
 
     func load() -> Preferences {
@@ -84,9 +101,7 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
                     self.accept(loaded)
                 } else {
                     try self.localPreferences.save(preferences, replacing: previous)
-                    self.snapshot = .init(preferences: preferences, profiles: self.snapshot.profiles)
-                    self.setProblem(nil)
-                    self.announcePreferencesChanged()
+                    self.accept(.init(preferences: preferences, profiles: self.snapshot.profiles))
                 }
             } catch {
                 self.setProblem(error.localizedDescription)
@@ -101,7 +116,7 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
             try await write {
                 guard revision == self.locationRevision else { throw ConfigurationError.changedExternally }
                 self.localPreferences.saveFontSize(fontSize)
-                self.announcePreferencesChanged()
+                self.accept(.init(preferences: self.localPreferences.load(), profiles: self.snapshot.profiles))
             }
             return
         }
@@ -182,8 +197,8 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
             self.userDefaults.set(canonical.path, forKey: Self.directoryKey)
             self.directory = canonical
             self.locationRevision &+= 1
-            self.accept(loaded, announcePreferences: false)
-            self.notifyChange()
+            self.accept(loaded)
+            self.notifyLocationChange()
         }
     }
 
@@ -198,14 +213,16 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
             self.userDefaults.removeObject(forKey: Self.directoryKey)
             self.directory = nil
             self.locationRevision &+= 1
-            self.accept(.init(preferences: self.localPreferences.load(), profiles: profiles), announcePreferences: false)
-            self.notifyChange()
+            self.accept(.init(preferences: self.localPreferences.load(), profiles: profiles))
+            self.notifyLocationChange()
         }
     }
 
+    /// Re-reads both files. Preferences are announced only if they changed;
+    /// `didChange` always prompts the connection library to reload.
     func reloadFromDisk() async {
         _ = await reload()
-        notifyChange()
+        notifyLocationChange()
     }
 
     /// Quitting waits for accepted writes, but not for an unrelated background
@@ -237,29 +254,24 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         return canonical
     }
 
-    private func accept(_ loaded: ConfigurationFiles.Snapshot, announcePreferences: Bool = true) {
+    /// The single path for publishing new values. `.shadePreferencesChanged` is
+    /// requested only when the preferences differ from the last announced
+    /// snapshot, and it is posted after the current storage transaction.
+    private func accept(_ loaded: ConfigurationFiles.Snapshot) {
         let changed = snapshot.preferences != loaded.preferences
         snapshot = loaded
         setProblem(nil)
-        if changed, announcePreferences {
-            announcePreferencesChanged()
-        }
-    }
-
-    /// The only sender of `.shadePreferencesChanged`: posted after a successful
-    /// save, a reload that found different values, or a storage switch, so
-    /// observers apply exactly what this store now returns from `load()`.
-    private func announcePreferencesChanged() {
-        NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
+        if changed { announcer.request() }
     }
 
     private func setProblem(_ message: String?) {
         if problem != message { problem = message }
     }
 
-    private func notifyChange() {
+    /// The storage location or file contents were replaced; preferences are
+    /// announced separately by `accept` when they actually differ.
+    private func notifyLocationChange() {
         NotificationCenter.default.post(name: Self.didChange, object: self)
-        announcePreferencesChanged()
     }
 }
 

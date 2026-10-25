@@ -3,21 +3,41 @@ import XCTest
 
 @MainActor
 final class SettingsModelTests: XCTestCase {
-    func testReloadPreventsUnrelatedSaveFromOverwritingExternalFontZoom() async {
-        let suite = "SettingsModelTests.\(UUID().uuidString)"
-        let store = UserDefaults(suiteName: suite)!
-        defer { store.removePersistentDomain(forName: suite) }
+    func testReloadPreventsUnrelatedSaveFromOverwritingExternalFontZoom() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
 
-        store.set(13, forKey: PreferencesStore.Key.fontSize)
-        let model = SettingsModel(preferences: PreferencesStore(userDefaults: store), openAtLogin: false)
-
-        store.set(14, forKey: PreferencesStore.Key.fontSize)
-        NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+        // An external `defaults write`, picked up by the store's next reload.
+        fixture.defaults.set(14, forKey: PreferencesStore.Key.fontSize)
+        _ = await configuration.reload()
+        await configuration.waitForPendingAnnouncement()
         XCTAssertEqual(model.preferences.fontSize, 14)
 
         model.preferences.visualBell.toggle()
         await model.waitForPendingSave()
-        XCTAssertEqual(store.double(forKey: PreferencesStore.Key.fontSize), 14)
+        XCTAssertEqual(fixture.defaults.double(forKey: PreferencesStore.Key.fontSize), 14)
+    }
+
+    func testModelIgnoresAnnouncementsFromOtherStores() async throws {
+        let fixture = try ConfigurationFixture()
+        let other = try ConfigurationFixture()
+        defer {
+            fixture.cleanup()
+            other.cleanup()
+        }
+        let configuration = fixture.store()
+        let otherConfiguration = other.store()
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
+        let shown = model.preferences
+
+        // A change visible in this model's store, but announced by another one.
+        fixture.defaults.set(19, forKey: PreferencesStore.Key.fontSize)
+        try await otherConfiguration.saveFontSize(21)
+        await otherConfiguration.waitForPendingAnnouncement()
+
+        XCTAssertEqual(model.preferences, shown)
     }
 
     func testNotificationAuthorizationIsRequestedOnlyWhenEnablingNotifications() async {
@@ -50,20 +70,21 @@ final class SettingsModelTests: XCTestCase {
         XCTAssertEqual(requester.requestCount, 2)
     }
 
-    func testExternalNotificationReloadDoesNotRequestAuthorization() async {
-        let suite = "SettingsModelTests.\(UUID().uuidString)"
-        let store = UserDefaults(suiteName: suite)!
-        defer { store.removePersistentDomain(forName: suite) }
+    func testExternalNotificationReloadDoesNotRequestAuthorization() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
 
         let requester = NotificationAuthorizationRequesterSpy()
         let model = SettingsModel(
-            preferences: PreferencesStore(userDefaults: store),
+            preferences: configuration,
             openAtLogin: false,
             notificationAuthorizationRequester: requester
         )
 
-        store.set(true, forKey: PreferencesStore.Key.notifyOnCommandFinish)
-        NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
+        fixture.defaults.set(true, forKey: PreferencesStore.Key.notifyOnCommandFinish)
+        _ = await configuration.reload()
+        await configuration.waitForPendingAnnouncement()
 
         XCTAssertTrue(model.preferences.notifyOnCommandFinish)
         XCTAssertEqual(requester.requestCount, 0)

@@ -28,12 +28,15 @@ final class ConfigurationStoreTests: XCTestCase {
         defer { NotificationCenter.default.removeObserver(spy) }
 
         try await configuration.saveFontSize(20)
+        await configuration.waitForPendingAnnouncement()
         XCTAssertEqual(spy.count, 1)
         XCTAssertEqual(configuration.load().fontSize, 20)
 
         try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+        await configuration.waitForPendingAnnouncement()
         let beforePortableSave = spy.count
         try await configuration.saveFontSize(22)
+        await configuration.waitForPendingAnnouncement()
         XCTAssertEqual(spy.count, beforePortableSave + 1)
         XCTAssertEqual(configuration.load().fontSize, 22)
     }
@@ -58,14 +61,14 @@ final class ConfigurationStoreTests: XCTestCase {
         for portable in [false, true] {
             if portable {
                 try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+                await configuration.waitForPendingAnnouncement()
             }
             let storeBefore = fromStore.count
             let anyBefore = fromAnySender.count
 
             model.preferences.visualBell.toggle()
             await model.waitForPendingSave()
-            // Nothing else announces the edit later, such as a debounced repost.
-            try await Task.sleep(for: .milliseconds(200))
+            await configuration.waitForPendingAnnouncement()
 
             XCTAssertEqual(fromStore.count - storeBefore, 1, "portable: \(portable)")
             XCTAssertEqual(fromAnySender.count - anyBefore, 1, "portable: \(portable)")
@@ -87,8 +90,85 @@ final class ConfigurationStoreTests: XCTestCase {
         edited.visualBell.toggle()
 
         await assertThrowsAsync { try await configuration.save(edited, replacing: stale) }
+        await configuration.waitForPendingAnnouncement()
 
         XCTAssertEqual(spy.count, 0)
+    }
+
+    func testReloadFilesAnnouncesPreferencesOnlyWhenTheyChanged() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+        await configuration.waitForPendingAnnouncement()
+        let preferencesSpy = ConfigurationChangeSpy()
+        let locationSpy = ConfigurationChangeSpy()
+        let center = NotificationCenter.default
+        center.addObserver(preferencesSpy, selector: #selector(ConfigurationChangeSpy.changed),
+                           name: .shadePreferencesChanged, object: configuration)
+        center.addObserver(locationSpy, selector: #selector(ConfigurationChangeSpy.changed),
+                           name: ConfigurationStore.didChange, object: configuration)
+        defer {
+            center.removeObserver(preferencesSpy)
+            center.removeObserver(locationSpy)
+        }
+
+        await configuration.reloadFromDisk()
+        await configuration.waitForPendingAnnouncement()
+        XCTAssertEqual(preferencesSpy.count, 0)
+        XCTAssertEqual(locationSpy.count, 1)
+
+        let settingsURL = try XCTUnwrap(configuration.directory).appendingPathComponent("settings.json")
+        var external = configuration.load()
+        external.fontSize = 25
+        try SettingsFileDocument.encode(external).write(to: settingsURL)
+        await configuration.reloadFromDisk()
+        await configuration.waitForPendingAnnouncement()
+        XCTAssertEqual(preferencesSpy.count, 1)
+        XCTAssertEqual(locationSpy.count, 2)
+        XCTAssertEqual(configuration.load().fontSize, 25)
+    }
+
+    func testLocalZoomIsNotAnnouncedAgainByTheNextReload() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        let spy = ConfigurationChangeSpy()
+        NotificationCenter.default.addObserver(spy, selector: #selector(ConfigurationChangeSpy.changed),
+                                               name: .shadePreferencesChanged, object: configuration)
+        defer { NotificationCenter.default.removeObserver(spy) }
+
+        try await configuration.saveFontSize(20)
+        await configuration.waitForPendingAnnouncement()
+        _ = await configuration.reload()
+        _ = try await configuration.loadProfiles()
+        await configuration.waitForPendingAnnouncement()
+
+        XCTAssertEqual(spy.count, 1)
+    }
+
+    func testSliderBurstIsCoalescedAndEndsWithTheFinalValue() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store(announcementInterval: .milliseconds(100))
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
+        var announcedOpacities: [Double] = []
+        let observer = NotificationCenter.default.addObserver(
+            forName: .shadePreferencesChanged, object: configuration, queue: .main
+        ) { _ in
+            MainActor.assumeIsolated { announcedOpacities.append(configuration.load().backgroundOpacity) }
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        for step in 0..<20 {
+            model.preferences.backgroundOpacity = 0.5 + Double(step) * 0.01
+            await model.waitForPendingSave()
+        }
+        await configuration.waitForPendingAnnouncement()
+
+        XCTAssertGreaterThanOrEqual(announcedOpacities.count, 1)
+        XCTAssertLessThan(announcedOpacities.count, 5, "every save of the drag was announced")
+        XCTAssertEqual(try XCTUnwrap(announcedOpacities.last), 0.69, accuracy: 0.0001)
     }
 
     func testCopyCreatesPrivatePortableFilesAndPreservesOriginals() async throws {
@@ -187,10 +267,12 @@ final class ConfigurationStoreTests: XCTestCase {
         try ConfigurationFiles(directory: folder).create(.init(preferences: preferences, profiles: []))
 
         try await configuration.useFolder(folder, copyCurrent: false)
+        await configuration.waitForPendingAnnouncement()
 
         XCTAssertEqual(model.preferences.fontSize, 23)
         XCTAssertEqual(spy.count, 1)
         try await configuration.useLocalStorage()
+        await configuration.waitForPendingAnnouncement()
         XCTAssertEqual(model.preferences.fontSize, 17)
         XCTAssertEqual(spy.count, 2)
     }
@@ -489,8 +571,12 @@ final class ConfigurationFixture {
         try SSHProfileStore(fileURL: localConnections).save(profiles)
     }
 
-    func store() -> ConfigurationStore {
-        ConfigurationStore(userDefaults: defaults, localConnectionsURL: localConnections)
+    func store(announcementInterval: Duration = .milliseconds(120)) -> ConfigurationStore {
+        ConfigurationStore(
+            userDefaults: defaults,
+            localConnectionsURL: localConnections,
+            announcementInterval: announcementInterval
+        )
     }
 
     func folder(_ name: String) throws -> URL {

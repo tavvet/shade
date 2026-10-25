@@ -50,12 +50,16 @@ final class SettingsModel: NSObject, ObservableObject {
         savedPreferences = loaded
         self.openAtLogin = openAtLogin ?? loginItemManager.isEnabled
         super.init()
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(preferencesChanged),
-            name: .shadePreferencesChanged,
-            object: nil
-        )
+        // Follow only this model's own store; a store that never announces
+        // (such as a plain local defaults store) needs no observation.
+        if let sender = preferencesStore.preferencesChangeSender {
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(preferencesChanged),
+                name: .shadePreferencesChanged,
+                object: sender
+            )
+        }
     }
 
     deinit {

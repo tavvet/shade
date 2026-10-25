@@ -12,10 +12,14 @@ protocol PreferencesStoring: PreferencesProviding {
     func reload() async -> Preferences
     func save(_ preferences: Preferences, replacing previous: Preferences) async throws
     func saveFontSize(_ fontSize: CGFloat) async throws
+    /// The object this store posts `.shadePreferencesChanged` with, or nil
+    /// when it does not announce changes.
+    var preferencesChangeSender: AnyObject? { get }
 }
 
 extension PreferencesStoring {
     func reload() async -> Preferences { load() }
+    var preferencesChangeSender: AnyObject? { nil }
 }
 
 /// Persists the complete Preferences snapshot in UserDefaults. Validation

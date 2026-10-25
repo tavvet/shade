@@ -581,6 +581,7 @@ Sources/Shade/
 ├── PanelKeyboardController.swift  Panel shortcuts, terminal input forwarding, cut/clear
 ├── PanelTerminalInputResolver.swift  Pure physical-key → terminal input translation
 ├── Preferences.swift        Settings value model + appearance/layout projections
+├── PreferencesChangeAnnouncer.swift  Coalesced, post-transaction preference-change notices
 ├── PreferencesStore.swift   UserDefaults keys, validation, loading and persistence
 ├── ProcessCwd.swift         libproc-based CWD lookup for shell processes
 ├── ProcessTree.swift        Finds foreground ssh/mosh clients in the shell's process tree
@@ -648,10 +649,11 @@ Key design choices:
   layout.
 - **Live-apply prefs.** `SettingsModel` publishes one `Preferences` snapshot and
   persists edits immediately. `ConfigurationStore` is the only sender of
-  `.shadePreferencesChanged`: it posts after each successful save, a reload
-  that found different values, or a storage switch. The application coordinator
-  then updates panel content and every session, and each tab applies only the
-  values that changed, so font/opacity changes remain instant.
+  `.shadePreferencesChanged`, and only when the stored values actually change.
+  A single change is announced at once; during a slider drag announcements are
+  spaced 120 ms apart and the last one carries the final values. The
+  application coordinator then updates panel content and every session, and
+  each tab applies only the values that changed.
 - **Structured initial processes.** Saved connection values remain executable
   arguments all the way to `/usr/bin/ssh`; a single PTY-owning wrapper runs the
   initial process and then becomes the local login shell. Closing the tab

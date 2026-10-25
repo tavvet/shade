@@ -50,10 +50,16 @@ neither source is removed or implicitly overwritten.
 ## External edits and failures
 
 `ConfigurationStore` is the only sender of `ShadePreferencesChanged`, always with
-itself as the notification object. It posts after a successful preferences or
-font-size save, a reload that found different values, and a storage switch; a
-rejected or failed save posts nothing. A storage switch also posts
-`ShadeConfigurationChanged`. Active terminal sessions are preserved.
+itself as the notification object. Every save, reload and storage switch
+publishes through one change check against the last announced snapshot, so
+the notification means the values returned by `load()` differ from those
+observers last applied; a rejected or failed save, or a reload that finds the
+same values, posts nothing. `PreferencesChangeAnnouncer` posts after the
+storage transaction returns: the first change at once, later ones in a burst
+at most every 120 ms, with a final post for the latest values. Storage switches
+and Reload Files also post `ShadeConfigurationChanged`, which reloads the
+connection library. Observers subscribe to their own store's announcements.
+Active terminal sessions are preserved.
 The app reloads at panel/Settings/picker presentation and before a quick-slot
 connection; Storage also offers an explicit Reload Files action. There is no
 continuous file watcher or cloud completion indicator.
