@@ -99,10 +99,12 @@ obvious fixes can skip straight to the implementation step.
   Structured collections such as SSH profiles retain their own model and codec.
 - Pure logic (parsers, models, command construction, settings documents)
   belongs in the `ShadeCore` library target, which must not import AppKit,
-  SwiftUI, Cocoa, SwiftTerm or KeyboardShortcuts; `ShadeCoreBoundaryTests`
-  enforces this. Declarations the app uses are `public`, and AppKit
-  projections of core models (for example `Preferences+AppKit.swift`) stay in
-  the app target. Add a test in `Tests/ShadeTests/` alongside the change.
+  SwiftUI, Cocoa, Carbon, UIKit, SwiftTerm or KeyboardShortcuts — in any import
+  form; `ShadeCoreBoundaryTests` enforces this. Only declarations the app uses
+  are `public`; helpers used inside ShadeCore or by tests stay `internal`
+  (tests use `@testable import ShadeCore`). AppKit projections of core models
+  (for example `Preferences+AppKit.swift`) stay in the app target. Add a test
+  in `Tests/ShadeTests/` alongside the change.
 
 ## Reporting bugs
 

@@ -58,8 +58,3 @@ extension Preferences {
         ))
     }
 }
-
-extension Notification.Name {
-    /// Posted only by `ConfigurationStore`, with the store as the object.
-    static let shadePreferencesChanged = Notification.Name("ShadePreferencesChanged")
-}

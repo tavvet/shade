@@ -68,7 +68,7 @@ public enum GitInfo {
     }
 
     /// Pulls the integer that immediately precedes `keyword` in a shortstat-like line.
-    public static func firstNumber(in text: String, before keyword: String) -> Int? {
+    static func firstNumber(in text: String, before keyword: String) -> Int? {
         guard let kwRange = text.range(of: keyword) else { return nil }
         let prefix = text[..<kwRange.lowerBound]
         var digits = ""

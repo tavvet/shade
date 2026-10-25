@@ -2,6 +2,12 @@ import Combine
 import Foundation
 import ShadeCore
 
+extension Notification.Name {
+    /// Posted only by `ConfigurationStore` (through its
+    /// `PreferencesChangeAnnouncer`), with the store as the object.
+    static let shadePreferencesChanged = Notification.Name("ShadePreferencesChanged")
+}
+
 /// The device-local location selects a backend. Runtime readers use the last
 /// valid snapshot; explicit refreshes and mutations perform disk I/O off-main.
 @MainActor

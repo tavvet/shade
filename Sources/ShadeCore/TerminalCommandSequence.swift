@@ -4,8 +4,8 @@ import Foundation
 /// process. The static wrapper script receives every executable and argument
 /// positionally, so profile values never become shell syntax.
 public enum TerminalCommandSequence {
-    public static let wrapperExecutable = "/bin/sh"
-    public static let defaultExecutablePath = "/usr/bin:/bin:/usr/sbin:/sbin"
+    static let wrapperExecutable = "/bin/sh"
+    static let defaultExecutablePath = "/usr/bin:/bin:/usr/sbin:/sbin"
     private static let integrationMarker = "SHADE_SEQUENCE_HAS_INTEGRATION"
     private static let integrationKeys: Set<String> = [
         "ZDOTDIR",
@@ -20,7 +20,7 @@ public enum TerminalCommandSequence {
     /// shell begins at `$1`, followed by the fully structured command invocation.
     /// Shell-integration variables are hidden from the configured command and
     /// restored only when the wrapper becomes the local login shell.
-    public static let wrapperScript = """
+    static let wrapperScript = """
     login_shell=$1
     shift
 

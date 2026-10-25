@@ -195,6 +195,32 @@ final class TerminalLaunchConfigurationTests: XCTestCase {
     }
 
     @MainActor
+    func testOutputBurstWhileMainIsBusyReportsActivityOnce() {
+        var activityCalls = 0
+        let controller = TerminalProcessController(
+            configuration: TerminalLaunchConfiguration(
+                initialCommand: ProcessInvocation(executable: "/bin/sh", arguments: [
+                    "-c", "head -c 400000 /dev/zero | tr '\\0' x; sleep 30",
+                ])
+            ),
+            shellPath: "/usr/bin/true"
+        )
+        controller.onActivity = { activityCalls += 1 }
+        defer {
+            controller.onExit = nil
+            controller.terminate()
+        }
+
+        controller.start(shellEnrichment: false)
+        // Keep the main thread busy while many PTY reads arrive.
+        Thread.sleep(forTimeInterval: 0.6)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+
+        XCTAssertGreaterThanOrEqual(activityCalls, 1)
+        XCTAssertLessThanOrEqual(activityCalls, 2, "each output chunk reported activity separately")
+    }
+
+    @MainActor
     func testProcessControllerRetriesAfterPTYLaunchFailure() {
         var attempts = 0
         let controller = TerminalProcessController(
