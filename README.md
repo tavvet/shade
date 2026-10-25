@@ -646,10 +646,12 @@ Key design choices:
   translation to `PanelTerminalInputResolver`. The resolvers use physical key
   codes, so Control combinations and app shortcuts work independently of input
   layout.
-- **Live-apply prefs.** `SettingsModel` publishes one `Preferences` snapshot.
-  Edits are persisted immediately and `.shadePreferencesChanged` is posted after
-  a short debounce; the application coordinator then updates panel content and
-  every session so font/opacity changes remain instant.
+- **Live-apply prefs.** `SettingsModel` publishes one `Preferences` snapshot and
+  persists edits immediately. `ConfigurationStore` is the only sender of
+  `.shadePreferencesChanged`: it posts after each successful save, a reload
+  that found different values, or a storage switch. The application coordinator
+  then updates panel content and every session, and each tab applies only the
+  values that changed, so font/opacity changes remain instant.
 - **Structured initial processes.** Saved connection values remain executable
   arguments all the way to `/usr/bin/ssh`; a single PTY-owning wrapper runs the
   initial process and then becomes the local login shell. Closing the tab

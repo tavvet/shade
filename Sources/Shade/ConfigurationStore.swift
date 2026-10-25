@@ -81,11 +81,12 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
                         }
                         return ConfigurationFiles.Snapshot(preferences: preferences, profiles: current.profiles)
                     }
-                    self.accept(loaded, announcePreferences: false)
+                    self.accept(loaded)
                 } else {
                     try self.localPreferences.save(preferences, replacing: previous)
                     self.snapshot = .init(preferences: preferences, profiles: self.snapshot.profiles)
                     self.setProblem(nil)
+                    self.announcePreferencesChanged()
                 }
             } catch {
                 self.setProblem(error.localizedDescription)
@@ -94,23 +95,21 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         }
     }
 
-    /// Saves keyboard font zoom and announces it, so observers apply the size
-    /// from the same store that persisted it.
     func saveFontSize(_ fontSize: CGFloat) async throws {
         let revision = locationRevision
         if directory == nil {
             try await write {
                 guard revision == self.locationRevision else { throw ConfigurationError.changedExternally }
                 self.localPreferences.saveFontSize(fontSize)
+                self.announcePreferencesChanged()
             }
-        } else {
-            let previous = await reload()
-            guard revision == locationRevision else { throw ConfigurationError.changedExternally }
-            var updated = previous
-            updated.fontSize = fontSize
-            try await save(updated, replacing: previous)
+            return
         }
-        NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
+        let previous = await reload()
+        guard revision == locationRevision else { throw ConfigurationError.changedExternally }
+        var updated = previous
+        updated.fontSize = fontSize
+        try await save(updated, replacing: previous)
     }
 
     func saveProfiles(_ profiles: [SSHProfile], replacing previous: [SSHProfile]) async throws {
@@ -243,8 +242,15 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         snapshot = loaded
         setProblem(nil)
         if changed, announcePreferences {
-            NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
+            announcePreferencesChanged()
         }
+    }
+
+    /// The only sender of `.shadePreferencesChanged`: posted after a successful
+    /// save, a reload that found different values, or a storage switch, so
+    /// observers apply exactly what this store now returns from `load()`.
+    private func announcePreferencesChanged() {
+        NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
     }
 
     private func setProblem(_ message: String?) {
@@ -253,7 +259,7 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
 
     private func notifyChange() {
         NotificationCenter.default.post(name: Self.didChange, object: self)
-        NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
+        announcePreferencesChanged()
     }
 }
 

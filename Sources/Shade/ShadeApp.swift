@@ -126,7 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self,
             selector: #selector(preferencesDidChange),
             name: .shadePreferencesChanged,
-            object: nil
+            object: configuration
         )
         NotificationCenter.default.addObserver(
             self,

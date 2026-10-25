@@ -49,8 +49,11 @@ neither source is removed or implicitly overwritten.
 
 ## External edits and failures
 
-Configuration changes post `ShadeConfigurationChanged` and the existing
-`ShadePreferencesChanged` notification. Active terminal sessions are preserved.
+`ConfigurationStore` is the only sender of `ShadePreferencesChanged`, always with
+itself as the notification object. It posts after a successful preferences or
+font-size save, a reload that found different values, and a storage switch; a
+rejected or failed save posts nothing. A storage switch also posts
+`ShadeConfigurationChanged`. Active terminal sessions are preserved.
 The app reloads at panel/Settings/picker presentation and before a quick-slot
 connection; Storage also offers an explicit Reload Files action. There is no
 continuous file watcher or cloud completion indicator.

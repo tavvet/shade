@@ -32,7 +32,6 @@ final class SettingsModel: NSObject, ObservableObject {
     private let notificationAuthorizationRequester: any NotificationAuthorizationRequesting
     private var suppressPreferenceWrites = false
     private var suppressOpenAtLoginWrite = false
-    private var applyDebounce: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
     private var savedPreferences: Preferences
 
@@ -89,7 +88,8 @@ final class SettingsModel: NSObject, ObservableObject {
         isSaving = true
         saveTask = Task { @MainActor in
             // One write at a time. Slider changes arriving during I/O become
-            // the next candidate, based only on the last successful save.
+            // the next candidate, based only on the last successful save. The
+            // store announces each successful save; the model never posts.
             while preferences != savedPreferences {
                 let candidate = preferences
                 let previous = savedPreferences
@@ -109,14 +109,12 @@ final class SettingsModel: NSObject, ObservableObject {
             isSaving = false
             saveTask = nil
             reloadPreferences()
-            scheduleApply()
         }
     }
 
     func waitForPendingSave() async { await saveTask?.value }
 
     @objc private func preferencesChanged(_ notification: Notification) {
-        if let source = notification.object as AnyObject?, source === self { return }
         reloadPreferences()
     }
 
@@ -129,16 +127,6 @@ final class SettingsModel: NSObject, ObservableObject {
             suppressOpenAtLoginWrite = true
             openAtLogin = loginItemManager.isEnabled
             suppressOpenAtLoginWrite = false
-        }
-    }
-
-    /// Coalesce the live re-apply after pending slider/color changes are saved.
-    private func scheduleApply() {
-        applyDebounce?.cancel()
-        applyDebounce = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(120))
-            guard !Task.isCancelled else { return }
-            NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
         }
     }
 }

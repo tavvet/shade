@@ -76,9 +76,9 @@ final class LocalPreferencesConcurrencyTests: XCTestCase {
             let desiredVisualBell = !original.visualBell
             let zoomedFontSize = Preferences.zoomedFontSize(from: original.fontSize, delta: 1)
 
-            // Match the keyboard zoom's reload → calculate → save → notify
-            // sequence. The separate main-actor task represents a settings
-            // action handled while the asynchronous zoom save is suspended.
+            // Match the keyboard zoom's reload → calculate → save sequence; the
+            // store announces the saved size. The separate main-actor task
+            // represents a settings action handled while the save is suspended.
             let zoom = Task { @MainActor in
                 let current = await configuration.reload().fontSize
                 let target = Preferences.zoomedFontSize(from: current, delta: 1)
@@ -86,7 +86,6 @@ final class LocalPreferencesConcurrencyTests: XCTestCase {
                     model.preferences.visualBell = desiredVisualBell
                 }
                 try await configuration.saveFontSize(target)
-                NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
                 await edit.value
             }
             try await zoom.value

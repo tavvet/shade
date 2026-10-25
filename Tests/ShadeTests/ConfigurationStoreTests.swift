@@ -38,6 +38,59 @@ final class ConfigurationStoreTests: XCTestCase {
         XCTAssertEqual(configuration.load().fontSize, 22)
     }
 
+    func testSettingsEditIsAnnouncedOnceAndOnlyByTheStore() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
+        let fromStore = ConfigurationChangeSpy()
+        let fromAnySender = ConfigurationChangeSpy()
+        let center = NotificationCenter.default
+        center.addObserver(fromStore, selector: #selector(ConfigurationChangeSpy.changed),
+                           name: .shadePreferencesChanged, object: configuration)
+        center.addObserver(fromAnySender, selector: #selector(ConfigurationChangeSpy.changed),
+                           name: .shadePreferencesChanged, object: nil)
+        defer {
+            center.removeObserver(fromStore)
+            center.removeObserver(fromAnySender)
+        }
+
+        for portable in [false, true] {
+            if portable {
+                try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+            }
+            let storeBefore = fromStore.count
+            let anyBefore = fromAnySender.count
+
+            model.preferences.visualBell.toggle()
+            await model.waitForPendingSave()
+            // Nothing else announces the edit later, such as a debounced repost.
+            try await Task.sleep(for: .milliseconds(200))
+
+            XCTAssertEqual(fromStore.count - storeBefore, 1, "portable: \(portable)")
+            XCTAssertEqual(fromAnySender.count - anyBefore, 1, "portable: \(portable)")
+            XCTAssertEqual(configuration.load().visualBell, model.preferences.visualBell)
+        }
+    }
+
+    func testRejectedSaveIsNotAnnounced() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        let spy = ConfigurationChangeSpy()
+        NotificationCenter.default.addObserver(spy, selector: #selector(ConfigurationChangeSpy.changed),
+                                               name: .shadePreferencesChanged, object: configuration)
+        defer { NotificationCenter.default.removeObserver(spy) }
+        var stale = configuration.load()
+        stale.fontSize += 3
+        var edited = configuration.load()
+        edited.visualBell.toggle()
+
+        await assertThrowsAsync { try await configuration.save(edited, replacing: stale) }
+
+        XCTAssertEqual(spy.count, 0)
+    }
+
     func testCopyCreatesPrivatePortableFilesAndPreservesOriginals() async throws {
         let fixture = try ConfigurationFixture()
         defer { fixture.cleanup() }
