@@ -36,6 +36,22 @@ final class TerminalSessionAppearanceTests: XCTestCase {
         XCTAssertEqual(session.view.font.pointSize, prefs.fontSize)
     }
 
+    func testConfiguredLinkHighlightColorIsAppliedToTheView() throws {
+        var prefs = Preferences.defaults
+        let session = TerminalSession(preferences: prefs)
+        let initial = try XCTUnwrap(session.view.linkHighlightColor?.usingColorSpace(.sRGB))
+        XCTAssertEqual(initial.redComponent, 1, accuracy: 0.01)
+        XCTAssertEqual(initial.greenComponent, 0.8, accuracy: 0.01)
+
+        prefs.linkHighlightHex = "00CCFF"
+        session.apply(prefs)
+
+        let updated = try XCTUnwrap(session.view.linkHighlightColor?.usingColorSpace(.sRGB))
+        XCTAssertEqual(updated.redComponent, 0, accuracy: 0.01)
+        XCTAssertEqual(updated.greenComponent, 0.8, accuracy: 0.01)
+        XCTAssertEqual(updated.blueComponent, 1, accuracy: 0.01)
+    }
+
     func testChangedBackgroundOpacityIsApplied() {
         var prefs = Preferences.defaults
         prefs.backgroundOpacity = 0.9

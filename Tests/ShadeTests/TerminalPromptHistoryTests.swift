@@ -277,6 +277,24 @@ final class TerminalPromptHistoryTests: XCTestCase {
         XCTAssertTrue(history.marks.isEmpty)
     }
 
+    func testMarksTrimmedOutOfScrollbackAreDroppedAndNotNavigated() {
+        let terminal = Terminal(
+            delegate: HistoryTerminalDelegate(),
+            options: TerminalOptions(cols: 20, rows: 5, scrollback: 10)
+        )
+        var history = TerminalPromptHistory()
+        _ = history.record(payload: Array("A".utf8), row: 0, in: terminal)
+        for line in 0..<40 { terminal.feed(text: "line \(line)\r\n") }
+        let snapshot = terminal.contentSnapshot(region: .history(maximumScrollbackRows: 500))
+        XCTAssertGreaterThan(snapshot.capturedRange.lowerBound, 0, "no rows were trimmed")
+        let currentRow = snapshot.capturedRange.upperBound - 1
+
+        _ = history.record(payload: Array("A".utf8), row: currentRow, in: terminal)
+
+        XCTAssertEqual(history.marks.map(\.row), [currentRow])
+        XCTAssertNil(history.viewportRow(toward: .previous, in: terminal))
+    }
+
     func testCopyKeepsSpacesAtSoftWrapBoundaries() {
         let terminal = makeTerminal(cols: 5)
         var history = TerminalPromptHistory()

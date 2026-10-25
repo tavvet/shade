@@ -89,6 +89,7 @@ final class PanelKeyboardController: PanelKeyHandler {
     private let preferences: any PreferencesStoring
     private let showConnections: @MainActor () -> Void
     private let connectQuickSlot: @MainActor (Int) -> Void
+    private let pasteboard: NSPasteboard
     /// The latest zoom; each one is a single store transaction, and the store
     /// runs them in the order the key presses arrived.
     private var lastZoom: Task<Void, Never>?
@@ -97,10 +98,12 @@ final class PanelKeyboardController: PanelKeyHandler {
         terminals: TerminalsController,
         preferences: any PreferencesStoring,
         showConnections: @escaping @MainActor () -> Void = {},
-        connectQuickSlot: @escaping @MainActor (Int) -> Void = { _ in }
+        connectQuickSlot: @escaping @MainActor (Int) -> Void = { _ in },
+        pasteboard: NSPasteboard = .general
     ) {
         self.terminals = terminals
         self.preferences = preferences
+        self.pasteboard = pasteboard
         self.showConnections = showConnections
         self.connectQuickSlot = connectQuickSlot
     }
@@ -140,7 +143,6 @@ final class PanelKeyboardController: PanelKeyHandler {
               let text = session.view.getSelection(),
               !text.isEmpty else { return }
         let view = session.view
-        let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         session.sendUserInput([UInt8](repeating: 0x7F, count: text.count))
@@ -172,7 +174,7 @@ final class PanelKeyboardController: PanelKeyHandler {
         case .nextPrompt:
             terminals.activeSession?.jumpToNextPrompt()
         case .copyLastCommandOutput:
-            terminals.activeSession?.copyLastCommandOutput()
+            terminals.activeSession?.copyLastCommandOutput(to: pasteboard)
         case .showConnections:
             showConnections()
         case .connectQuickSlot(let number):

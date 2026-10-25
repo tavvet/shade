@@ -26,7 +26,7 @@ enum ShadeApp {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The single preferences source passed to every feature controller.
     private let configuration: ConfigurationStore
-    private let terminals: TerminalsController
+    let terminals: TerminalsController
     private let inputSource = InputSourceMonitor()
     private lazy var connections = SSHConnectionsController(
         store: ConfigurationSSHProfileStore(configuration: configuration)
@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.connectQuickSlot(number)
         }
     )
-    private lazy var panelContent = TerminalPanelContentController(
+    private(set) lazy var panelContent = TerminalPanelContentController(
         terminals: terminals,
         tabs: tabs,
         inputSource: inputSource
@@ -63,7 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var quickSlotRequest = SSHConnectionRequest(controller: connections)
     private var settingsWerePresented = false
 
-    private lazy var panel: DropdownPanel = {
+    private(set) lazy var panel: DropdownPanel = {
         let panel = DropdownPanel(preferences: configuration)
         panel.keyHandler = keyboard
         panel.onBecomeKey = { [weak self] in
@@ -107,8 +107,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         inputSource: inputSource
     )
 
-    override init() {
-        let configuration = ConfigurationStore.shared
+    /// The app passes `ConfigurationStore.shared`; tests pass an isolated store.
+    init(configuration: ConfigurationStore = .shared) {
         self.configuration = configuration
         terminals = TerminalsController(preferences: configuration)
         super.init()
@@ -120,10 +120,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWindow.allowsAutomaticWindowTabbing = false
 
         menus.install()
-        panelContent.install(in: panel, preferences: configuration.load())
+        connectComponents()
         notifications.start()
         primePanelFrame()
 
+        KeyboardShortcuts.onKeyDown(for: .toggleShade) { [weak self] in
+            self?.panel.toggle()
+        }
+        // Start with portable preferences when available. F12 remains usable
+        // during a slow initial read and can create a session from the fallback.
+        Task { @MainActor in
+            await connections.reload()
+            if !panel.isVisible { primePanelFrame() }
+            terminals.ensureAtLeastOneSession()
+        }
+    }
+
+    /// Builds the panel content and subscribes to this delegate's store and to
+    /// app activation. It has no global side effects (hotkey, menus, system
+    /// notifications), so tests can exercise the wiring directly.
+    func connectComponents() {
+        panelContent.install(in: panel, preferences: configuration.load())
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(preferencesDidChange),
@@ -142,16 +159,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: ConfigurationStore.didChange,
             object: configuration
         )
-        KeyboardShortcuts.onKeyDown(for: .toggleShade) { [weak self] in
-            self?.panel.toggle()
-        }
-        // Start with portable preferences when available. F12 remains usable
-        // during a slow initial read and can create a session from the fallback.
-        Task { @MainActor in
-            await connections.reload()
-            if !panel.isVisible { primePanelFrame() }
-            terminals.ensureAtLeastOneSession()
-        }
     }
 
     /// Lays out the panel before the first shell starts so SwiftTerm computes

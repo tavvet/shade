@@ -209,11 +209,11 @@ final class TerminalSession {
     /// `false` if no completed C/D pair exists or the command produced
     /// no output.
     @discardableResult
-    func copyLastCommandOutput() -> Bool {
+    func copyLastCommandOutput(to pasteboard: NSPasteboard = .general) -> Bool {
         guard let snapshot = historySnapshot,
               let text = promptHistory.lastCommandOutput(in: snapshot) else { return false }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
         return true
     }
 

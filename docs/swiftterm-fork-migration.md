@@ -83,15 +83,28 @@ dependency can hide a broken pin.
 - [x] `swift test -c release` in Shade: all 346 tests pass with optimizations
 - [x] `make test-build`: release bundle, signature, resources and packaging fixtures
 
-The remaining items are manual checks in a running application:
+These former manual checks are now covered by automated Shade tests against
+the pinned fork (they exercise the terminal view and session, not keyboard
+delivery through a running app):
 
-- [ ] keyboard selection: character, word, wide glyph, emoji, BiDi and soft wrap
-- [ ] selection starts at the live cursor while the viewport is scrolled up
-- [ ] `⌘X` copies selection and clears it
-- [ ] OSC 133 navigation (`⌘⇧↑` / `⌘⇧↓`) and output copy (`⌘⇧O`)
-- [ ] OSC 133 split across PTY chunks and multiple marks in one chunk
-- [ ] OSC 133 rows remain correct after scrollback trimming
-- [ ] configurable link tint on `⌘`-hover
+- [x] keyboard selection: character, word, wide glyph, emoji and soft wrap —
+  `TerminalKeyboardSelectionTests`; BiDi movement is covered by the fork's
+  keyboard-selection regressions
+- [x] selection starts at the live cursor while the viewport is scrolled up —
+  `TerminalKeyboardSelectionTests.testSelectionStartsAtTheLiveCursorWhileScrolledUp`
+- [x] `⌘X` copies the selection and clears it — `TerminalClipboardTests`
+- [x] OSC 133 navigation (`⌘⇧↑` / `⌘⇧↓`) and output copy (`⌘⇧O`) —
+  `TerminalClipboardTests.testPromptNavigationAndOutputCopyFollowOSC133Marks`
+- [x] OSC 133 split across PTY chunks and multiple marks in one chunk —
+  `TerminalOscObservationTests`
+- [x] OSC 133 rows remain correct after scrollback trimming —
+  `TerminalPromptHistoryTests.testMarksTrimmedOutOfScrollbackAreDroppedAndNotNavigated`
+
+These remain manual checks in a running application, because they judge what
+is drawn on screen:
+
+- [ ] configurable link tint on `⌘`-hover (the configured color reaching the
+  view is tested in `TerminalSessionAppearanceTests`)
 - [ ] rendering and translucency in nano, vim, less and htop
 
 ## Historical note
