@@ -1,7 +1,8 @@
 # SwiftTerm fork maintenance
 
-_Status: SwiftTerm 1.99.1 migration on `update/swiftterm-1.99.1`.
-The four specific patches were approved and published on 2026-10-23._
+_Status: SwiftTerm 1.99.1 migration complete, merged into `main` and released
+in Shade 0.1.25. The four specific patches were approved and published on
+2026-10-23._
 
 ## Current state
 

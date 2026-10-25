@@ -10,8 +10,8 @@ Requirements:
 
 - Deployment target: macOS 13 or later
 - Development host: a macOS version supported by the selected Xcode (Xcode
-  16.3 requires macOS 15.2+; CI runs on macOS 15)
-- Xcode 16.3+ (Swift 6.1+ toolchain); newer Xcode releases can require newer macOS
+  26 requires macOS 15.6+; CI runs Xcode 26.3 on macOS 15)
+- Xcode 26+ (Swift 6.2+ toolchain); newer Xcode releases can require newer macOS
 
 ```sh
 git clone <fork-url>

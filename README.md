@@ -588,7 +588,6 @@ Sources/Shade/
 ├── AppearanceSettingsView.swift  Appearance settings form
 ├── GeneralSettingsView.swift  Window, startup and behavior settings form
 ├── NotificationSettingsView.swift  Command-notification settings form
-├── OSC133StreamObserver.swift  Non-invasive OSC 133 observation in the PTY stream
 ├── SettingsModel.swift      Observable settings snapshot + live-apply coordination
 ├── SettingsFileDocument.swift  Versioned portable preferences JSON and validation
 ├── SettingsSystemServices.swift  Login-item and notification authorization adapters
@@ -601,6 +600,7 @@ Sources/Shade/
 ├── SSHCommandBuilder.swift  Validated OpenSSH invocation construction
 ├── SSHConnectionLaunch.swift  SSH profile → generic terminal launch configuration
 ├── SSHConnectionPickerComponents.swift  Quick-picker rows and supporting states
+├── SSHConnectionPickerConnectionRequest.swift  Cancellable refresh-then-connect picker action
 ├── SSHConnectionPickerList.swift  Filtered rows with selection-aware scrolling
 ├── SSHConnectionPickerNavigation.swift  Picker key routing and bounded selection movement
 ├── SSHConnectionPickerSearch.swift  Tokenized saved-connection filtering
@@ -615,7 +615,6 @@ Sources/Shade/
 ├── TabChip.swift            Individual tab rendering and inline rename state
 ├── TabsObservable.swift     Observable tab/session projection for SwiftUI
 ├── TerminalAppearance.swift  SwiftTerm styling and visual-bell rendering
-├── TerminalBufferGeometry.swift  Public-API-only active-buffer geometry
 ├── TerminalCommandSequence.swift  One-PTY command → login-shell wrapper
 ├── TerminalContextPoller.swift  Visibility-scoped repeating context refresh
 ├── TerminalContextTracker.swift  CWD, Git status/branch and remote-session masking
@@ -625,7 +624,6 @@ Sources/Shade/
 ├── TerminalPresentationState.swift  Tab titles, activity and command-status state
 ├── TerminalProcessController.swift  SwiftTerm view, shell lifecycle and callback wiring
 ├── TerminalPromptHistory.swift  OSC 133 state, command timing, prompt navigation/output
-├── TerminalScreenClear.swift  Local text erasure that preserves shell input/cursor
 ├── TerminalPanelContentController.swift  Panel view hierarchy, tabs, badge and blur
 ├── TerminalSession.swift    Coordinator for one terminal tab
 ├── TerminalTabStore.swift   Pure multi-tab collection and selection state

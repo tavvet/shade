@@ -6,6 +6,12 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Correct the documented build requirement to Xcode 26+ / Swift 6.2+, list the
+  current source files in the README architecture tree, and mark the SwiftTerm
+  1.99.1 migration as released.
+
 ## [0.1.26] — 2026-10-24
 
 ### Added
