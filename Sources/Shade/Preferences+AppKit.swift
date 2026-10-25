@@ -45,13 +45,34 @@ extension Preferences {
     }
 
     func linkHighlightColor() -> NSColor {
-        guard let rgb = Self.parseHex(linkHighlightHex) else { return .systemYellow }
-        return NSColor(red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1.0)
+        Self.color(hex: linkHighlightHex, fallback: .systemYellow)
     }
 
     mutating func setLinkHighlightColor(_ color: NSColor) {
+        linkHighlightHex = Self.hex(for: color)
+    }
+
+    /// The terminal's default background with the configured opacity.
+    func terminalBackgroundColor() -> NSColor {
+        let fallback = Self.color(hex: Self.defaults.backgroundHex, fallback: .black)
+        return Self.color(hex: backgroundHex, fallback: fallback)
+            .withAlphaComponent(backgroundOpacity)
+    }
+
+    mutating func setTerminalBackgroundColor(_ color: NSColor) {
+        backgroundHex = Self.hex(for: color)
+    }
+
+    /// sRGB color for a stored `RRGGBB` value, or `fallback` when it is invalid.
+    static func color(hex: String, fallback: NSColor) -> NSColor {
+        guard let rgb = parseHex(hex) else { return fallback }
+        return NSColor(srgbRed: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1.0)
+    }
+
+    /// Uppercase `RRGGBB` for `color` in sRGB; alpha is dropped.
+    static func hex(for color: NSColor) -> String {
         let srgb = color.usingColorSpace(.sRGB) ?? color
-        linkHighlightHex = Self.hexString(for: .init(
+        return hexString(for: .init(
             red: srgb.redComponent,
             green: srgb.greenComponent,
             blue: srgb.blueComponent

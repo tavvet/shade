@@ -11,6 +11,7 @@ final class SettingsFileDocumentTests: XCTestCase {
         preferences.showInputSourceIndicator = true
         preferences.tabMinimumWidth = 180
         preferences.shellEnrichment = true
+        preferences.backgroundHex = "1A2B3C"
 
         XCTAssertEqual(try SettingsFileDocument.decode(SettingsFileDocument.encode(preferences)), preferences)
     }
@@ -21,7 +22,7 @@ final class SettingsFileDocumentTests: XCTestCase {
         json["version"] = 99
         XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
 
-        json["version"] = 2
+        json["version"] = SettingsFileDocument.currentVersion
         var preferences = try XCTUnwrap(json["preferences"] as? [String: Any])
         preferences["cursorShape"] = "unknown"
         json["preferences"] = preferences
@@ -49,6 +50,7 @@ final class SettingsFileDocumentTests: XCTestCase {
         json["version"] = 1
         var preferences = try XCTUnwrap(json["preferences"] as? [String: Any])
         preferences.removeValue(forKey: "tabMinimumWidth")
+        preferences.removeValue(forKey: "backgroundHex")
         json["preferences"] = preferences
 
         let migrated = try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json))
@@ -57,11 +59,46 @@ final class SettingsFileDocumentTests: XCTestCase {
         let encoded = try XCTUnwrap(JSONSerialization.jsonObject(
             with: SettingsFileDocument.encode(migrated)
         ) as? [String: Any])
-        XCTAssertEqual(encoded["version"] as? Int, 2)
+        XCTAssertEqual(encoded["version"] as? Int, SettingsFileDocument.currentVersion)
 
         preferences.removeValue(forKey: "fontName")
         json["preferences"] = preferences
         XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
+    }
+
+    func testVersionTwoMigratesTheBackgroundColorWithoutChangingOtherPreferences() throws {
+        var expected = Preferences.defaults
+        expected.tabMinimumWidth = 200
+        expected.backgroundOpacity = 0.6
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: SettingsFileDocument.encode(expected)
+        ) as? [String: Any])
+        json["version"] = 2
+        var preferences = try XCTUnwrap(json["preferences"] as? [String: Any])
+        preferences.removeValue(forKey: "backgroundHex")
+        json["preferences"] = preferences
+
+        XCTAssertEqual(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)), expected)
+
+        preferences.removeValue(forKey: "tabMinimumWidth")
+        json["preferences"] = preferences
+        XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
+    }
+
+    func testCurrentVersionRequiresAValidBackgroundColor() throws {
+        let data = try SettingsFileDocument.encode(.defaults)
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var preferences = try XCTUnwrap(json["preferences"] as? [String: Any])
+        preferences.removeValue(forKey: "backgroundHex")
+        json["preferences"] = preferences
+        XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
+
+        preferences["backgroundHex"] = "dark"
+        json["preferences"] = preferences
+        XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
+        var value = Preferences.defaults
+        value.backgroundHex = "dark"
+        XCTAssertThrowsError(try SettingsFileDocument.encode(value))
     }
 
     func testVersionTwoRequiresAValidTabWidth() throws {

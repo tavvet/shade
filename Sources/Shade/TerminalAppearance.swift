@@ -18,8 +18,9 @@ enum TerminalAppearance {
         if previous?.fontName != prefs.fontName || previous?.fontSize != prefs.fontSize {
             view.font = prefs.terminalFont()
         }
-        if previous?.backgroundOpacity != prefs.backgroundOpacity {
-            view.nativeBackgroundColor = NSColor(white: 0.08, alpha: prefs.backgroundOpacity)
+        if previous?.backgroundHex != prefs.backgroundHex
+            || previous?.backgroundOpacity != prefs.backgroundOpacity {
+            view.nativeBackgroundColor = prefs.terminalBackgroundColor()
         }
         if previous?.linkHighlightHex != prefs.linkHighlightHex {
             view.linkHighlightColor = prefs.linkHighlightColor()

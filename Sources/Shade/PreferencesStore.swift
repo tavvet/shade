@@ -66,6 +66,10 @@ struct PreferencesStore {
                 1.0
             )
         }
+        if let raw = userDefaults.string(forKey: Key.backgroundHex),
+           Preferences.parseHex(raw) != nil {
+            preferences.backgroundHex = normalize(hex: raw)
+        }
         if userDefaults.object(forKey: Key.animationDuration) != nil {
             preferences.animationDuration = min(
                 max(userDefaults.double(forKey: Key.animationDuration), 0.0),
@@ -132,6 +136,7 @@ struct PreferencesStore {
         userDefaults.set(preferences.fontSize, forKey: Key.fontSize)
         userDefaults.set(preferences.fontName, forKey: Key.fontName)
         userDefaults.set(preferences.backgroundOpacity, forKey: Key.backgroundOpacity)
+        userDefaults.set(preferences.backgroundHex, forKey: Key.backgroundHex)
         userDefaults.set(preferences.animationDuration, forKey: Key.animationDuration)
         userDefaults.set(preferences.linkHighlightHex, forKey: Key.linkHighlightHex)
         userDefaults.set(preferences.backgroundBlur, forKey: Key.backgroundBlur)
@@ -175,6 +180,7 @@ struct PreferencesStore {
         static let fontSize = "fontSize"
         static let fontName = "fontName"
         static let backgroundOpacity = "backgroundOpacity"
+        static let backgroundHex = "backgroundHex"
         static let animationDuration = "animationDuration"
         static let linkHighlightHex = "linkHighlightHex"
         static let backgroundBlur = "backgroundBlur"

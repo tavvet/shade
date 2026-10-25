@@ -1,3 +1,5 @@
+import AppKit
+import SwiftUI
 import XCTest
 @testable import Shade
 
@@ -38,6 +40,25 @@ final class SettingsModelTests: XCTestCase {
         await otherConfiguration.waitForPendingAnnouncement()
 
         XCTAssertEqual(model.preferences, shown)
+    }
+
+    func testBackgroundColorPickerKeepsOpacitySeparate() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
+        model.preferences.backgroundOpacity = 0.6
+
+        model.terminalBackgroundColor.wrappedValue = Color(
+            nsColor: NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.3)
+        )
+        await model.waitForPendingSave()
+
+        XCTAssertEqual(model.preferences.backgroundHex, "336699")
+        XCTAssertEqual(model.preferences.backgroundOpacity, 0.6)
+        XCTAssertEqual(configuration.load().backgroundHex, "336699")
+        let shown = NSColor(model.terminalBackgroundColor.wrappedValue)
+        XCTAssertEqual(shown.alphaComponent, 1, accuracy: 0.001)
     }
 
     func testNotificationAuthorizationIsRequestedOnlyWhenEnablingNotifications() async {

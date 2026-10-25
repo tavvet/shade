@@ -63,6 +63,26 @@ final class TerminalSessionAppearanceTests: XCTestCase {
         XCTAssertEqual(session.view.nativeBackgroundColor.alphaComponent, 0.5, accuracy: 0.001)
     }
 
+    func testChangedBackgroundColorIsAppliedWithTheOpacity() throws {
+        var prefs = Preferences.defaults
+        prefs.backgroundOpacity = 0.8
+        let session = TerminalSession(preferences: prefs)
+
+        prefs.backgroundHex = "336699"
+        session.apply(prefs)
+
+        let color = try XCTUnwrap(session.view.nativeBackgroundColor.usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: color), "336699")
+        XCTAssertEqual(color.alphaComponent, 0.8, accuracy: 0.001)
+
+        prefs.backgroundOpacity = 0.5
+        session.apply(prefs)
+
+        let faded = try XCTUnwrap(session.view.nativeBackgroundColor.usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: faded), "336699")
+        XCTAssertEqual(faded.alphaComponent, 0.5, accuracy: 0.001)
+    }
+
     func testControllerCreatesSessionsFromInjectedPreferences() {
         var prefs = Preferences.defaults
         prefs.cursorShape = .bar

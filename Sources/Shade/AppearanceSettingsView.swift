@@ -61,6 +61,12 @@ struct AppearanceSettingsView: View {
             }
 
             Section("Color & Background") {
+                ColorPicker(
+                    "Background",
+                    selection: model.terminalBackgroundColor,
+                    supportsOpacity: false
+                )
+
                 HStack {
                     Text("Opacity")
                         .frame(width: 76, alignment: .leading)

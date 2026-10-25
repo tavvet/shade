@@ -31,7 +31,7 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Multi-monitor** aware — appears on the screen containing the mouse, or on
   the primary screen, your choice.
 - **Customizable layout** — width, height, horizontal alignment, screen
-  selection, font family/size, background opacity, background blur,
+  selection, font family/size, background color and opacity, background blur,
   slide-animation duration.
 - **Live-apply** settings — most preferences take effect immediately; layout
   ones (size/position) on the next toggle.
@@ -219,7 +219,7 @@ seven focused pages:
   Open at Login and slide animation
 - **Connections** — saved SSH profiles and their quick-access order
 - **Appearance** — optional current-input-source badge, monospace font family
-  and size, background opacity, link highlight color, blur and material
+  and size, background color and opacity, link highlight color, blur and material
 - **Terminal** — zsh completion enrichment, cursor shape and blink, visual bell
 - **Notifications** — command-finished alerts and their duration threshold
 - **Shortcuts** — global-hotkey recorder and keyboard reference
@@ -298,6 +298,7 @@ defaults write dev.shade.Shade screenChoice mouseLocation      # main | mouseLoc
 defaults write dev.shade.Shade fontSize 14                     # 8 – 32; Settings slider: 9 – 22
 defaults write dev.shade.Shade fontName "Menlo"                # "" = system monospaced
 defaults write dev.shade.Shade backgroundOpacity 0.85          # 0.3 – 1.0
+defaults write dev.shade.Shade backgroundHex "1E1E2E"          # RRGGBB, optional '#'; default: 141414
 defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdrop (most visible at lower opacity)
 defaults write dev.shade.Shade blurMaterial hud                # hud | underWindow | sidebar | fullScreen
 defaults write dev.shade.Shade showInputSourceIndicator -bool true # live EN / RU / FI badge; default false

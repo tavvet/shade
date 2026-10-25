@@ -28,6 +28,14 @@ final class SettingsModel: NSObject, ObservableObject {
         )
     }
 
+    /// Background color without opacity; the opacity slider stays separate.
+    var terminalBackgroundColor: Binding<Color> {
+        Binding(
+            get: { Color(nsColor: self.preferences.terminalBackgroundColor().withAlphaComponent(1)) },
+            set: { self.preferences.setTerminalBackgroundColor(NSColor($0)) }
+        )
+    }
+
     private let preferencesStore: any PreferencesStoring
     private let loginItemManager: any LoginItemManaging
     private let notificationAuthorizationRequester: any NotificationAuthorizationRequesting

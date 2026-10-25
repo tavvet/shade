@@ -6,6 +6,13 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Add a background color picker under Appearance → Color & Background. The
+  opacity slider still controls translucency, and the color is saved in local
+  defaults (`backgroundHex`) and in portable `settings.json`, which moves to
+  version 3; older files load with the previous dark gray.
+
 ### Changed
 
 - Stop resetting the cursor to the configured shape on every panel show. A

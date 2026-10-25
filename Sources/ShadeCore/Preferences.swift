@@ -11,6 +11,7 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var fontSize: CGFloat
     public var fontName: String              // "" = system monospaced
     public var backgroundOpacity: Double     // 0.3 – 1.0
+    public var backgroundHex: String         // 6-char RRGGBB terminal background; opacity applies on top
     public var animationDuration: Double     // 0.0 – 0.5 seconds
     public var linkHighlightHex: String      // 6-char RRGGBB; falls back to systemYellow if invalid
     public var backgroundBlur: Bool          // frosted-glass backdrop behind the translucent terminal
@@ -64,6 +65,7 @@ public struct Preferences: Codable, Equatable, Sendable {
         fontSize: 13,
         fontName: "",
         backgroundOpacity: 0.94,
+        backgroundHex: "141414",
         animationDuration: 0.16,
         linkHighlightHex: "FFCC00",     // ≈ NSColor.systemYellow
         backgroundBlur: true,

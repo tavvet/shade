@@ -55,6 +55,7 @@ final class PreferencesTests: XCTestCase {
         prefs.fontSize = 17
         prefs.fontName = "Menlo"
         prefs.backgroundOpacity = 0.75
+        prefs.backgroundHex = "1A2B3C"
         prefs.animationDuration = 0.3
         prefs.linkHighlightHex = "123ABC"
         prefs.backgroundBlur = false
@@ -146,6 +147,15 @@ final class PreferencesTests: XCTestCase {
         store.set("#ffcc00", forKey: PreferencesStore.Key.linkHighlightHex)
 
         XCTAssertEqual(PreferencesStore(userDefaults: store).load().linkHighlightHex, "FFCC00")
+    }
+
+    func testLoadNormalizesValidBackgroundHexAndIgnoresInvalidOnes() {
+        let store = freshStore()
+        store.set("#1a2b3c", forKey: PreferencesStore.Key.backgroundHex)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().backgroundHex, "1A2B3C")
+
+        store.set("dark", forKey: PreferencesStore.Key.backgroundHex)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().backgroundHex, Preferences.defaults.backgroundHex)
     }
 
     func testFractionsAreClampedToValidRange() {
@@ -260,6 +270,23 @@ final class PreferencesTests: XCTestCase {
         var prefs = Preferences.defaults
         prefs.linkHighlightHex = "not-a-color"
         XCTAssertEqual(prefs.linkHighlightColor(), NSColor.systemYellow)
+    }
+
+    func testTerminalBackgroundColorCarriesTheOpacity() throws {
+        var prefs = Preferences.defaults
+        prefs.setTerminalBackgroundColor(NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.5))
+        prefs.backgroundOpacity = 0.7
+        XCTAssertEqual(prefs.backgroundHex, "336699")
+
+        let color = try XCTUnwrap(prefs.terminalBackgroundColor().usingColorSpace(.sRGB))
+        XCTAssertEqual(color.redComponent, 0.2, accuracy: 0.01)
+        XCTAssertEqual(color.blueComponent, 0.6, accuracy: 0.01)
+        XCTAssertEqual(color.alphaComponent, 0.7, accuracy: 0.001)
+
+        prefs.backgroundHex = "invalid"
+        let fallback = try XCTUnwrap(prefs.terminalBackgroundColor().usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: fallback), Preferences.defaults.backgroundHex)
+        XCTAssertEqual(fallback.alphaComponent, 0.7, accuracy: 0.001)
     }
 
     func testSetLinkHighlightColorStoresRGBHex() {
