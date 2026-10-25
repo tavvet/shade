@@ -80,13 +80,13 @@ final class TerminalSession {
 
     init(
         configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration(),
-        preferences: Preferences? = nil
+        preferences prefs: Preferences
     ) {
-        let prefs = preferences ?? PreferencesStore.standard.load()
         let options = TerminalAppearance.terminalOptions(for: prefs)
         let processController = TerminalProcessController(
             configuration: configuration,
-            terminalOptions: options
+            terminalOptions: options,
+            shellEnrichment: prefs.shellEnrichment
         )
         process = processController
         cursorStyle = TerminalCursorStyleTracker(applied: options.cursorStyle)
@@ -103,8 +103,9 @@ final class TerminalSession {
         }
         process.onActivity = { [weak self] in self?.presentation.noteActivity() }
         process.onBell = { [weak self] in
-            guard let self else { return false }
-            return TerminalAppearance.flashBell(in: self.view)
+            guard let self, self.appliedPreferences?.visualBell == true else { return false }
+            TerminalAppearance.flashBell(in: self.view)
+            return true
         }
         process.onPromptMark = { [weak self] event in
             self?.recordPromptMark(event)

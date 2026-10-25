@@ -6,7 +6,7 @@ import XCTest
 @MainActor
 final class TerminalScreenClearTests: XCTestCase {
     func testCommandKDoesNotSubmitPendingPTYInput() throws {
-        let controller = TerminalsController()
+        let controller = TerminalsController(preferences: StaticPreferences())
         let session = controller.newSession(configuration: TerminalLaunchConfiguration(
             initialCommand: ProcessInvocation(executable: "/bin/sh", arguments: [
                 "-c", "IFS= read -r line; printf 'SUBMITTED_%s\\n' \"$line\"; /bin/sleep 5"
@@ -16,7 +16,7 @@ final class TerminalScreenClearTests: XCTestCase {
             session.onExit = nil
             session.terminate()
         }
-        let keyboard = PanelKeyboardController(terminals: controller)
+        let keyboard = PanelKeyboardController(terminals: controller, preferences: isolatedPreferencesStore())
         RunLoop.main.run(until: Date().addingTimeInterval(0.1))
         session.sendUserInput(Array("probe".utf8))
         RunLoop.main.run(until: Date().addingTimeInterval(0.1))

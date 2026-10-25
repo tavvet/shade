@@ -46,6 +46,20 @@ final class TerminalSessionAppearanceTests: XCTestCase {
         XCTAssertEqual(session.view.nativeBackgroundColor.alphaComponent, 0.5, accuracy: 0.001)
     }
 
+    func testControllerCreatesSessionsFromInjectedPreferences() {
+        var prefs = Preferences.defaults
+        prefs.cursorShape = .bar
+        prefs.cursorBlink = false
+        prefs.fontSize = 17
+        let controller = TerminalsController(preferences: StaticPreferences(preferences: prefs))
+
+        let session = controller.newSession()
+        defer { session.terminate() }
+
+        XCTAssertEqual(session.view.terminalStateSnapshot().cursorStyle, .steadyBar)
+        XCTAssertEqual(session.view.font.pointSize, 17)
+    }
+
     private func selectedSession(_ prefs: Preferences) -> TerminalSession {
         let session = TerminalSession(preferences: prefs)
         session.view.feed(text: "hello")

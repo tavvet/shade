@@ -20,8 +20,7 @@ final class TerminalPanelContentController {
         self.inputSource = inputSource
     }
 
-    func install(in panel: DropdownPanel) {
-        let prefs = PreferencesStore.standard.load()
+    func install(in panel: DropdownPanel, preferences prefs: Preferences) {
         let tabBar = TabBarView(
             tabs: tabs,
             inputSource: inputSource,

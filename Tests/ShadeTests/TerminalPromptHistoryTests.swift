@@ -235,7 +235,7 @@ final class TerminalPromptHistoryTests: XCTestCase {
 
     @MainActor
     func testSessionInvalidatesMarksOnWidthRoundTripWithoutHistoryAccess() throws {
-        let session = TerminalSession()
+        let session = TerminalSession(preferences: .defaults)
         let view = try XCTUnwrap(session.view as? ActivityTerminalView)
         view.setFrameSize(NSSize(width: 640, height: 480))
         let columns = view.terminalDimensions.cols

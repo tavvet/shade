@@ -8,7 +8,7 @@ final class TabsObservableTests: XCTestCase {
         weak var observable: TabsObservable?
 
         do {
-            let controller = TerminalsController()
+            let controller = TerminalsController(preferences: StaticPreferences())
             let value = TabsObservable(controller: controller, notificationCenter: center)
             observable = value
         }

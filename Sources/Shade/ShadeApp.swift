@@ -23,10 +23,12 @@ enum ShadeApp {
 /// Coordinates application lifecycle and the top-level feature controllers.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let terminals = TerminalsController()
+    /// The single preferences source passed to every feature controller.
+    private let configuration: ConfigurationStore
+    private let terminals: TerminalsController
     private let inputSource = InputSourceMonitor()
     private lazy var connections = SSHConnectionsController(
-        store: ConfigurationSSHProfileStore(configuration: .shared)
+        store: ConfigurationSSHProfileStore(configuration: configuration)
     ) { [weak self] profile in
         guard let self else { return }
         try self.terminals.connect(to: profile)
@@ -44,6 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var tabs = TabsObservable(controller: terminals)
     private lazy var keyboard = PanelKeyboardController(
         terminals: terminals,
+        preferences: configuration,
         showConnections: { [weak self] in self?.presentConnectionPicker() },
         connectQuickSlot: { [weak self] number in
             self?.connectQuickSlot(number)
@@ -59,7 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWerePresented = false
 
     private lazy var panel: DropdownPanel = {
-        let panel = DropdownPanel()
+        let panel = DropdownPanel(preferences: configuration)
         panel.keyHandler = keyboard
         panel.onBecomeKey = { [weak self] in
             guard let self else { return }
@@ -87,7 +90,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }()
 
     private lazy var menus = ApplicationMenuController(actions: self)
-    private lazy var notifications = CommandNotificationCoordinator(terminals: terminals, panel: panel)
+    private lazy var notifications = CommandNotificationCoordinator(
+        terminals: terminals,
+        panel: panel,
+        preferences: configuration
+    )
     private lazy var settings = SettingsWindowController(connections: connections)
     private lazy var about = AboutWindowController()
     private lazy var diagnostics = DiagnosticsWindowController(
@@ -95,13 +102,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         inputSource: inputSource
     )
 
+    override init() {
+        let configuration = ConfigurationStore.shared
+        self.configuration = configuration
+        terminals = TerminalsController(preferences: configuration)
+        super.init()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // The system's window-tab shortcuts would consume ⌘T before Shade's
         // own tab model gets a chance to handle it.
         NSWindow.allowsAutomaticWindowTabbing = false
 
         menus.install()
-        panelContent.install(in: panel)
+        panelContent.install(in: panel, preferences: configuration.load())
         notifications.start()
         primePanelFrame()
 
@@ -121,7 +135,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self,
             selector: #selector(configurationDidChange),
             name: ConfigurationStore.didChange,
-            object: ConfigurationStore.shared
+            object: configuration
         )
         KeyboardShortcuts.onKeyDown(for: .toggleShade) { [weak self] in
             self?.panel.toggle()
@@ -138,14 +152,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Lays out the panel before the first shell starts so SwiftTerm computes
     /// its real row and column count instead of using its default buffer size.
     private func primePanelFrame() {
-        let prefs = PreferencesStore.standard.load()
+        let prefs = configuration.load()
         guard let screen = prefs.resolvedScreen() else { return }
         panel.setFrame(prefs.dropdownFrame(on: screen), display: false)
         panel.contentView?.layoutSubtreeIfNeeded()
     }
 
     @objc private func preferencesDidChange() {
-        applyPreferences(PreferencesStore.standard.load())
+        applyPreferences(configuration.load())
     }
 
     @objc private func configurationDidChange() {
@@ -207,7 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if settingsWerePresented { await settings.waitForPendingSave() }
             await connections.waitForPendingSave()
             await keyboard.waitForPendingSave()
-            await ConfigurationStore.shared.waitForPendingWrites()
+            await configuration.waitForPendingWrites()
             sender.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater
@@ -216,7 +230,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Hide on a real app switch, but not during the transient resign-active
     /// event caused by opening one of Shade's own windows.
     @objc private func appDidResignActive() {
-        guard PreferencesStore.standard.load().hideOnFocusLoss, panel.isVisible else { return }
+        guard configuration.load().hideOnFocusLoss, panel.isVisible else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self, !NSApp.isActive, self.panel.isVisible else { return }
             self.panel.hide()

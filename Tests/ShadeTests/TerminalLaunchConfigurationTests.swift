@@ -265,7 +265,8 @@ final class TerminalLaunchConfigurationTests: XCTestCase {
     func testConfiguredTitleIsPinnedOnTerminalSession() async {
         await MainActor.run {
             let session = TerminalSession(
-                configuration: TerminalLaunchConfiguration(title: "Production EU")
+                configuration: TerminalLaunchConfiguration(title: "Production EU"),
+                preferences: .defaults
             )
 
             XCTAssertEqual(session.userTitle, "Production EU")
@@ -275,7 +276,7 @@ final class TerminalLaunchConfigurationTests: XCTestCase {
 
     func testControllerRejectsInvalidProfileWithoutAddingTab() async {
         await MainActor.run {
-            let controller = TerminalsController()
+            let controller = TerminalsController(preferences: StaticPreferences())
 
             do {
                 _ = try controller.connect(

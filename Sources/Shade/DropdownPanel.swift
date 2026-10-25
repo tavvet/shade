@@ -4,6 +4,7 @@ import AppKit
 /// Becomes the key window when shown so keyboard shortcuts route to us.
 @MainActor
 final class DropdownPanel: NSPanel {
+    private let preferences: any PreferencesProviding
     private var slideDuration: TimeInterval = Preferences.defaults.animationDuration
 
     /// Receives panel-level shortcuts and terminal input forwarding.
@@ -31,7 +32,8 @@ final class DropdownPanel: NSPanel {
         onBecomeKey?()
     }
 
-    init() {
+    init(preferences: any PreferencesProviding) {
+        self.preferences = preferences
         super.init(
             contentRect: .zero,
             styleMask: [.borderless],
@@ -44,7 +46,7 @@ final class DropdownPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         hidesOnDeactivate = false
         animationBehavior = .none
-        apply(PreferencesStore.standard.load())
+        apply(preferences.load())
     }
 
     override var canBecomeKey: Bool { true }
@@ -107,7 +109,7 @@ final class DropdownPanel: NSPanel {
     }
 
     func show() {
-        let prefs = PreferencesStore.standard.load()
+        let prefs = preferences.load()
         apply(prefs)
         onWillShow?(prefs)
         guard let screen = prefs.resolvedScreen() else { return }

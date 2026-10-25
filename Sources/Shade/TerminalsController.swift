@@ -5,6 +5,7 @@ import AppKit
 @MainActor
 final class TerminalsController {
     private let viewHost: TerminalViewHost
+    private let preferences: any PreferencesProviding
     var containerView: NSView { viewHost.containerView }
 
     private var tabs = TerminalTabStore<TerminalSession>()
@@ -23,7 +24,11 @@ final class TerminalsController {
     }
     private var automaticRespawnLimiter = AutomaticSessionRespawnLimiter()
 
-    init(viewHost: TerminalViewHost = TerminalViewHost()) {
+    init(
+        preferences: any PreferencesProviding,
+        viewHost: TerminalViewHost = TerminalViewHost()
+    ) {
+        self.preferences = preferences
         self.viewHost = viewHost
     }
 
@@ -60,13 +65,14 @@ final class TerminalsController {
     func newSession() -> TerminalSession {
         // ⌘T can open in the active tab's directory instead of $HOME. The first tab
         // and the last-tab respawn have no active session, so they keep $HOME.
+        let prefs = preferences.load()
         var configuration = TerminalLaunchConfiguration()
-        if PreferencesStore.standard.load().newTabInheritsCwd,
+        if prefs.newTabInheritsCwd,
            let cwd = activeSession?.cwd,
            !cwd.isEmpty {
             configuration.startupDirectory = cwd
         }
-        return newSession(configuration: configuration)
+        return newSession(configuration: configuration, preferences: prefs)
     }
 
     /// Opens a profile in a fresh tab. Validation and command construction
@@ -79,8 +85,15 @@ final class TerminalsController {
 
     @discardableResult
     func newSession(configuration: TerminalLaunchConfiguration) -> TerminalSession {
-        // TerminalSession.init already applies the persisted preferences.
-        let session = TerminalSession(configuration: configuration)
+        newSession(configuration: configuration, preferences: preferences.load())
+    }
+
+    private func newSession(
+        configuration: TerminalLaunchConfiguration,
+        preferences prefs: Preferences
+    ) -> TerminalSession {
+        // TerminalSession.init applies these preferences to the new view.
+        let session = TerminalSession(configuration: configuration, preferences: prefs)
         // Close this tab when the shell exits (Ctrl-D / `exit` / crash).
         // Weak self + weak session — onExit lives on the session, the
         // session is owned by `sessions`, and the closure must not keep

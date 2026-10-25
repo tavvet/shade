@@ -1,10 +1,17 @@
 import Foundation
 
+/// Read access to the active preferences. The application passes
+/// `ConfigurationStore.shared` to its controllers; tests pass isolated stores.
 @MainActor
-protocol PreferencesStoring {
+protocol PreferencesProviding {
     func load() -> Preferences
+}
+
+@MainActor
+protocol PreferencesStoring: PreferencesProviding {
     func reload() async -> Preferences
     func save(_ preferences: Preferences, replacing previous: Preferences) async throws
+    func saveFontSize(_ fontSize: CGFloat) async throws
 }
 
 extension PreferencesStoring {
@@ -20,9 +27,6 @@ struct PreferencesStore {
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
     }
-
-    @MainActor
-    static var standard: ConfigurationStore { .shared }
 
     func load() -> Preferences {
         var preferences = Preferences.defaults

@@ -5,7 +5,7 @@ import XCTest
 @MainActor
 final class DropdownPanelKeyRoutingTests: XCTestCase {
     func testSendEventFallsBackToPanelShortcutForModifiedNavigationKey() throws {
-        let panel = DropdownPanel()
+        let panel = DropdownPanel(preferences: StaticPreferences())
         let handler = RecordingPanelKeyHandler()
         panel.keyHandler = handler
         let event = try XCTUnwrap(NSEvent.keyEvent(
@@ -29,7 +29,7 @@ final class DropdownPanelKeyRoutingTests: XCTestCase {
     }
 
     func testPerformKeyEquivalentRecordsHandledShortcutAsUserInput() throws {
-        let panel = DropdownPanel()
+        let panel = DropdownPanel(preferences: StaticPreferences())
         let handler = RecordingPanelKeyHandler()
         panel.keyHandler = handler
         let event = try XCTUnwrap(NSEvent.keyEvent(

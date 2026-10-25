@@ -6,8 +6,9 @@ final class CommandNotificationCoordinatorTests: XCTestCase {
         await MainActor.run {
             let requester = NotificationAuthorizationRequesterSpy()
             let coordinator = CommandNotificationCoordinator(
-                terminals: TerminalsController(),
-                panel: DropdownPanel(),
+                terminals: TerminalsController(preferences: StaticPreferences()),
+                panel: DropdownPanel(preferences: StaticPreferences()),
+                preferences: StaticPreferences(),
                 authorizationRequester: requester
             )
             var preferences = Preferences.defaults

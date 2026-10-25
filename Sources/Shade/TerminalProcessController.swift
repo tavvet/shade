@@ -33,6 +33,7 @@ final class TerminalProcessController: NSObject {
     private let activityView: ActivityTerminalView
     private let launchConfiguration: TerminalLaunchConfiguration
     private let shellPath: String
+    private let shellEnrichment: Bool
     private let processStarter: ProcessStarter
     private let signalSender: SignalSender
     private var didPadInitialPrompt = false
@@ -41,11 +42,13 @@ final class TerminalProcessController: NSObject {
     init(
         configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration(),
         terminalOptions: TerminalOptions = .default,
+        shellEnrichment: Bool = false,
         shellPath: String = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh",
         processStarter: ProcessStarter? = nil,
         signalSender: @escaping SignalSender = { kill($0, $1) }
     ) {
         self.shellPath = shellPath
+        self.shellEnrichment = shellEnrichment
         shellName = (shellPath as NSString).lastPathComponent
         launchConfiguration = configuration
         self.signalSender = signalSender
@@ -112,7 +115,7 @@ final class TerminalProcessController: NSObject {
         }
         let shellEnvironment = ShellIntegration.environment(
             shellName: shellName,
-            enabled: PreferencesStore.standard.load().shellEnrichment
+            enabled: shellEnrichment
         )
         if let initialCommand = launchConfiguration.initialCommand {
             didStartProcess = startCommandSequence(

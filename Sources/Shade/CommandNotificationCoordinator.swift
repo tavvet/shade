@@ -5,18 +5,21 @@ import Foundation
 final class CommandNotificationCoordinator {
     private let terminals: TerminalsController
     private let panel: DropdownPanel
+    private let preferences: any PreferencesProviding
     private let notifier: CommandNotifier
     private let authorizationRequester: any NotificationAuthorizationRequesting
 
     init(
         terminals: TerminalsController,
         panel: DropdownPanel,
+        preferences: any PreferencesProviding,
         notifier: CommandNotifier = CommandNotifier(),
         authorizationRequester: any NotificationAuthorizationRequesting =
             SystemNotificationAuthorizationRequester()
     ) {
         self.terminals = terminals
         self.panel = panel
+        self.preferences = preferences
         self.notifier = notifier
         self.authorizationRequester = authorizationRequester
     }
@@ -39,7 +42,7 @@ final class CommandNotificationCoordinator {
 
     private func handleCommandFinish(duration: TimeInterval, exitCode: Int?, cwd: String) {
         guard !panel.isVisible else { return }
-        let prefs = PreferencesStore.standard.load()
+        let prefs = preferences.load()
         guard prefs.notifyOnCommandFinish, duration >= prefs.notifyThresholdSeconds else { return }
         notifier.post(exitCode: exitCode, duration: duration, cwd: cwd)
     }

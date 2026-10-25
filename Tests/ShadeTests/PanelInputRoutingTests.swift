@@ -17,7 +17,7 @@ final class PanelInputRoutingTests: XCTestCase {
 
     @MainActor
     func testTerminalCutRequiresTerminalResponderInDropdownPanel() {
-        let panel = DropdownPanel()
+        let panel = DropdownPanel(preferences: StaticPreferences())
         let terminal = TerminalView(frame: NSRect(x: 0, y: 0, width: 400, height: 200))
         panel.contentView = terminal
         XCTAssertTrue(panel.makeFirstResponder(terminal))
@@ -39,6 +39,6 @@ final class PanelInputRoutingTests: XCTestCase {
 
         XCTAssertNil(PanelInputRouting.terminalReceivingInput(in: window))
         XCTAssertNil(PanelInputRouting.terminalReceivingInput(in: nil))
-        XCTAssertNil(PanelInputRouting.terminalReceivingInput(in: DropdownPanel()))
+        XCTAssertNil(PanelInputRouting.terminalReceivingInput(in: DropdownPanel(preferences: StaticPreferences())))
     }
 }

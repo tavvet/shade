@@ -23,10 +23,13 @@ The portable folder contains two versioned JSON documents:
   and array order retain identity and quick-slot order. It contains connection
   metadata and identity-file paths, never passwords or private-key contents.
 
-`PreferencesStore.standard` routes runtime preference consumers through the
-configuration selector. Explicit `PreferencesStore(userDefaults:)` remains the
-local-only implementation for tests and migration-independent defaults access.
-`PreferencesStoring` lets SettingsModel handle persistence failures. The
+Runtime consumers never look up a global store. `AppDelegate` passes
+`ConfigurationStore.shared` to each controller as `PreferencesProviding`
+(read-only) or `PreferencesStoring` (read and write); controllers hand value
+snapshots to the sessions they create. Explicit `PreferencesStore(userDefaults:)`
+remains the local-only implementation for tests and migration-independent
+defaults access. `PreferencesStoring` lets SettingsModel handle persistence
+failures. The
 `ConfigurationSSHProfileStore` adapter connects the SSH controller to the same
 selector without making either document's codec depend on application lifecycle.
 

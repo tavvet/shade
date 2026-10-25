@@ -85,16 +85,19 @@ enum PanelShortcutResolver {
 @MainActor
 final class PanelKeyboardController: PanelKeyHandler {
     private let terminals: TerminalsController
+    private let preferences: any PreferencesStoring
     private let showConnections: @MainActor () -> Void
     private let connectQuickSlot: @MainActor (Int) -> Void
     private let zoomOperations = ConfigurationTaskQueue()
 
     init(
         terminals: TerminalsController,
+        preferences: any PreferencesStoring,
         showConnections: @escaping @MainActor () -> Void = {},
         connectQuickSlot: @escaping @MainActor (Int) -> Void = { _ in }
     ) {
         self.terminals = terminals
+        self.preferences = preferences
         self.showConnections = showConnections
         self.connectQuickSlot = connectQuickSlot
     }
@@ -178,7 +181,7 @@ final class PanelKeyboardController: PanelKeyHandler {
         Task { @MainActor in
             do {
                 try await zoomOperations.run {
-                    let store = PreferencesStore.standard
+                    let store = self.preferences
                     let current = await store.reload().fontSize
                     let target = Preferences.zoomedFontSize(from: current, delta: delta)
                     guard target != current else { return }

@@ -84,7 +84,9 @@ obvious fixes can skip straight to the implementation step.
 - Scalar user-facing settings extend the `Preferences` value model and get a
   control on the appropriate settings page. Runtime persistence goes through
   `ConfigurationStore` / `PreferencesStoring`; `PreferencesStore` remains the
-  local-defaults backend. Update the portable document version/migration when
+  local-defaults backend. Components receive preferences from their creator
+  (`PreferencesProviding` or a `Preferences` value) instead of reading
+  `ConfigurationStore.shared` themselves. Update the portable document version/migration when
   changing its schema; see [Configuration storage](docs/configuration-storage.md).
   Structured collections such as SSH profiles retain their own model and codec.
 - Pure logic (parsers, models, layout math) belongs in a module that's already
