@@ -62,6 +62,12 @@ struct AppearanceSettingsView: View {
 
             Section("Color & Background") {
                 ColorPicker(
+                    "Text",
+                    selection: model.terminalForegroundColor,
+                    supportsOpacity: false
+                )
+
+                ColorPicker(
                     "Background",
                     selection: model.terminalBackgroundColor,
                     supportsOpacity: false

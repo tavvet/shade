@@ -100,7 +100,6 @@ final class TerminalProcessController: NSObject {
         }
 
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.nativeForegroundColor = NSColor(white: 0.92, alpha: 1.0)
     }
 
     var isRunning: Bool { view.process.running }

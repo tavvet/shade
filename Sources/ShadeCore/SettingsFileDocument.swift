@@ -24,6 +24,7 @@ public struct SettingsFileDocument: Codable {
                 preferences["tabMinimumWidth"] = Double(Preferences.defaults.tabMinimumWidth)
             }
             preferences["backgroundHex"] = Preferences.defaults.backgroundHex
+            preferences["foregroundHex"] = Preferences.defaults.foregroundHex
             json["preferences"] = preferences
             json["version"] = currentVersion
             migrated = try JSONSerialization.data(withJSONObject: json)
@@ -57,7 +58,8 @@ public struct SettingsFileDocument: Codable {
               (0...0.5).contains(value.animationDuration),
               (1...600).contains(value.notifyThresholdSeconds),
               Preferences.parseHex(value.linkHighlightHex) != nil,
-              Preferences.parseHex(value.backgroundHex) != nil else {
+              Preferences.parseHex(value.backgroundHex) != nil,
+              Preferences.parseHex(value.foregroundHex) != nil else {
             throw ConfigurationError.invalidPreferences
         }
     }

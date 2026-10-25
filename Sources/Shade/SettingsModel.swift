@@ -36,6 +36,13 @@ final class SettingsModel: NSObject, ObservableObject {
         )
     }
 
+    var terminalForegroundColor: Binding<Color> {
+        Binding(
+            get: { Color(nsColor: self.preferences.terminalForegroundColor()) },
+            set: { self.preferences.setTerminalForegroundColor(NSColor($0)) }
+        )
+    }
+
     private let preferencesStore: any PreferencesStoring
     private let loginItemManager: any LoginItemManaging
     private let notificationAuthorizationRequester: any NotificationAuthorizationRequesting

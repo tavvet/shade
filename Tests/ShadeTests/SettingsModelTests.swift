@@ -61,6 +61,21 @@ final class SettingsModelTests: XCTestCase {
         XCTAssertEqual(shown.alphaComponent, 1, accuracy: 0.001)
     }
 
+    func testTextColorPickerSavesAnOpaqueColor() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
+
+        model.terminalForegroundColor.wrappedValue = Color(
+            nsColor: NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.3)
+        )
+        await model.waitForPendingSave()
+
+        XCTAssertEqual(model.preferences.foregroundHex, "336699")
+        XCTAssertEqual(configuration.load().foregroundHex, "336699")
+    }
+
     func testNotificationAuthorizationIsRequestedOnlyWhenEnablingNotifications() async {
         let suite = "SettingsModelTests.\(UUID().uuidString)"
         let store = UserDefaults(suiteName: suite)!

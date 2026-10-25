@@ -83,6 +83,20 @@ final class TerminalSessionAppearanceTests: XCTestCase {
         XCTAssertEqual(faded.alphaComponent, 0.5, accuracy: 0.001)
     }
 
+    func testTextColorIsAppliedAtStartAndWhenChanged() throws {
+        var prefs = Preferences.defaults
+        prefs.foregroundHex = "C0FFEE"
+        let session = TerminalSession(preferences: prefs)
+        let initial = try XCTUnwrap(session.view.nativeForegroundColor.usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: initial), "C0FFEE")
+
+        prefs.foregroundHex = "336699"
+        session.apply(prefs)
+
+        let updated = try XCTUnwrap(session.view.nativeForegroundColor.usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: updated), "336699")
+    }
+
     func testControllerCreatesSessionsFromInjectedPreferences() {
         var prefs = Preferences.defaults
         prefs.cursorShape = .bar

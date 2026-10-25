@@ -63,6 +63,16 @@ extension Preferences {
         backgroundHex = Self.hex(for: color)
     }
 
+    /// The default text color; programs may still pick their own colors.
+    func terminalForegroundColor() -> NSColor {
+        let fallback = Self.color(hex: Self.defaults.foregroundHex, fallback: .white)
+        return Self.color(hex: foregroundHex, fallback: fallback)
+    }
+
+    mutating func setTerminalForegroundColor(_ color: NSColor) {
+        foregroundHex = Self.hex(for: color)
+    }
+
     /// sRGB color for a stored `RRGGBB` value, or `fallback` when it is invalid.
     static func color(hex: String, fallback: NSColor) -> NSColor {
         guard let rgb = parseHex(hex) else { return fallback }

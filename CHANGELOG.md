@@ -12,6 +12,9 @@ All notable changes to Shade are documented in this file. Format follows
   opacity slider still controls translucency, and the color is saved in local
   defaults (`backgroundHex`) and in portable `settings.json`, which moves to
   version 3; older files load with the previous dark gray.
+- Add a text color picker next to it for the default terminal text color
+  (`foregroundHex`, the previous light gray by default). Programs that choose
+  their own colors keep them.
 
 ### Changed
 

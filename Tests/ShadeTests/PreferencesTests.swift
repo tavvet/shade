@@ -56,6 +56,7 @@ final class PreferencesTests: XCTestCase {
         prefs.fontName = "Menlo"
         prefs.backgroundOpacity = 0.75
         prefs.backgroundHex = "1A2B3C"
+        prefs.foregroundHex = "C0FFEE"
         prefs.animationDuration = 0.3
         prefs.linkHighlightHex = "123ABC"
         prefs.backgroundBlur = false
@@ -156,6 +157,15 @@ final class PreferencesTests: XCTestCase {
 
         store.set("dark", forKey: PreferencesStore.Key.backgroundHex)
         XCTAssertEqual(PreferencesStore(userDefaults: store).load().backgroundHex, Preferences.defaults.backgroundHex)
+    }
+
+    func testLoadNormalizesValidForegroundHexAndIgnoresInvalidOnes() {
+        let store = freshStore()
+        store.set("#c0ffee", forKey: PreferencesStore.Key.foregroundHex)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().foregroundHex, "C0FFEE")
+
+        store.set("light", forKey: PreferencesStore.Key.foregroundHex)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().foregroundHex, Preferences.defaults.foregroundHex)
     }
 
     func testFractionsAreClampedToValidRange() {
@@ -287,6 +297,17 @@ final class PreferencesTests: XCTestCase {
         let fallback = try XCTUnwrap(prefs.terminalBackgroundColor().usingColorSpace(.sRGB))
         XCTAssertEqual(Preferences.hex(for: fallback), Preferences.defaults.backgroundHex)
         XCTAssertEqual(fallback.alphaComponent, 0.7, accuracy: 0.001)
+    }
+
+    func testTerminalForegroundColorIsOpaqueAndFallsBackToTheDefault() throws {
+        var prefs = Preferences.defaults
+        prefs.setTerminalForegroundColor(NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.5))
+        XCTAssertEqual(prefs.foregroundHex, "336699")
+        XCTAssertEqual(prefs.terminalForegroundColor().alphaComponent, 1, accuracy: 0.001)
+
+        prefs.foregroundHex = "invalid"
+        let fallback = try XCTUnwrap(prefs.terminalForegroundColor().usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: fallback), Preferences.defaults.foregroundHex)
     }
 
     func testSetLinkHighlightColorStoresRGBHex() {

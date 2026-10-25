@@ -22,6 +22,9 @@ enum TerminalAppearance {
             || previous?.backgroundOpacity != prefs.backgroundOpacity {
             view.nativeBackgroundColor = prefs.terminalBackgroundColor()
         }
+        if previous?.foregroundHex != prefs.foregroundHex {
+            view.nativeForegroundColor = prefs.terminalForegroundColor()
+        }
         if previous?.linkHighlightHex != prefs.linkHighlightHex {
             view.linkHighlightColor = prefs.linkHighlightColor()
         }
