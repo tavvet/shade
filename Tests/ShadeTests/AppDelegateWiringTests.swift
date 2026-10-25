@@ -62,6 +62,63 @@ final class AppDelegateWiringTests: XCTestCase {
         XCTAssertEqual(session.view.terminalStateSnapshot().cursorStyle, .steadyBar)
     }
 
+    func testConnectingComponentsTwiceKeepsOneSetOfSubscriptions() throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let delegate = AppDelegate(configuration: fixture.store())
+
+        delegate.connectComponents()
+        let content = try XCTUnwrap(delegate.panel.contentView)
+        delegate.connectComponents()
+
+        XCTAssertTrue(delegate.panel.contentView === content)
+    }
+
+    func testMenuCutReachesTheKeyboardControllerAndItsPasteboard() throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let pasteboard = privatePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        let delegate = AppDelegate(configuration: fixture.store(), pasteboard: pasteboard)
+        let session = delegate.terminals.newSession(configuration: .waitingForTermination)
+        defer { stop(session) }
+        session.view.feed(text: "echo hello")
+        session.view.extendShadeKeyboardSelection(direction: .left, byWord: true)
+
+        delegate.applicationMenuCutSelection()
+
+        XCTAssertEqual(pasteboard.string(forType: .string), "hello")
+        XCTAssertNil(session.view.getSelection())
+    }
+
+    func testCopyOutputShortcutUsesTheDelegatePasteboard() throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let pasteboard = privatePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        let delegate = AppDelegate(configuration: fixture.store(), pasteboard: pasteboard)
+        let session = delegate.terminals.newSession(configuration: .waitingForTermination)
+        defer { stop(session) }
+        let view = try XCTUnwrap(session.view as? ActivityTerminalView)
+        let stream = Array("\u{1B}]133;C\u{07}copied output\r\n\u{1B}]133;D;0\u{07}".utf8)
+        view.dataReceived(slice: stream[...])
+        waitForCondition { session.promptMarks.count == 2 }
+        let oKey = try XCTUnwrap(KeyCodes.asciiLetterForKeyCode.first { $0.value == "o" }?.key)
+        let event = try XCTUnwrap(NSEvent.keyEvent(
+            with: .keyDown, location: .zero, modifierFlags: [.command, .shift], timestamp: 0,
+            windowNumber: 0, context: nil, characters: "O", charactersIgnoringModifiers: "O",
+            isARepeat: false, keyCode: oKey
+        ))
+
+        XCTAssertEqual(delegate.panel.keyHandler?.panelHandleKey(event), true)
+
+        XCTAssertEqual(pasteboard.string(forType: .string), "copied output")
+    }
+
+    private func privatePasteboard() -> NSPasteboard {
+        NSPasteboard(name: NSPasteboard.Name("shade-tests-\(UUID().uuidString)"))
+    }
+
     private func stop(_ session: TerminalSession) {
         session.onExit = nil
         session.terminate()

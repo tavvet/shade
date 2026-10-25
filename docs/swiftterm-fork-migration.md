@@ -92,9 +92,13 @@ delivery through a running app):
   keyboard-selection regressions
 - [x] selection starts at the live cursor while the viewport is scrolled up —
   `TerminalKeyboardSelectionTests.testSelectionStartsAtTheLiveCursorWhileScrolledUp`
-- [x] `⌘X` copies the selection and clears it — `TerminalClipboardTests`
+- [x] `⌘X` copies the selection, clears it and sends one DEL per selected
+  character — `TerminalClipboardTests`; the Cut menu action reaching the
+  keyboard controller — `AppDelegateWiringTests`
 - [x] OSC 133 navigation (`⌘⇧↑` / `⌘⇧↓`) and output copy (`⌘⇧O`) —
-  `TerminalClipboardTests.testPromptNavigationAndOutputCopyFollowOSC133Marks`
+  `TerminalClipboardTests.testPromptNavigationAndOutputCopyFollowOSC133Marks`;
+  the `⌘⇧O` key event through the panel's key handler —
+  `AppDelegateWiringTests.testCopyOutputShortcutUsesTheDelegatePasteboard`
 - [x] OSC 133 split across PTY chunks and multiple marks in one chunk —
   `TerminalOscObservationTests`
 - [x] OSC 133 rows remain correct after scrollback trimming —

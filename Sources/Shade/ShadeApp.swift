@@ -26,6 +26,7 @@ enum ShadeApp {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The single preferences source passed to every feature controller.
     private let configuration: ConfigurationStore
+    private let pasteboard: NSPasteboard
     let terminals: TerminalsController
     private let inputSource = InputSourceMonitor()
     private lazy var connections = SSHConnectionsController(
@@ -51,9 +52,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showConnections: { [weak self] in self?.presentConnectionPicker() },
         connectQuickSlot: { [weak self] number in
             self?.connectQuickSlot(number)
-        }
+        },
+        pasteboard: pasteboard
     )
-    private(set) lazy var panelContent = TerminalPanelContentController(
+    private lazy var panelContent = TerminalPanelContentController(
         terminals: terminals,
         tabs: tabs,
         inputSource: inputSource
@@ -62,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Panel quick slots (⌘⇧1…9); hiding the panel cancels a pending one.
     private lazy var quickSlotRequest = SSHConnectionRequest(controller: connections)
     private var settingsWerePresented = false
+    private var componentsConnected = false
 
     private(set) lazy var panel: DropdownPanel = {
         let panel = DropdownPanel(preferences: configuration)
@@ -107,9 +110,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         inputSource: inputSource
     )
 
-    /// The app passes `ConfigurationStore.shared`; tests pass an isolated store.
-    init(configuration: ConfigurationStore = .shared) {
+    /// The app passes `ConfigurationStore.shared` and the general pasteboard;
+    /// tests pass an isolated store and a private pasteboard.
+    init(configuration: ConfigurationStore = .shared, pasteboard: NSPasteboard = .general) {
         self.configuration = configuration
+        self.pasteboard = pasteboard
         terminals = TerminalsController(preferences: configuration)
         super.init()
     }
@@ -138,8 +143,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Builds the panel content and subscribes to this delegate's store and to
     /// app activation. It has no global side effects (hotkey, menus, system
-    /// notifications), so tests can exercise the wiring directly.
+    /// notifications), so tests can exercise the wiring directly. Only the
+    /// first call has an effect, so observers are never registered twice.
     func connectComponents() {
+        guard !componentsConnected else { return }
+        componentsConnected = true
         panelContent.install(in: panel, preferences: configuration.load())
         NotificationCenter.default.addObserver(
             self,
