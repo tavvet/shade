@@ -3,14 +3,16 @@ import SwiftUI
 
 @MainActor
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
-    private let model = SettingsModel()
+    private let model: SettingsModel
     private let navigation = SettingsNavigation()
     private let connections: SSHConnectionsController
 
-    init(connections: SSHConnectionsController) {
+    init(connections: SSHConnectionsController, configuration: ConfigurationStore) {
         self.connections = connections
+        model = SettingsModel(preferences: configuration)
         let hosting = NSHostingController(
             rootView: SettingsView(
+                configuration: configuration,
                 model: model,
                 connections: connections,
                 navigation: navigation

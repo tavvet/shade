@@ -185,8 +185,8 @@ final class PanelKeyboardController: PanelKeyHandler {
                     let current = await store.reload().fontSize
                     let target = Preferences.zoomedFontSize(from: current, delta: delta)
                     guard target != current else { return }
+                    // The store announces the change to its observers.
                     try await store.saveFontSize(target)
-                    NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
                 }
             } catch {
                 NSLog("Shade: cannot save font size: %@", error.localizedDescription)

@@ -160,13 +160,37 @@ final class TerminalLaunchConfigurationTests: XCTestCase {
         )
         controller.onExit = { didExit = true }
 
-        controller.start()
+        controller.start(shellEnrichment: false)
 
         let deadline = Date().addingTimeInterval(3)
         while !didExit, Date() < deadline {
             RunLoop.main.run(until: Date().addingTimeInterval(0.01))
         }
         XCTAssertTrue(didExit, "Command wrapper did not continue through the login-shell stage")
+    }
+
+    @MainActor
+    func testProcessControllerUsesCurrentShellEnrichmentForEachLaunchAttempt() {
+        var requested: [Bool] = []
+        var launchedEnvironments: [[String]?] = []
+        let controller = TerminalProcessController(
+            shellPath: "/bin/zsh",
+            processStarter: { _, _, _, environment, _, _ in
+                launchedEnvironments.append(environment)
+                return launchedEnvironments.count > 1
+            },
+            shellEnvironment: { _, enrichment in
+                requested.append(enrichment)
+                return enrichment ? ["SHADE_TEST_ENRICHED=1"] : nil
+            }
+        )
+
+        controller.start(shellEnrichment: false)  // PTY launch fails
+        controller.start(shellEnrichment: true)   // retry reads the new setting
+        controller.start(shellEnrichment: false)  // already started: no attempt
+
+        XCTAssertEqual(requested, [false, true])
+        XCTAssertEqual(launchedEnvironments, [nil, ["SHADE_TEST_ENRICHED=1"]])
     }
 
     @MainActor
@@ -180,9 +204,9 @@ final class TerminalLaunchConfigurationTests: XCTestCase {
             }
         )
 
-        controller.start()
-        controller.start()
-        controller.start()
+        controller.start(shellEnrichment: false)
+        controller.start(shellEnrichment: false)
+        controller.start(shellEnrichment: false)
 
         XCTAssertEqual(attempts, 2)
     }
@@ -213,7 +237,7 @@ final class TerminalLaunchConfigurationTests: XCTestCase {
             shellPath: shell.path
         )
         controller.onExit = { didExit = true }
-        controller.start()
+        controller.start(shellEnrichment: false)
         controller.terminate()
 
         let deadline = Date().addingTimeInterval(3)

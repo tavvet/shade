@@ -128,7 +128,7 @@ final class ConfigurationConcurrencyTests: XCTestCase {
         let configuration = fixture.store()
         let folder = try fixture.folder("portable")
         try await configuration.useFolder(folder, copyCurrent: true)
-        let model = SettingsModel(configuration: configuration, openAtLogin: false)
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
         model.preferences.fontSize = 18
         await Task.yield()
         model.preferences.fontSize = 19
@@ -152,7 +152,7 @@ final class ConfigurationConcurrencyTests: XCTestCase {
         try ConfigurationFiles(directory: folder).create(.init(preferences: external, profiles: fixture.profiles))
         fixture.defaults.set(folder.path, forKey: ConfigurationStore.directoryKey)
         let configuration = fixture.store()
-        let model = SettingsModel(configuration: configuration, openAtLogin: false)
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
         XCTAssertEqual(configuration.load().fontSize, 17)
 
         _ = await configuration.reload()

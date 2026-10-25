@@ -53,11 +53,28 @@ final class TerminalSessionAppearanceTests: XCTestCase {
         prefs.fontSize = 17
         let controller = TerminalsController(preferences: StaticPreferences(preferences: prefs))
 
-        let session = controller.newSession()
-        defer { session.terminate() }
+        let session = controller.newSession(configuration: .waitingForTermination)
+        defer {
+            session.onExit = nil
+            session.terminate()
+        }
 
         XCTAssertEqual(session.view.terminalStateSnapshot().cursorStyle, .steadyBar)
         XCTAssertEqual(session.view.font.pointSize, 17)
+    }
+
+    func testControllerAnswersVisualBellFromLivePreferences() {
+        let preferences = MutablePreferences()
+        let controller = TerminalsController(preferences: preferences)
+        let session = controller.newSession(configuration: .waitingForTermination)
+        defer {
+            session.onExit = nil
+            session.terminate()
+        }
+
+        XCTAssertEqual(session.shouldFlashBell?(), false)
+        preferences.preferences.visualBell = true
+        XCTAssertEqual(session.shouldFlashBell?(), true)
     }
 
     private func selectedSession(_ prefs: Preferences) -> TerminalSession {

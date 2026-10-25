@@ -37,19 +37,12 @@ final class SettingsModel: NSObject, ObservableObject {
     private var savedPreferences: Preferences
 
     init(
-        store: UserDefaults? = nil,
-        configuration: ConfigurationStore? = nil,
+        preferences preferencesStore: any PreferencesStoring,
         openAtLogin: Bool? = nil,
         loginItemManager: any LoginItemManaging = SystemLoginItemManager(),
         notificationAuthorizationRequester: any NotificationAuthorizationRequesting =
             SystemNotificationAuthorizationRequester()
     ) {
-        let preferencesStore: any PreferencesStoring
-        if let store {
-            preferencesStore = PreferencesStore(userDefaults: store)
-        } else {
-            preferencesStore = configuration ?? .shared
-        }
         self.preferencesStore = preferencesStore
         self.loginItemManager = loginItemManager
         self.notificationAuthorizationRequester = notificationAuthorizationRequester

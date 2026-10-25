@@ -71,7 +71,7 @@ final class LocalPreferencesConcurrencyTests: XCTestCase {
             let fixture = try ConfigurationFixture()
             defer { fixture.cleanup() }
             let configuration = fixture.store()
-            let model = SettingsModel(configuration: configuration, openAtLogin: false)
+            let model = SettingsModel(preferences: configuration, openAtLogin: false)
             let original = configuration.load()
             let desiredVisualBell = !original.visualBell
             let zoomedFontSize = Preferences.zoomedFontSize(from: original.fontSize, delta: 1)
@@ -116,7 +116,7 @@ final class LocalPreferencesConcurrencyTests: XCTestCase {
         let fixture = try ConfigurationFixture()
         defer { fixture.cleanup() }
         let configuration = fixture.store()
-        let model = SettingsModel(configuration: configuration, openAtLogin: false)
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
 
         model.preferences.fontSize = 18
         await Task.yield()

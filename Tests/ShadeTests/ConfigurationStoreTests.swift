@@ -18,6 +18,26 @@ final class ConfigurationStoreTests: XCTestCase {
         XCTAssertNil(fixture.defaults.string(forKey: ConfigurationStore.directoryKey))
     }
 
+    func testFontSizeSaveIsAnnouncedByTheStoreThatPersistedIt() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        let spy = ConfigurationChangeSpy()
+        NotificationCenter.default.addObserver(spy, selector: #selector(ConfigurationChangeSpy.changed),
+                                               name: .shadePreferencesChanged, object: configuration)
+        defer { NotificationCenter.default.removeObserver(spy) }
+
+        try await configuration.saveFontSize(20)
+        XCTAssertEqual(spy.count, 1)
+        XCTAssertEqual(configuration.load().fontSize, 20)
+
+        try await configuration.useFolder(try fixture.folder("portable"), copyCurrent: true)
+        let beforePortableSave = spy.count
+        try await configuration.saveFontSize(22)
+        XCTAssertEqual(spy.count, beforePortableSave + 1)
+        XCTAssertEqual(configuration.load().fontSize, 22)
+    }
+
     func testCopyCreatesPrivatePortableFilesAndPreservesOriginals() async throws {
         let fixture = try ConfigurationFixture()
         defer { fixture.cleanup() }
@@ -103,7 +123,7 @@ final class ConfigurationStoreTests: XCTestCase {
         let fixture = try ConfigurationFixture()
         defer { fixture.cleanup() }
         let configuration = fixture.store()
-        let model = SettingsModel(configuration: configuration, openAtLogin: false)
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
         let spy = ConfigurationChangeSpy()
         NotificationCenter.default.addObserver(spy, selector: #selector(ConfigurationChangeSpy.changed),
                                                name: ConfigurationStore.didChange, object: configuration)
@@ -193,7 +213,7 @@ final class ConfigurationStoreTests: XCTestCase {
         let configuration = fixture.store()
         let folder = try fixture.folder("portable")
         try await configuration.useFolder(folder, copyCurrent: true)
-        let model = SettingsModel(configuration: configuration, openAtLogin: false)
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
         var external = model.preferences
         external.fontSize = 24
         let files = ConfigurationFiles(directory: folder)
@@ -359,7 +379,7 @@ final class ConfigurationStoreTests: XCTestCase {
         let files = ConfigurationFiles(directory: folder)
         let settings = try Data(contentsOf: files.settingsURL)
         let connections = try Data(contentsOf: files.connectionsURL)
-        let model = SettingsModel(configuration: configuration, openAtLogin: false)
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
         try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: folder.path)
         defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path) }
 

@@ -55,7 +55,7 @@ final class SettingsNavigation: ObservableObject {
 }
 
 struct SettingsView: View {
-    @ObservedObject private var configuration = ConfigurationStore.shared
+    @ObservedObject var configuration: ConfigurationStore
     @ObservedObject var model: SettingsModel
     @ObservedObject var connections: SSHConnectionsController
     @ObservedObject var navigation: SettingsNavigation
@@ -113,7 +113,7 @@ struct SettingsView: View {
         case .shortcuts:
             ShortcutsSettingsView()
         case .storage:
-            ConfigurationSettingsView(configuration: .shared)
+            ConfigurationSettingsView(configuration: configuration)
                 .disabled(model.isSaving || connections.isSaving)
         }
     }

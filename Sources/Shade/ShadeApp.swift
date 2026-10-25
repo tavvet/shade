@@ -95,7 +95,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel: panel,
         preferences: configuration
     )
-    private lazy var settings = SettingsWindowController(connections: connections)
+    private lazy var settings = SettingsWindowController(
+        connections: connections,
+        configuration: configuration
+    )
     private lazy var about = AboutWindowController()
     private lazy var diagnostics = DiagnosticsWindowController(
         terminals: terminals,

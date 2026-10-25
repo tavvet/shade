@@ -15,6 +15,9 @@ final class TerminalProcessController: NSObject {
         _ currentDirectory: String?
     ) -> Bool
     typealias SignalSender = @MainActor (Int32, Int32) -> Int32
+    /// Builds the shell environment from the shell name and the enrichment
+    /// setting; nil keeps SwiftTerm's default environment.
+    typealias ShellEnvironmentBuilder = @MainActor (_ shellName: String, _ enrichment: Bool) -> [String]?
 
     let view: LocalProcessTerminalView
     let shellName: String
@@ -33,7 +36,7 @@ final class TerminalProcessController: NSObject {
     private let activityView: ActivityTerminalView
     private let launchConfiguration: TerminalLaunchConfiguration
     private let shellPath: String
-    private let shellEnrichment: Bool
+    private let shellEnvironment: ShellEnvironmentBuilder
     private let processStarter: ProcessStarter
     private let signalSender: SignalSender
     private var didPadInitialPrompt = false
@@ -42,13 +45,15 @@ final class TerminalProcessController: NSObject {
     init(
         configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration(),
         terminalOptions: TerminalOptions = .default,
-        shellEnrichment: Bool = false,
         shellPath: String = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh",
         processStarter: ProcessStarter? = nil,
-        signalSender: @escaping SignalSender = { kill($0, $1) }
+        signalSender: @escaping SignalSender = { kill($0, $1) },
+        shellEnvironment: @escaping ShellEnvironmentBuilder = {
+            ShellIntegration.environment(shellName: $0, enabled: $1)
+        }
     ) {
         self.shellPath = shellPath
-        self.shellEnrichment = shellEnrichment
+        self.shellEnvironment = shellEnvironment
         shellName = (shellPath as NSString).lastPathComponent
         launchConfiguration = configuration
         self.signalSender = signalSender
@@ -106,17 +111,16 @@ final class TerminalProcessController: NSObject {
         return processGroup > 0 ? processGroup : nil
     }
 
-    func start() {
+    /// Starts the process once. `shellEnrichment` is the current setting, read
+    /// by the caller at each attempt so a retried launch uses the latest value.
+    func start(shellEnrichment: Bool) {
         guard !isRunning,
               !didStartProcess else { return }
         if !didPadInitialPrompt {
             padCursorToBottom()
             didPadInitialPrompt = true
         }
-        let shellEnvironment = ShellIntegration.environment(
-            shellName: shellName,
-            enabled: shellEnrichment
-        )
+        let shellEnvironment = shellEnvironment(shellName, shellEnrichment)
         if let initialCommand = launchConfiguration.initialCommand {
             didStartProcess = startCommandSequence(
                 initialCommand,

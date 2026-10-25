@@ -94,6 +94,8 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
         }
     }
 
+    /// Saves keyboard font zoom and announces it, so observers apply the size
+    /// from the same store that persisted it.
     func saveFontSize(_ fontSize: CGFloat) async throws {
         let revision = locationRevision
         if directory == nil {
@@ -101,13 +103,14 @@ final class ConfigurationStore: ObservableObject, PreferencesStoring {
                 guard revision == self.locationRevision else { throw ConfigurationError.changedExternally }
                 self.localPreferences.saveFontSize(fontSize)
             }
-            return
+        } else {
+            let previous = await reload()
+            guard revision == locationRevision else { throw ConfigurationError.changedExternally }
+            var updated = previous
+            updated.fontSize = fontSize
+            try await save(updated, replacing: previous)
         }
-        let previous = await reload()
-        guard revision == locationRevision else { throw ConfigurationError.changedExternally }
-        var updated = previous
-        updated.fontSize = fontSize
-        try await save(updated, replacing: previous)
+        NotificationCenter.default.post(name: .shadePreferencesChanged, object: self)
     }
 
     func saveProfiles(_ profiles: [SSHProfile], replacing previous: [SSHProfile]) async throws {

@@ -24,6 +24,10 @@ final class TerminalSession {
     /// The tab controller uses it to re-arm its one-shot automatic respawn.
     var onUserInput: (() -> Void)?
 
+    /// Asked on each terminal bell whether to show the visual flash instead of
+    /// the audible bell. The tab controller answers from the live preferences.
+    var shouldFlashBell: (() -> Bool)?
+
     private let process: TerminalProcessController
     private let presentation: TerminalPresentationState
     private var promptHistory = TerminalPromptHistory()
@@ -85,8 +89,7 @@ final class TerminalSession {
         let options = TerminalAppearance.terminalOptions(for: prefs)
         let processController = TerminalProcessController(
             configuration: configuration,
-            terminalOptions: options,
-            shellEnrichment: prefs.shellEnrichment
+            terminalOptions: options
         )
         process = processController
         cursorStyle = TerminalCursorStyleTracker(applied: options.cursorStyle)
@@ -103,7 +106,7 @@ final class TerminalSession {
         }
         process.onActivity = { [weak self] in self?.presentation.noteActivity() }
         process.onBell = { [weak self] in
-            guard let self, self.appliedPreferences?.visualBell == true else { return false }
+            guard let self, self.shouldFlashBell?() == true else { return false }
             TerminalAppearance.flashBell(in: self.view)
             return true
         }
@@ -119,8 +122,8 @@ final class TerminalSession {
         apply(prefs)
     }
 
-    func start() {
-        process.start()
+    func start(shellEnrichment: Bool) {
+        process.start(shellEnrichment: shellEnrichment)
     }
 
     /// Applies only preferences that changed since the previous call, so a panel

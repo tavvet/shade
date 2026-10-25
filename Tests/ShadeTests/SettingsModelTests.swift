@@ -9,7 +9,7 @@ final class SettingsModelTests: XCTestCase {
         defer { store.removePersistentDomain(forName: suite) }
 
         store.set(13, forKey: PreferencesStore.Key.fontSize)
-        let model = SettingsModel(store: store, openAtLogin: false)
+        let model = SettingsModel(preferences: PreferencesStore(userDefaults: store), openAtLogin: false)
 
         store.set(14, forKey: PreferencesStore.Key.fontSize)
         NotificationCenter.default.post(name: .shadePreferencesChanged, object: nil)
@@ -27,7 +27,7 @@ final class SettingsModelTests: XCTestCase {
 
         let requester = NotificationAuthorizationRequesterSpy()
         let model = SettingsModel(
-            store: store,
+            preferences: PreferencesStore(userDefaults: store),
             openAtLogin: false,
             notificationAuthorizationRequester: requester
         )
@@ -57,7 +57,7 @@ final class SettingsModelTests: XCTestCase {
 
         let requester = NotificationAuthorizationRequesterSpy()
         let model = SettingsModel(
-            store: store,
+            preferences: PreferencesStore(userDefaults: store),
             openAtLogin: false,
             notificationAuthorizationRequester: requester
         )
@@ -73,6 +73,7 @@ final class SettingsModelTests: XCTestCase {
         let manager = LoginItemManagerStub(isEnabled: false)
         manager.error = StubError.rejected
         let model = SettingsModel(
+            preferences: isolatedPreferencesStore(),
             openAtLogin: false,
             loginItemManager: manager
         )
@@ -86,6 +87,7 @@ final class SettingsModelTests: XCTestCase {
     func testPresentationReloadRefreshesExternalLoginItemStateWithoutWriting() async {
         let manager = LoginItemManagerStub(isEnabled: false)
         let model = SettingsModel(
+            preferences: isolatedPreferencesStore(),
             openAtLogin: false,
             loginItemManager: manager
         )

@@ -105,6 +105,9 @@ final class TerminalsController {
         session.onCommandFinish = { [weak self] duration, exitCode, cwd in
             self?.commandFinishHandler?(duration, exitCode, cwd)
         }
+        session.shouldFlashBell = { [weak self] in
+            self?.preferences.load().visualBell ?? false
+        }
         session.onUserInput = { [weak self] in
             self?.automaticRespawnLimiter.reset()
         }
@@ -159,7 +162,7 @@ final class TerminalsController {
         viewHost.show(v)
         tabs.select(at: index)
         for (i, s) in tabs.sessions.enumerated() { s.setActive(i == index) }
-        session.start()
+        session.start(shellEnrichment: preferences.load().shellEnrichment)
         // Refresh cwd/branch now and let the coordinator decide whether to
         // re-run git status (cwd change → strong, unchanged cwd within
         // cooldown → skip).
