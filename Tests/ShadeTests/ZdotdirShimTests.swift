@@ -211,7 +211,11 @@ private struct Fixture {
         let stdout = Pipe()
         let stderr = Pipe()
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        // `+m` turns off job control: an interactive zsh otherwise opens
+        // /dev/tty even with stdin redirected, and stops on SIGTTIN/SIGTTOU
+        // when `swift test` runs from a terminal it does not own.
         process.arguments = [
+            "+m",
             "-lic",
             "print -r -- \"SHADE_RESULT:${+ZDOTDIR}:${ZDOTDIR-<unset>}\"",
         ]
@@ -228,10 +232,10 @@ private struct Fixture {
             "TERM": "xterm-256color",
         ]
         process.currentDirectoryURL = home
+        process.standardInput = FileHandle.nullDevice
         process.standardOutput = stdout
         process.standardError = stderr
         try process.run()
-        process.waitUntilExit()
 
         let output = String(
             data: stdout.fileHandleForReading.readDataToEndOfFile(),
@@ -241,6 +245,7 @@ private struct Fixture {
             data: stderr.fileHandleForReading.readDataToEndOfFile(),
             encoding: .utf8
         ) ?? ""
+        process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             throw ShimTestError.zshFailed(process.terminationStatus, errors)
         }

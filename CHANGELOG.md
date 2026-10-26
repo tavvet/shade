@@ -46,6 +46,8 @@ All notable changes to Shade are documented in this file. Format follows
   sRGB form from the color panel instead of crashing.
 - Keep the color panel's sliders from jumping while dragging: the picker shows
   the exact chosen color until the stored `RRGGBB` value changes.
+- Stop `ZdotdirShimTests` from hanging when `swift test` runs in a terminal:
+  the interactive zsh under test no longer takes the terminal for job control.
 
 ## [0.1.26] — 2026-10-24
 
