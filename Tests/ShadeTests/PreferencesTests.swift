@@ -322,11 +322,19 @@ final class PreferencesTests: XCTestCase {
         XCTAssertNil(Preferences.hex(for: pattern))
     }
 
-    func testDefaultColorsMatchTheFormerFixedGrays() throws {
-        let background = try XCTUnwrap(NSColor(white: 0.08, alpha: 1).usingColorSpace(.sRGB))
-        let foreground = try XCTUnwrap(NSColor(white: 0.92, alpha: 1).usingColorSpace(.sRGB))
-        XCTAssertEqual(Preferences.hex(for: background), Preferences.defaults.backgroundHex)
-        XCTAssertEqual(Preferences.hex(for: foreground), Preferences.defaults.foregroundHex)
+    func testDefaultColorsMatchTheFormerFixedGrays() {
+        // The old NSColor(white: 0.08) / (white: 0.92) are gamma-2.2 grays.
+        // Convert with the transfer functions rather than ColorSync, whose
+        // result varies by system: the macOS 15 CI runner returns 141414.
+        func srgbHex(gamma22 white: Double) -> String {
+            let linear = pow(white, 2.2)
+            let encoded = linear <= 0.0031308
+                ? 12.92 * linear
+                : 1.055 * pow(linear, 1 / 2.4) - 0.055
+            return Preferences.hexString(for: .init(red: encoded, green: encoded, blue: encoded))
+        }
+        XCTAssertEqual(srgbHex(gamma22: 0.08), Preferences.defaults.backgroundHex)
+        XCTAssertEqual(srgbHex(gamma22: 0.92), Preferences.defaults.foregroundHex)
     }
 
     func testNormalizedHexUsesOneCanonicalForm() {
