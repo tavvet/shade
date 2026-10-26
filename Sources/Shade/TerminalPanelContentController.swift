@@ -28,6 +28,7 @@ final class TerminalPanelContentController {
             minimumTabWidth: prefs.tabMinimumWidth,
             onSelect: { [weak self] in self?.terminals.select(at: $0) },
             onClose: { [weak self] in self?.terminals.close(at: $0) },
+            onTogglePin: { [weak self] in self?.terminals.togglePin(at: $0) },
             onNew: { [weak self] in self?.terminals.newSession() },
             onRename: { [weak self] index, name in self?.terminals.renameSession(at: index, to: name) },
             onEditEnd: { [weak self] in self?.focusActiveTerminal() }

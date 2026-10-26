@@ -46,6 +46,11 @@ final class PanelShortcutResolverTests: XCTestCase {
         )
     }
 
+    func testPinShortcutUsesPhysicalLetterKeyAndLeavesClearAlone() {
+        XCTAssertEqual(resolve(key("k"), characters: "л", flags: [.command, .shift]), .togglePin)
+        XCTAssertEqual(resolve(key("k"), characters: "k", flags: [.command]), .clearScreen)
+    }
+
     func testConnectionQuickSlotsUsePhysicalNumberRow() {
         for (keyCode, digit) in KeyCodes.digitForKeyCode {
             XCTAssertEqual(

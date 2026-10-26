@@ -19,6 +19,11 @@ All notable changes to Shade are documented in this file. Format follows
   choose their own colors keep them.
 - Flash the visual bell in the text color, so it stays visible on a light
   background.
+- Pin tabs with `⌘⇧K` or the tab's context menu. A pinned tab moves to the
+  left, shows a pin instead of the close button and can't be closed with `⌘W`,
+  the button or Close Tab until it is unpinned. If its shell exits, a new
+  local login shell starts in the same tab and directory (an SSH tab does not
+  reconnect); pinning a tab whose shell already exited starts one too.
 
 ### Changed
 

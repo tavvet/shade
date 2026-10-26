@@ -104,6 +104,57 @@ final class TerminalTabStoreTests: XCTestCase {
         XCTAssertEqual(store.index(of: session), 0)
         XCTAssertNil(store.index(of: SessionStub()))
     }
+
+    func testPinningMovesTabsLeftInPinOrderAndKeepsTheActiveSession() {
+        var store = TerminalTabStore<SessionStub>()
+        let tabs = (0..<4).map { _ in SessionStub() }
+        tabs.forEach { store.append($0) }
+        store.select(at: 1)
+
+        XCTAssertTrue(store.setPinned(true, at: 2))
+        XCTAssertTrue(store.setPinned(true, at: 3))
+
+        XCTAssertEqual(store.pinnedCount, 2)
+        XCTAssertTrue(store.sessions.elementsEqual([tabs[2], tabs[3], tabs[0], tabs[1]], by: ===))
+        XCTAssertTrue(store.isPinned(at: 0))
+        XCTAssertTrue(store.isPinned(at: 1))
+        XCTAssertFalse(store.isPinned(at: 2))
+        XCTAssertTrue(store.activeSession === tabs[1])
+        XCTAssertFalse(store.setPinned(true, at: 0))
+        XCTAssertFalse(store.setPinned(true, at: 9))
+    }
+
+    func testUnpinningPlacesTheTabFirstAmongUnpinnedTabs() {
+        var store = TerminalTabStore<SessionStub>()
+        let tabs = (0..<3).map { _ in SessionStub() }
+        tabs.forEach { store.append($0) }
+        store.setPinned(true, at: 1)
+        store.setPinned(true, at: 2)
+        store.select(at: 0)
+
+        XCTAssertTrue(store.setPinned(false, at: 0))
+
+        XCTAssertEqual(store.pinnedCount, 1)
+        XCTAssertTrue(store.sessions.elementsEqual([tabs[2], tabs[1], tabs[0]], by: ===))
+        XCTAssertTrue(store.activeSession === tabs[1])
+        XCTAssertFalse(store.setPinned(false, at: 1))
+    }
+
+    func testRemovingAPinnedTabKeepsPinnedTabsLeading() {
+        var store = TerminalTabStore<SessionStub>()
+        let tabs = (0..<3).map { _ in SessionStub() }
+        tabs.forEach { store.append($0) }
+        store.setPinned(true, at: 0)
+        store.setPinned(true, at: 1)
+
+        store.remove(at: 0)
+        let added = SessionStub()
+        store.append(added)
+
+        XCTAssertEqual(store.pinnedCount, 1)
+        XCTAssertTrue(store.sessions.elementsEqual([tabs[1], tabs[2], added], by: ===))
+        XCTAssertFalse(store.isPinned(at: 2))
+    }
 }
 
 private final class SessionStub {}

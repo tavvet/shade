@@ -18,6 +18,7 @@ final class TabsObservable: ObservableObject {
         let label: String
         let editableName: String
         let indicator: TabIndicator
+        let isPinned: Bool
     }
 
     @Published private(set) var tabs: [TabInfo] = []
@@ -46,7 +47,8 @@ final class TabsObservable: ObservableObject {
                 indicator: Self.indicator(
                     lastExitCode: session.lastExitCode,
                     hasUnseenActivity: session.hasUnseenActivity
-                )
+                ),
+                isPinned: controller.isPinned(at: index)
             )
         }
         activeIndex = controller.activeIndex

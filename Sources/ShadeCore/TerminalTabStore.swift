@@ -3,6 +3,8 @@
 public struct TerminalTabStore<Session: AnyObject> {
     public private(set) var sessions: [Session] = []
     public private(set) var activeIndex = -1
+    /// The first `pinnedCount` tabs are pinned; pinned tabs always lead.
+    public private(set) var pinnedCount = 0
 
     public init() {}
 
@@ -27,6 +29,31 @@ public struct TerminalTabStore<Session: AnyObject> {
         return sessions.count - 1
     }
 
+    public func isPinned(at index: Int) -> Bool {
+        sessions.indices.contains(index) && index < pinnedCount
+    }
+
+    /// Pins a tab by moving it to the end of the pinned group, or unpins it
+    /// by moving it to the start of the unpinned ones. The same session stays
+    /// selected. Returns false for an invalid index or an unchanged state.
+    @discardableResult
+    public mutating func setPinned(_ pinned: Bool, at index: Int) -> Bool {
+        guard sessions.indices.contains(index), isPinned(at: index) != pinned else { return false }
+        let active = activeSession
+        let session = sessions.remove(at: index)
+        if pinned {
+            sessions.insert(session, at: pinnedCount)
+            pinnedCount += 1
+        } else {
+            pinnedCount -= 1
+            sessions.insert(session, at: pinnedCount)
+        }
+        if let active, let newIndex = self.index(of: active) {
+            activeIndex = newIndex
+        }
+        return true
+    }
+
     @discardableResult
     public mutating func select(at index: Int) -> Bool {
         guard sessions.indices.contains(index) else { return false }
@@ -42,6 +69,7 @@ public struct TerminalTabStore<Session: AnyObject> {
         guard sessions.indices.contains(index) else { return nil }
         let previousActiveIndex = activeIndex
         let removed = sessions.remove(at: index)
+        if index < pinnedCount { pinnedCount -= 1 }
 
         guard !sessions.isEmpty else {
             activeIndex = -1

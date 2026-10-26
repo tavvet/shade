@@ -20,6 +20,7 @@ struct TabBarView: View {
     var minimumTabWidth: CGFloat
     var onSelect: (Int) -> Void
     var onClose: (Int) -> Void
+    var onTogglePin: (Int) -> Void
     var onNew: () -> Void
     var onRename: (Int, String) -> Void
     var onEditEnd: () -> Void
@@ -45,9 +46,11 @@ struct TabBarView: View {
                                 editableName: tab.editableName,
                                 isActive: tab.index == tabs.activeIndex,
                                 indicator: tab.indicator,
+                                isPinned: tab.isPinned,
                                 minimumWidth: minimumTabWidth,
                                 onClick: { onSelect(tab.index) },
                                 onClose: { onClose(tab.index) },
+                                onTogglePin: { onTogglePin(tab.index) },
                                 onRename: { onRename(tab.index, $0) },
                                 onEditEnd: onEditEnd
                             )

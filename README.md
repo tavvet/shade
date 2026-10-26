@@ -17,6 +17,9 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 - **Slides** down from the top of the active screen and back up when hidden.
 - **Tabs** with `⌘T` / `⌘W` / `⌘1…9` / `⌃Tab` (macOS-standard), larger
   click targets and a configurable minimum width.
+- **Pinned tabs** — pin a tab (`⌘⇧K` or right-click → Pin Tab) to keep it at
+  the left with a pin mark; it can't be closed until unpinned, and its shell
+  restarts in place if it exits.
 - **Current input source (opt-in)** — a compact `EN` / `RU` / `FI` badge in
   the tab bar follows the keyboard source selected in macOS. It is off by
   default and needs no Accessibility or Input Monitoring permission.
@@ -24,7 +27,7 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   Settings, open the searchable picker with `⌘⇧P`, or connect directly to
   the first nine profiles with `⌘⇧1…9`.
 - **Tab titles** track the shell's current working directory (no `.zshrc`
-  cooperation required), or double-click a tab to pin your own name.
+  cooperation required), or double-click a tab to set your own name.
 - **Tab status dots** — a red dot when a tab's last command exited non-zero
   (needs the OSC 133 snippet), a neutral dot when a background tab has new
   output you haven't seen.
@@ -154,13 +157,23 @@ Press `Esc` (or `F12` again) to hide.
 | Jump to tab N     | `⌘1` … `⌘9`        |
 | Next tab          | `⌃Tab`             |
 | Previous tab      | `⌃⇧Tab`            |
+| Pin / unpin tab   | `⌘⇧K`              |
 
 The tab bar lives at the bottom of the panel. Click a chip to switch, click
 the `×` (or right-click → Close Tab) to close it, click `+` for a new tab.
 Tab labels show the index and the abbreviated current working directory
 (e.g. `1 · ~/projects/shade`).
-Double-click a tab (or right-click → Rename) to pin a fixed name instead; an
+Double-click a tab (or right-click → Rename) to set a fixed name instead; an
 empty name or Reset Name restores the automatic title.
+
+Pin a tab with `⌘⇧K` or right-click → Pin Tab. Pinned tabs move to the left
+of the strip (tab numbers follow the new order) and show a pin instead of the
+`×`; click the pin, press `⌘⇧K` again or choose Unpin Tab to release it. A
+pinned tab ignores `⌘W` (with an alert sound), the close button and Close
+Tab. If its shell exits, a new local login shell starts in the same tab and
+directory (an SSH tab does not reconnect); a shell that keeps exiting without
+input is not restarted again, and pinning it later starts it once more. Pins
+last until Shade quits.
 
 Set **Settings → Appearance → Interface → Minimum tab width** to keep short
 titles such as `~` easy to click. The default is 120 pt, adjustable from 80 to
@@ -352,7 +365,7 @@ With the terminal panel open:
 Filtering keeps the selected profile when it still matches and scrolls it into
 view, so `Return` always has a visible target after the results update.
 
-Each connection opens in a new tab pinned to the profile's display name. When
+Each connection opens in a new tab named after the profile's display name. When
 SSH exits, the same tab continues as a local login shell. Profile fields are
 passed to OpenSSH as structured arguments rather than interpolated into a shell
 command, and SSH inherits the app environment so an available `SSH_AUTH_SOCK`
@@ -525,8 +538,8 @@ report.
 **Tab title and git badge show wrong info during an SSH session.** This is
 expected — Shade detects `ssh` / `mosh` / `tmate` in the terminal's foreground
 process group and hides the local-only readouts (the tab title shows `[ssh]`
-unless you've pinned a name, and the git badge disappears). Tabs opened from a
-saved connection are pinned to the profile name automatically. Local cwd / git
+unless you've set a name, and the git badge disappears). Tabs opened from a
+saved connection are named after the profile automatically. Local cwd / git
 state can't describe a remote machine. Remote OSC 7 updates are intentionally
 masked as well; pin a custom tab name if you want a host-specific label while
 the remote session is active.
@@ -638,7 +651,7 @@ Sources/ShadeCore/         UI-free library: no AppKit, SwiftUI or SwiftTerm impo
 ├── SettingsFileDocument.swift Versioned portable preferences JSON and validation
 ├── TerminalCommandSequence.swift One-PTY command → login-shell wrapper
 ├── TerminalLaunchConfiguration.swift Generic startup directory/title/command descriptor
-└── TerminalTabStore.swift    Pure multi-tab collection and selection state
+└── TerminalTabStore.swift    Pure multi-tab collection, pinning and selection state
 ```
 
 Key design choices:

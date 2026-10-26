@@ -6,9 +6,11 @@ struct TabChip: View {
     let editableName: String
     let isActive: Bool
     let indicator: TabIndicator
+    let isPinned: Bool
     let minimumWidth: CGFloat
     let onClick: () -> Void
     let onClose: () -> Void
+    let onTogglePin: () -> Void
     let onRename: (String) -> Void
     let onEditEnd: () -> Void
 
@@ -48,8 +50,10 @@ struct TabChip: View {
                         if !editableName.isEmpty {
                             Button("Reset Name") { onRename("") }
                         }
+                        Button(isPinned ? "Unpin Tab" : "Pin Tab", action: onTogglePin)
                         Divider()
                         Button("Close Tab", role: .destructive, action: onClose)
+                            .disabled(isPinned)
                     }
             }
         }
@@ -72,14 +76,27 @@ struct TabChip: View {
                 .font(.system(size: 12, weight: isActive ? .semibold : .regular))
                 .foregroundStyle(.white.opacity(isActive ? 1.0 : 0.7))
             Spacer(minLength: 0)
-            Button(action: onClose) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.white.opacity(hovering || isActive ? 0.8 : 0.0))
-                    .frame(width: 18, height: 18)
+            if isPinned {
+                Button(action: onTogglePin) {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .rotationEffect(.degrees(45))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.plain)
+                .help("Pinned — click to unpin (⌘⇧K)")
+                .accessibilityLabel("Unpin tab")
+            } else {
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white.opacity(hovering || isActive ? 0.8 : 0.0))
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.plain)
+                .help("Close tab")
             }
-            .buttonStyle(.plain)
-            .help("Close tab")
         }
     }
 

@@ -42,6 +42,9 @@ final class TerminalProcessController: NSObject {
     private let signalSender: SignalSender
     private var didPadInitialPrompt = false
     private var didStartProcess = false
+    /// Set by a restart: every later launch is a local login shell in this
+    /// directory, never the configured initial command (such as `ssh`) again.
+    private var restartDirectory: String??
 
     init(
         configuration: TerminalLaunchConfiguration = TerminalLaunchConfiguration(),
@@ -121,14 +124,39 @@ final class TerminalProcessController: NSObject {
             didPadInitialPrompt = true
         }
         let shellEnvironment = shellEnvironment(shellName, shellEnrichment)
-        if let initialCommand = launchConfiguration.initialCommand {
+        if let restartDirectory {
+            didStartProcess = startLoginShell(
+                environment: shellEnvironment,
+                directory: restartDirectory
+            )
+        } else if let initialCommand = launchConfiguration.initialCommand {
             didStartProcess = startCommandSequence(
                 initialCommand,
                 shellEnvironment: shellEnvironment
             )
         } else {
-            didStartProcess = startLoginShell(environment: shellEnvironment)
+            didStartProcess = startLoginShell(
+                environment: shellEnvironment,
+                directory: launchConfiguration.startupDirectory
+            )
         }
+    }
+
+    /// Starts a new local login shell in this view after the previous process
+    /// exited, for a tab that must not close. A configured initial command
+    /// (such as `ssh`) is not repeated. Returns false while a process is still
+    /// active, including SwiftTerm's wind-down after an exit.
+    @discardableResult
+    func restartLoginShell(shellEnrichment: Bool, directory: String?) -> Bool {
+        guard !isRunning, !view.process.windingDown else { return false }
+        restartDirectory = .some(directory)
+        resetModesLeftByExitedProcess()
+        view.feed(text: "\r\n[Shade] Shell exited; restarted because the tab is pinned.\r\n")
+        didStartProcess = startLoginShell(
+            environment: shellEnvironment(shellName, shellEnrichment),
+            directory: directory
+        )
+        return didStartProcess
     }
 
     private func startCommandSequence(
@@ -152,15 +180,27 @@ final class TerminalProcessController: NSObject {
         )
     }
 
-    private func startLoginShell(environment: [String]?) -> Bool {
+    private func startLoginShell(environment: [String]?, directory: String?) -> Bool {
         processStarter(
             view,
             shellPath,
             ["-l"],
             environment,
             "-" + shellName,
-            launchConfiguration.startupDirectory
+            directory
         )
+    }
+
+    /// The exited process may have left the alternate screen, a hidden
+    /// cursor, mouse reporting or bracketed paste on. No PTY output is in
+    /// flight once it exited, so these local sequences cannot split one.
+    private func resetModesLeftByExitedProcess() {
+        let isAlternateScreen = view.terminalInputStateSnapshot()?.isAlternateBuffer ?? false
+        // 1049l also restores the saved cursor, so send it only when needed.
+        let leaveAlternateScreen = isAlternateScreen ? "\u{1B}[?1049l" : ""
+        view.feed(text: leaveAlternateScreen
+            + "\u{1B}[0m\u{1B}[?25h\u{1B}[?2004l\u{1B}[?1l\u{1B}>"
+            + "\u{1B}[?1000l\u{1B}[?1002l\u{1B}[?1003l\u{1B}[?1006l")
     }
 
     func terminate() {
@@ -185,6 +225,13 @@ final class TerminalProcessController: NSObject {
         view.feed(
             text: "\r\n[Shade] Shell exited repeatedly; automatic restart stopped. "
                 + "Press ⌘W to retry.\r\n"
+        )
+    }
+
+    func showPinnedRestartStoppedNotice() {
+        view.feed(
+            text: "\r\n[Shade] Shell exited repeatedly; automatic restart stopped. "
+                + "Unpin the tab (⌘⇧K) and press ⌘W to close it.\r\n"
         )
     }
 

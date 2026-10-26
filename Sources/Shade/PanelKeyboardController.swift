@@ -8,6 +8,7 @@ enum PanelShortcut: Equatable {
     case resetZoom
     case newTab
     case closeTab
+    case togglePin
     case clearScreen
     case selectTab(Int)
     case nextTab
@@ -75,6 +76,7 @@ enum PanelShortcutResolver {
             default:
                 if letter == "o" { return .copyLastCommandOutput }
                 if letter == "p" { return .showConnections }
+                if letter == "k" { return .togglePin }
             }
         }
 
@@ -160,7 +162,9 @@ final class PanelKeyboardController: PanelKeyHandler {
         case .newTab:
             terminals.newSession()
         case .closeTab:
-            terminals.closeActive()
+            if !terminals.closeActive() { NSSound.beep() }
+        case .togglePin:
+            terminals.toggleActivePin()
         case .clearScreen:
             clearVisibleScreen()
         case .selectTab(let index):

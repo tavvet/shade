@@ -26,6 +26,8 @@ final class TerminalsController {
         self?.pollOnce()
     }
     private var automaticRespawnLimiter = AutomaticSessionRespawnLimiter()
+    /// One restart allowance per pinned session, re-armed by its user input.
+    private var pinnedRestartLimiters: [UUID: AutomaticSessionRespawnLimiter] = [:]
 
     init(
         preferences: any PreferencesProviding,
@@ -114,28 +116,67 @@ final class TerminalsController {
         session.shouldFlashBell = { [weak self] in
             self?.preferences.load().visualBell ?? false
         }
-        session.onUserInput = { [weak self] in
+        session.onUserInput = { [weak self, weak session] in
             self?.automaticRespawnLimiter.reset()
+            if let session { self?.pinnedRestartLimiters[session.id]?.reset() }
         }
         let index = tabs.append(session)
         select(at: index)
         return session
     }
 
-    func closeActive() {
+    /// Returns false when nothing closed, for example because the tab is pinned.
+    @discardableResult
+    func closeActive() -> Bool {
         close(at: activeIndex)
     }
 
     func noteUserInput() {
         automaticRespawnLimiter.reset()
+        if let id = activeSession?.id { pinnedRestartLimiters[id]?.reset() }
     }
 
-    func close(at index: Int) {
-        close(at: index, origin: .userAction)
+    /// Closes a tab unless it is pinned. Returns whether a tab closed.
+    @discardableResult
+    func close(at index: Int) -> Bool {
+        guard !tabs.isPinned(at: index) else { return false }
+        return close(at: index, origin: .userAction)
+    }
+
+    func isPinned(at index: Int) -> Bool {
+        tabs.isPinned(at: index)
+    }
+
+    /// Pins or unpins a tab. Pinned tabs move to the left and cannot be closed.
+    func togglePin(at index: Int) {
+        guard let session = tabs.session(at: index) else { return }
+        let pinned = !tabs.isPinned(at: index)
+        guard tabs.setPinned(pinned, at: index) else { return }
+        pinnedRestartLimiters[session.id] = pinned ? AutomaticSessionRespawnLimiter() : nil
+        // A tab whose shell already exited (for example after a stopped
+        // automatic restart) would otherwise stay empty and uncloseable.
+        if pinned, !session.isProcessRunning {
+            session.restartShell(shellEnrichment: preferences.load().shellEnrichment)
+        }
+        notifyTabsObservers()
+    }
+
+    func toggleActivePin() {
+        togglePin(at: activeIndex)
     }
 
     private func sessionDidExit(_ session: TerminalSession) {
         guard let index = tabs.index(of: session) else { return }
+        if tabs.isPinned(at: index) {
+            // Pinning may already have restarted it before this exit arrived.
+            guard !session.isProcessRunning else { return }
+            let allowed = pinnedRestartLimiters[session.id, default: AutomaticSessionRespawnLimiter()]
+                .shouldAllowRespawn()
+            if !allowed || !session.restartShell(shellEnrichment: preferences.load().shellEnrichment) {
+                session.showPinnedRestartStoppedNotice()
+            }
+            return
+        }
         if tabs.sessions.count == 1,
            !automaticRespawnLimiter.shouldAllowRespawn() {
             session.showRespawnStoppedNotice()
@@ -144,8 +185,10 @@ final class TerminalsController {
         close(at: index, origin: .processExit)
     }
 
-    private func close(at index: Int, origin: CloseOrigin) {
-        guard let closing = tabs.remove(at: index) else { return }
+    @discardableResult
+    private func close(at index: Int, origin: CloseOrigin) -> Bool {
+        guard let closing = tabs.remove(at: index) else { return false }
+        pinnedRestartLimiters[closing.id] = nil
         if origin == .userAction {
             automaticRespawnLimiter.reset()
         }
@@ -155,6 +198,7 @@ final class TerminalsController {
         } else {
             select(at: tabs.activeIndex)
         }
+        return true
     }
 
     private enum CloseOrigin: Equatable {

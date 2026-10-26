@@ -62,12 +62,13 @@ final class TerminalSession {
     var isActive: Bool { presentation.isActive }
     var shellName: String { presentation.shellName }
     var view: LocalProcessTerminalView { process.view }
+    var isProcessRunning: Bool { process.isRunning }
 
     /// What the tab bar shows: an explicit user name, else the shell-provided
     /// title or abbreviated CWD or shell name. The git branch is rendered
     /// separately as a floating badge over the terminal. When we're inside an
     /// ssh/mosh session, local cwd/branch info is meaningless, so we surface a
-    /// "[ssh]"-style indicator instead (unless the user pinned a name).
+    /// "[ssh]"-style indicator instead (unless the user set a name).
     var displayTitle: String {
         presentation.displayTitle(remoteIndicator: remoteIndicator, cwd: cwd)
     }
@@ -150,6 +151,23 @@ final class TerminalSession {
 
     func terminate() {
         process.terminate()
+    }
+
+    /// Starts a new login shell in this tab's last known directory after its
+    /// process exited. The name and tab state stay; prompt marks of the
+    /// finished shell are dropped so they cannot complete a phantom command.
+    @discardableResult
+    func restartShell(shellEnrichment: Bool) -> Bool {
+        promptHistory = TerminalPromptHistory()
+        return process.restartLoginShell(
+            shellEnrichment: shellEnrichment,
+            directory: cwd.isEmpty ? nil : cwd
+        )
+    }
+
+    func showPinnedRestartStoppedNotice() {
+        presentation.setOscTitle("shell exited")
+        process.showPinnedRestartStoppedNotice()
     }
 
     func sendUserInput(_ bytes: [UInt8]) {
