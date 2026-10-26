@@ -33,9 +33,18 @@ public struct SettingsFileDocument: Codable {
         default:
             throw ConfigurationError.unsupportedSettingsVersion(header.version)
         }
-        let document = try decoder.decode(Self.self, from: migrated)
-        try validate(document.preferences)
-        return document.preferences
+        var preferences = try decoder.decode(Self.self, from: migrated).preferences
+        try validate(preferences)
+        // A hand-edited file may use `#` or lowercase; keep the form local
+        // defaults use so equal colors compare equal.
+        normalizeHex(&preferences.backgroundHex)
+        normalizeHex(&preferences.foregroundHex)
+        normalizeHex(&preferences.linkHighlightHex)
+        return preferences
+    }
+
+    private static func normalizeHex(_ value: inout String) {
+        if let hex = Preferences.normalizedHex(value) { value = hex }
     }
 
     public static func encode(_ preferences: Preferences) throws -> Data {

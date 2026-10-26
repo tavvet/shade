@@ -70,7 +70,8 @@ enum TerminalAppearance {
         let flash = NSView(frame: view.bounds)
         flash.autoresizingMask = [.width, .height]
         flash.wantsLayer = true
-        flash.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.22).cgColor
+        // The text color contrasts with any chosen background, light or dark.
+        flash.layer?.backgroundColor = view.nativeForegroundColor.withAlphaComponent(0.22).cgColor
         view.addSubview(flash)
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.18

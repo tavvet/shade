@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import XCTest
 @testable import Shade
+import ShadeCore
 
 @MainActor
 final class SettingsModelTests: XCTestCase {
@@ -59,6 +60,27 @@ final class SettingsModelTests: XCTestCase {
         XCTAssertEqual(configuration.load().backgroundHex, "336699")
         let shown = NSColor(model.terminalBackgroundColor.wrappedValue)
         XCTAssertEqual(shown.alphaComponent, 1, accuracy: 0.001)
+    }
+
+    func testColorPickerShowsTheExactPickedColorUntilTheHexChanges() async throws {
+        let fixture = try ConfigurationFixture()
+        defer { fixture.cleanup() }
+        let configuration = fixture.store()
+        let model = SettingsModel(preferences: configuration, openAtLogin: false)
+        // Between two 8-bit steps, so the stored hex is rounded.
+        let picked = Color(nsColor: NSColor(srgbRed: 0.2013, green: 0.4, blue: 0.6, alpha: 1))
+
+        model.terminalForegroundColor.wrappedValue = picked
+        await model.waitForPendingSave()
+
+        XCTAssertEqual(model.preferences.foregroundHex, "336699")
+        XCTAssertEqual(model.terminalForegroundColor.wrappedValue, picked)
+
+        model.preferences.foregroundHex = "000000"
+        await model.waitForPendingSave()
+
+        let shown = try XCTUnwrap(NSColor(model.terminalForegroundColor.wrappedValue).usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: shown), "000000")
     }
 
     func testTextColorPickerSavesAnOpaqueColor() async throws {

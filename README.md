@@ -299,7 +299,7 @@ defaults write dev.shade.Shade screenChoice mouseLocation      # main | mouseLoc
 defaults write dev.shade.Shade fontSize 14                     # 8 – 32; Settings slider: 9 – 22
 defaults write dev.shade.Shade fontName "Menlo"                # "" = system monospaced
 defaults write dev.shade.Shade backgroundOpacity 0.85          # 0.3 – 1.0
-defaults write dev.shade.Shade backgroundHex "1E1E2E"          # RRGGBB, optional '#'; default: 141414
+defaults write dev.shade.Shade backgroundHex "1E1E2E"          # RRGGBB, optional '#'; default: 0D0D0D
 defaults write dev.shade.Shade foregroundHex "CDD6F4"          # default text color; default: EBEBEB
 defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdrop (most visible at lower opacity)
 defaults write dev.shade.Shade blurMaterial hud                # hud | underWindow | sidebar | fullScreen

@@ -48,29 +48,14 @@ extension Preferences {
         Self.color(hex: linkHighlightHex, fallback: .systemYellow)
     }
 
-    mutating func setLinkHighlightColor(_ color: NSColor) {
-        linkHighlightHex = Self.hex(for: color)
-    }
-
     /// The terminal's default background with the configured opacity.
     func terminalBackgroundColor() -> NSColor {
-        let fallback = Self.color(hex: Self.defaults.backgroundHex, fallback: .black)
-        return Self.color(hex: backgroundHex, fallback: fallback)
-            .withAlphaComponent(backgroundOpacity)
-    }
-
-    mutating func setTerminalBackgroundColor(_ color: NSColor) {
-        backgroundHex = Self.hex(for: color)
+        Self.color(hex: backgroundHex, fallback: .black).withAlphaComponent(backgroundOpacity)
     }
 
     /// The default text color; programs may still pick their own colors.
     func terminalForegroundColor() -> NSColor {
-        let fallback = Self.color(hex: Self.defaults.foregroundHex, fallback: .white)
-        return Self.color(hex: foregroundHex, fallback: fallback)
-    }
-
-    mutating func setTerminalForegroundColor(_ color: NSColor) {
-        foregroundHex = Self.hex(for: color)
+        Self.color(hex: foregroundHex, fallback: .white)
     }
 
     /// sRGB color for a stored `RRGGBB` value, or `fallback` when it is invalid.
@@ -79,9 +64,10 @@ extension Preferences {
         return NSColor(srgbRed: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1.0)
     }
 
-    /// Uppercase `RRGGBB` for `color` in sRGB; alpha is dropped.
-    static func hex(for color: NSColor) -> String {
-        let srgb = color.usingColorSpace(.sRGB) ?? color
+    /// Uppercase `RRGGBB` for `color` in sRGB, dropping alpha; nil for colors
+    /// with no sRGB form, such as patterns.
+    static func hex(for color: NSColor) -> String? {
+        guard let srgb = color.usingColorSpace(.sRGB) else { return nil }
         return hexString(for: .init(
             red: srgb.redComponent,
             green: srgb.greenComponent,

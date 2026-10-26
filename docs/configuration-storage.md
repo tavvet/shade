@@ -12,15 +12,19 @@ The portable folder contains two versioned JSON documents:
 
 - `settings.json`: `SettingsFileDocument` with version 3 and a typed `Preferences`
   snapshot. All fields are required; unknown enums and invalid ranges reject
-  the document rather than silently normalizing someone else's file.
+  the document rather than silently normalizing someone else's file. Valid
+  colors written as `#rrggbb` are read as uppercase `RRGGBB`, matching local
+  defaults; the file itself is not rewritten.
   Schema changes must version the document or provide an explicit migration;
   do not add required fields while leaving the version unchanged.
   Older documents load through explicit migrations that add only the fields
   their version lacked, at their defaults: version 1 gains `tabMinimumWidth`
-  (120 pt), and versions 1 and 2 gain `backgroundHex` (`141414`) and
+  (120 pt), and versions 1 and 2 gain `backgroundHex` (`0D0D0D`) and
   `foregroundHex` (`EBEBEB`). All other
   fields remain required. Loading does not rewrite the file. The next settings
   save writes version 3, including the width (80–240 pt) and colors (`RRGGBB`).
+  Shade releases before version 3 reject such a file, so every Mac sharing the
+  folder needs a current build.
 - `connections.json`: the existing `SSHProfileStore` version-1 envelope. UUIDs
   and array order retain identity and quick-slot order. It contains connection
   metadata and identity-file paths, never passwords or private-key contents.

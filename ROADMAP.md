@@ -34,9 +34,8 @@ only a native Mac app can do well.
 ## Bigger bets
 
 - **Color themes / ANSI palette** — *L.*
-  Replace the hardcoded foreground / background (`0.92` / `0.08`) with named
-  schemes — 16 ANSI colors plus fg / bg / cursor — and import of `.itermcolors`
-  or base16.
+  Extend the single text / background color pickers to named schemes — 16 ANSI
+  colors plus fg / bg / cursor — and import of `.itermcolors` or base16.
   *Why:* the single biggest appearance upgrade available.
   *How:* a Theme model in Preferences, applied through SwiftTerm's color table in
   `TerminalSession.apply`; a theme picker in Settings.

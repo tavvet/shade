@@ -97,6 +97,19 @@ final class TerminalSessionAppearanceTests: XCTestCase {
         XCTAssertEqual(Preferences.hex(for: updated), "336699")
     }
 
+    func testVisualBellFlashesInTheTextColor() throws {
+        var prefs = Preferences.defaults
+        prefs.foregroundHex = "102030"
+        let session = TerminalSession(preferences: prefs)
+
+        TerminalAppearance.flashBell(in: session.view)
+
+        let flash = try XCTUnwrap(session.view.subviews.last?.layer?.backgroundColor)
+        let color = try XCTUnwrap(NSColor(cgColor: flash)?.usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: color), "102030")
+        XCTAssertEqual(color.alphaComponent, 0.22, accuracy: 0.001)
+    }
+
     func testControllerCreatesSessionsFromInjectedPreferences() {
         var prefs = Preferences.defaults
         prefs.cursorShape = .bar

@@ -22,24 +22,44 @@ final class SettingsModel: NSObject, ObservableObject {
     }
 
     var linkHighlightColor: Binding<Color> {
-        Binding(
-            get: { Color(nsColor: self.preferences.linkHighlightColor()) },
-            set: { self.preferences.setLinkHighlightColor(NSColor($0)) }
-        )
+        colorBinding(\.linkHighlightHex, fallback: .systemYellow)
     }
 
     /// Background color without opacity; the opacity slider stays separate.
     var terminalBackgroundColor: Binding<Color> {
-        Binding(
-            get: { Color(nsColor: self.preferences.terminalBackgroundColor().withAlphaComponent(1)) },
-            set: { self.preferences.setTerminalBackgroundColor(NSColor($0)) }
-        )
+        colorBinding(\.backgroundHex, fallback: .black)
     }
 
     var terminalForegroundColor: Binding<Color> {
+        colorBinding(\.foregroundHex, fallback: .white)
+    }
+
+    /// The exact color last chosen for each hex preference. Returning it while
+    /// the stored hex still matches keeps the picker from being reset to the
+    /// 8-bit rounded value on every drag step, which makes its sliders jump.
+    private var pickedColors: [WritableKeyPath<Preferences, String>: (hex: String, color: Color)] = [:]
+
+    private func colorBinding(
+        _ hexKey: WritableKeyPath<Preferences, String> & Sendable,
+        fallback: NSColor
+    ) -> Binding<Color> {
         Binding(
-            get: { Color(nsColor: self.preferences.terminalForegroundColor()) },
-            set: { self.preferences.setTerminalForegroundColor(NSColor($0)) }
+            get: {
+                let hex = self.preferences[keyPath: hexKey]
+                if let picked = self.pickedColors[hexKey], picked.hex == hex {
+                    return picked.color
+                }
+                return Color(nsColor: Preferences.color(hex: hex, fallback: fallback))
+            },
+            set: { color in
+                let picked = NSColor(color)
+                guard let hex = Preferences.hex(for: picked) else { return }
+                let opaque = picked.alphaComponent == 1
+                    ? color
+                    : Color(nsColor: picked.withAlphaComponent(1))
+                self.pickedColors[hexKey] = (hex, opaque)
+                self.preferences[keyPath: hexKey] = hex
+            }
         )
     }
 

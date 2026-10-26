@@ -11,10 +11,14 @@ All notable changes to Shade are documented in this file. Format follows
 - Add a background color picker under Appearance → Color & Background. The
   opacity slider still controls translucency, and the color is saved in local
   defaults (`backgroundHex`) and in portable `settings.json`, which moves to
-  version 3; older files load with the previous dark gray.
+  version 3; older files load with the previous dark gray (`0D0D0D`). Older
+  Shade releases cannot read a version-3 file, so update every Mac that shares
+  a configuration folder.
 - Add a text color picker next to it for the default terminal text color
-  (`foregroundHex`, the previous light gray by default). Programs that choose
-  their own colors keep them.
+  (`foregroundHex`, the previous light gray `EBEBEB` by default). Programs that
+  choose their own colors keep them.
+- Flash the visual bell in the text color, so it stays visible on a light
+  background.
 
 ### Changed
 
@@ -36,6 +40,12 @@ All notable changes to Shade are documented in this file. Format follows
 - Correct the documented build requirement to Xcode 26+ / Swift 6.2+, list the
   current source files in the README architecture tree, and mark the SwiftTerm
   1.99.1 migration as released.
+- Read colors in a hand-edited `settings.json` written as `#rrggbb` or in
+  lowercase, including `linkHighlightHex`, in the uppercase `RRGGBB` form local
+  defaults use, so the same color always compares equal. Ignore a color with no
+  sRGB form from the color panel instead of crashing.
+- Keep the color panel's sliders from jumping while dragging: the picker shows
+  the exact chosen color until the stored `RRGGBB` value changes.
 
 ## [0.1.26] — 2026-10-24
 

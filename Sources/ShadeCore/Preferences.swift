@@ -66,7 +66,9 @@ public struct Preferences: Codable, Equatable, Sendable {
         fontSize: 13,
         fontName: "",
         backgroundOpacity: 0.94,
-        backgroundHex: "141414",
+        // The former fixed NSColor(white: 0.08) / (white: 0.92) grays, which
+        // are gamma-2.2 values, expressed in sRGB.
+        backgroundHex: "0D0D0D",
         foregroundHex: "EBEBEB",
         animationDuration: 0.16,
         linkHighlightHex: "FFCC00",     // ≈ NSColor.systemYellow
@@ -117,6 +119,11 @@ public struct Preferences: Codable, Equatable, Sendable {
             green: Double((value >> 8) & 0xFF) / 255.0,
             blue: Double(value & 0xFF) / 255.0
         )
+    }
+
+    /// Canonical uppercase `RRGGBB` for a value `parseHex` accepts, or nil.
+    public static func normalizedHex(_ raw: String) -> String? {
+        parseHex(raw).map(hexString(for:))
     }
 
     /// Formats sRGB components in 0…1 as uppercase `RRGGBB`.

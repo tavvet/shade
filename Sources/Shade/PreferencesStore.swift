@@ -67,12 +67,12 @@ struct PreferencesStore {
             )
         }
         if let raw = userDefaults.string(forKey: Key.backgroundHex),
-           Preferences.parseHex(raw) != nil {
-            preferences.backgroundHex = normalize(hex: raw)
+           let hex = Preferences.normalizedHex(raw) {
+            preferences.backgroundHex = hex
         }
         if let raw = userDefaults.string(forKey: Key.foregroundHex),
-           Preferences.parseHex(raw) != nil {
-            preferences.foregroundHex = normalize(hex: raw)
+           let hex = Preferences.normalizedHex(raw) {
+            preferences.foregroundHex = hex
         }
         if userDefaults.object(forKey: Key.animationDuration) != nil {
             preferences.animationDuration = min(
@@ -81,8 +81,8 @@ struct PreferencesStore {
             )
         }
         if let raw = userDefaults.string(forKey: Key.linkHighlightHex),
-           Preferences.parseHex(raw) != nil {
-            preferences.linkHighlightHex = normalize(hex: raw)
+           let hex = Preferences.normalizedHex(raw) {
+            preferences.linkHighlightHex = hex
         }
         if userDefaults.object(forKey: Key.backgroundBlur) != nil {
             preferences.backgroundBlur = userDefaults.bool(forKey: Key.backgroundBlur)
@@ -201,12 +201,6 @@ struct PreferencesStore {
         static let cursorShape = "cursorShape"
         static let cursorBlink = "cursorBlink"
         static let visualBell = "visualBell"
-    }
-
-    private func normalize(hex: String) -> String {
-        var value = hex.uppercased()
-        if value.hasPrefix("#") { value.removeFirst() }
-        return value
     }
 
     private func clampFraction(_ value: Double) -> CGFloat {

@@ -258,9 +258,11 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(Preferences.parseHex("00CCFF").map(Preferences.hexString(for:)), "00CCFF")
     }
 
-    func testLinkHighlightColorRoundTripsThroughNSColor() {
+    func testLinkHighlightColorRoundTripsThroughNSColor() throws {
         var prefs = Preferences.defaults
-        prefs.setLinkHighlightColor(NSColor(srgbRed: 0, green: 0.8, blue: 1, alpha: 1))
+        prefs.linkHighlightHex = try XCTUnwrap(
+            Preferences.hex(for: NSColor(srgbRed: 0, green: 0.8, blue: 1, alpha: 1))
+        )
         XCTAssertEqual(prefs.linkHighlightHex, "00CCFF")
 
         let srgb = prefs.linkHighlightColor().usingColorSpace(.sRGB)!
@@ -284,9 +286,8 @@ final class PreferencesTests: XCTestCase {
 
     func testTerminalBackgroundColorCarriesTheOpacity() throws {
         var prefs = Preferences.defaults
-        prefs.setTerminalBackgroundColor(NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.5))
+        prefs.backgroundHex = "336699"
         prefs.backgroundOpacity = 0.7
-        XCTAssertEqual(prefs.backgroundHex, "336699")
 
         let color = try XCTUnwrap(prefs.terminalBackgroundColor().usingColorSpace(.sRGB))
         XCTAssertEqual(color.redComponent, 0.2, accuracy: 0.01)
@@ -295,27 +296,43 @@ final class PreferencesTests: XCTestCase {
 
         prefs.backgroundHex = "invalid"
         let fallback = try XCTUnwrap(prefs.terminalBackgroundColor().usingColorSpace(.sRGB))
-        XCTAssertEqual(Preferences.hex(for: fallback), Preferences.defaults.backgroundHex)
+        XCTAssertEqual(Preferences.hex(for: fallback), "000000")
         XCTAssertEqual(fallback.alphaComponent, 0.7, accuracy: 0.001)
     }
 
-    func testTerminalForegroundColorIsOpaqueAndFallsBackToTheDefault() throws {
+    func testTerminalForegroundColorIsOpaqueAndFallsBackToWhite() throws {
         var prefs = Preferences.defaults
-        prefs.setTerminalForegroundColor(NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.5))
-        XCTAssertEqual(prefs.foregroundHex, "336699")
+        prefs.foregroundHex = "336699"
         XCTAssertEqual(prefs.terminalForegroundColor().alphaComponent, 1, accuracy: 0.001)
 
         prefs.foregroundHex = "invalid"
         let fallback = try XCTUnwrap(prefs.terminalForegroundColor().usingColorSpace(.sRGB))
-        XCTAssertEqual(Preferences.hex(for: fallback), Preferences.defaults.foregroundHex)
+        XCTAssertEqual(Preferences.hex(for: fallback), "FFFFFF")
     }
 
-    func testSetLinkHighlightColorStoresRGBHex() {
-        var prefs = Preferences.defaults
+    func testHexForColorDropsAlpha() {
+        XCTAssertEqual(
+            Preferences.hex(for: NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.5)),
+            "336699"
+        )
+    }
 
-        prefs.setLinkHighlightColor(NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.5))
+    func testHexForColorRejectsColorsWithoutAnSRGBForm() {
+        let pattern = NSColor(patternImage: NSImage(size: NSSize(width: 2, height: 2)))
+        XCTAssertNil(Preferences.hex(for: pattern))
+    }
 
-        XCTAssertEqual(prefs.linkHighlightHex, "336699")
+    func testDefaultColorsMatchTheFormerFixedGrays() throws {
+        let background = try XCTUnwrap(NSColor(white: 0.08, alpha: 1).usingColorSpace(.sRGB))
+        let foreground = try XCTUnwrap(NSColor(white: 0.92, alpha: 1).usingColorSpace(.sRGB))
+        XCTAssertEqual(Preferences.hex(for: background), Preferences.defaults.backgroundHex)
+        XCTAssertEqual(Preferences.hex(for: foreground), Preferences.defaults.foregroundHex)
+    }
+
+    func testNormalizedHexUsesOneCanonicalForm() {
+        XCTAssertEqual(Preferences.normalizedHex("#1a2b3c"), "1A2B3C")
+        XCTAssertEqual(Preferences.normalizedHex("C0FFEE"), "C0FFEE")
+        XCTAssertNil(Preferences.normalizedHex("dark"))
     }
 }
 

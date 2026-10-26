@@ -88,6 +88,22 @@ final class SettingsFileDocumentTests: XCTestCase {
         XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
     }
 
+    func testDecodeNormalizesHandEditedColors() throws {
+        let data = try SettingsFileDocument.encode(.defaults)
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var preferences = try XCTUnwrap(json["preferences"] as? [String: Any])
+        preferences["backgroundHex"] = "#1a2b3c"
+        preferences["foregroundHex"] = "c0ffee"
+        preferences["linkHighlightHex"] = "#00ccff"
+        json["preferences"] = preferences
+
+        let decoded = try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json))
+
+        XCTAssertEqual(decoded.backgroundHex, "1A2B3C")
+        XCTAssertEqual(decoded.foregroundHex, "C0FFEE")
+        XCTAssertEqual(decoded.linkHighlightHex, "00CCFF")
+    }
+
     func testCurrentVersionRequiresValidTerminalColors() throws {
         let data = try SettingsFileDocument.encode(.defaults)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
