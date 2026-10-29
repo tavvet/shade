@@ -65,6 +65,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var quickSlotRequest = SSHConnectionRequest(controller: connections)
     private var settingsWerePresented = false
     private var componentsConnected = false
+    /// Asks the user about the listed tabs before quitting; tests replace it.
+    var confirmQuit: @MainActor ([QuitWarning.Tab]) -> Bool = QuitConfirmationAlert.run
 
     private(set) lazy var panel: DropdownPanel = {
         let panel = DropdownPanel(preferences: configuration)
@@ -234,6 +236,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard shouldQuit(during: NSAppleEventManager.shared().currentAppleEvent) else {
+            return .terminateCancel
+        }
         quickSlotRequest.cancel()
         Task { @MainActor in
             // Let tasks accepted by the last button/key action enter their queues.
@@ -245,6 +250,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             sender.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater
+    }
+
+    /// Asks before a quit ends the tabs the quit confirmation setting covers.
+    /// A logout, restart or shutdown never waits for the answer.
+    func shouldQuit(during appleEvent: NSAppleEventDescriptor?) -> Bool {
+        let setting = configuration.load().quitConfirmation
+        guard setting != .never,
+              !QuitConfirmationAlert.isSessionEnding(appleEvent) else { return true }
+        let tabs = QuitWarning.tabs(terminals.quitWarningTabs(), for: setting)
+        return tabs.isEmpty || confirmQuit(tabs)
     }
 
     /// Hide on a real app switch, but not during the transient resign-active

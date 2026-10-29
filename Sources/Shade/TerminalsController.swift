@@ -165,6 +165,17 @@ final class TerminalsController {
         togglePin(at: activeIndex)
     }
 
+    /// Every tab as the quit confirmation describes it, in tab order.
+    func quitWarningTabs() -> [QuitWarning.Tab] {
+        tabs.sessions.enumerated().map { index, session in
+            QuitWarning.Tab(
+                label: TabsObservable.formatLabel(index: index, title: session.displayTitle),
+                isPinned: tabs.isPinned(at: index),
+                program: session.foregroundProgram
+            )
+        }
+    }
+
     private func sessionDidExit(_ session: TerminalSession) {
         guard let index = tabs.index(of: session) else { return }
         if tabs.isPinned(at: index) {

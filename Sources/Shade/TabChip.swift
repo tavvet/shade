@@ -80,7 +80,7 @@ struct TabChip: View {
                 .foregroundStyle(.white.opacity(isActive ? 1.0 : 0.7))
             Spacer(minLength: 0)
             if isPinned {
-                Button(action: onTogglePin) {
+                Button(action: firstClickOnly(onTogglePin)) {
                     Image(systemName: "pin.fill")
                         .font(.system(size: 9, weight: .bold))
                         .rotationEffect(.degrees(45))
@@ -91,7 +91,7 @@ struct TabChip: View {
                 .help("Pinned — click to unpin (⌘⇧K)")
                 .accessibilityLabel("Unpin tab")
             } else {
-                Button(action: onClose) {
+                Button(action: firstClickOnly(onClose)) {
                     Image(systemName: "xmark")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.white.opacity(hovering || isActive ? 0.8 : 0.0))
@@ -104,10 +104,20 @@ struct TabChip: View {
     }
 
     private func handleClick() {
-        if ConnectionsSettingsClickEvent.isDoubleClick(NSApp.currentEvent) {
+        if ClickEvent.isDoubleClick(NSApp.currentEvent) {
             beginEditing()
         } else {
             onClick()
+        }
+    }
+
+    /// Ignores the rest of a double-click on a chip button. Otherwise its
+    /// second click lands on whatever the first one put under the pointer:
+    /// the close button that replaces the pin, or the next tab's close button.
+    private func firstClickOnly(_ action: @escaping () -> Void) -> () -> Void {
+        {
+            guard !ClickEvent.isRepeatedClick(NSApp.currentEvent) else { return }
+            action()
         }
     }
 

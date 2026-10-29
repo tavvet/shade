@@ -13,6 +13,7 @@ final class SettingsFileDocumentTests: XCTestCase {
         preferences.shellEnrichment = true
         preferences.backgroundHex = "1A2B3C"
         preferences.foregroundHex = "C0FFEE"
+        preferences.quitConfirmation = .never
 
         XCTAssertEqual(try SettingsFileDocument.decode(SettingsFileDocument.encode(preferences)), preferences)
     }
@@ -84,6 +85,38 @@ final class SettingsFileDocumentTests: XCTestCase {
         XCTAssertEqual(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)), expected)
 
         preferences.removeValue(forKey: "tabMinimumWidth")
+        json["preferences"] = preferences
+        XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
+    }
+
+    func testVersionThreeMigratesQuitConfirmationWithoutChangingOtherPreferences() throws {
+        var expected = Preferences.defaults
+        expected.backgroundHex = "1A2B3C"
+        expected.tabMinimumWidth = 200
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: SettingsFileDocument.encode(expected)
+        ) as? [String: Any])
+        json["version"] = 3
+        var preferences = try XCTUnwrap(json["preferences"] as? [String: Any])
+        preferences.removeValue(forKey: "quitConfirmation")
+        json["preferences"] = preferences
+
+        XCTAssertEqual(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)), expected)
+
+        preferences.removeValue(forKey: "backgroundHex")
+        json["preferences"] = preferences
+        XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
+    }
+
+    func testCurrentVersionRequiresAKnownQuitConfirmation() throws {
+        let data = try SettingsFileDocument.encode(.defaults)
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var preferences = try XCTUnwrap(json["preferences"] as? [String: Any])
+        preferences.removeValue(forKey: "quitConfirmation")
+        json["preferences"] = preferences
+        XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
+
+        preferences["quitConfirmation"] = "always"
         json["preferences"] = preferences
         XCTAssertThrowsError(try SettingsFileDocument.decode(JSONSerialization.data(withJSONObject: json)))
     }

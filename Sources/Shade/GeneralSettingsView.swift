@@ -29,6 +29,12 @@ struct GeneralSettingsView: View {
             Section("Behavior") {
                 Toggle("Hide when Shade loses focus", isOn: $model.preferences.hideOnFocusLoss)
                 Toggle("New tab uses the current directory", isOn: $model.preferences.newTabInheritsCwd)
+                Picker("Ask before quitting", selection: $model.preferences.quitConfirmation) {
+                    Text("Never").tag(Preferences.QuitConfirmation.never)
+                    Text("When a tab is pinned").tag(Preferences.QuitConfirmation.pinnedTabs)
+                    Text("When a tab is pinned or runs a program")
+                        .tag(Preferences.QuitConfirmation.pinnedOrBusyTabs)
+                }
             }
 
             Section("Startup") {

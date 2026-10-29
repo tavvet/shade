@@ -27,6 +27,7 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var cursorShape: CursorShape      // block / bar / underline
     public var cursorBlink: Bool             // blink the cursor
     public var visualBell: Bool              // flash the terminal instead of relying on the audible bell
+    public var quitConfirmation: QuitConfirmation // when quitting asks first instead of ending the tabs
 
     public enum HorizontalAlignment: String, Codable, Sendable {
         case left, center, right
@@ -43,6 +44,15 @@ public struct Preferences: Codable, Equatable, Sendable {
 
     public enum CursorShape: String, Codable, Sendable {
         case block, bar, underline
+    }
+
+    /// Which tabs make a quit ask first, since quitting ends their processes.
+    public enum QuitConfirmation: String, Codable, Sendable, CaseIterable {
+        case never
+        /// Ask while any tab is pinned.
+        case pinnedTabs
+        /// Ask while any tab is pinned or runs a program instead of its shell.
+        case pinnedOrBusyTabs
     }
 
     /// An sRGB color with components in 0…1.
@@ -83,7 +93,8 @@ public struct Preferences: Codable, Equatable, Sendable {
         shellEnrichment: false,
         cursorShape: .block,
         cursorBlink: false,
-        visualBell: false
+        visualBell: false,
+        quitConfirmation: .pinnedTabs
     )
 
     public static let minFontSize: CGFloat = 8

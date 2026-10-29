@@ -6,6 +6,24 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Ask before quitting while a tab is pinned, listing the tabs and the programs
+  running in them. Settings → General → Behavior → Ask before quitting can also
+  ask while any tab runs a program, or never ask (`quitConfirmation`: `never`,
+  `pinnedTabs` by default, `pinnedOrBusyTabs`). Logging out, restarting or
+  shutting down never waits for the question. Portable `settings.json` moves to
+  version 4; older files load with the default. Older Shade releases cannot
+  read a version-4 file, so update every Mac that shares a configuration
+  folder.
+
+### Fixed
+
+- Switch and close tabs on the first mouse click. Each click used to wait for
+  the double-click interval.
+- A double-click on a tab's pin or close button acts once: it no longer unpins
+  and then closes the tab, or closes the next tab that moves under the pointer.
+
 ## [0.1.27] — 2026-10-26
 
 ### Added

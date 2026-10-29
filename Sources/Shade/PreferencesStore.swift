@@ -129,6 +129,10 @@ struct PreferencesStore {
         if userDefaults.object(forKey: Key.visualBell) != nil {
             preferences.visualBell = userDefaults.bool(forKey: Key.visualBell)
         }
+        if let raw = userDefaults.string(forKey: Key.quitConfirmation),
+           let value = Preferences.QuitConfirmation(rawValue: raw) {
+            preferences.quitConfirmation = value
+        }
         return preferences
     }
 
@@ -159,6 +163,7 @@ struct PreferencesStore {
         userDefaults.set(preferences.cursorShape.rawValue, forKey: Key.cursorShape)
         userDefaults.set(preferences.cursorBlink, forKey: Key.cursorBlink)
         userDefaults.set(preferences.visualBell, forKey: Key.visualBell)
+        userDefaults.set(preferences.quitConfirmation.rawValue, forKey: Key.quitConfirmation)
     }
 
     /// Persists keyboard font zoom without rewriting unrelated values that may
@@ -201,6 +206,7 @@ struct PreferencesStore {
         static let cursorShape = "cursorShape"
         static let cursorBlink = "cursorBlink"
         static let visualBell = "visualBell"
+        static let quitConfirmation = "quitConfirmation"
     }
 
     private func clampFraction(_ value: Double) -> CGFloat {

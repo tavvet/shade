@@ -27,6 +27,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.cursorShape, .block)
         XCTAssertFalse(prefs.cursorBlink)
         XCTAssertFalse(prefs.visualBell)
+        XCTAssertEqual(prefs.quitConfirmation, .pinnedTabs)
     }
 
     func testLoadReadsOverriddenValues() {
@@ -71,6 +72,7 @@ final class PreferencesTests: XCTestCase {
         prefs.cursorShape = .underline
         prefs.cursorBlink = true
         prefs.visualBell = true
+        prefs.quitConfirmation = .pinnedOrBusyTabs
 
         PreferencesStore(userDefaults: store).save(prefs)
 
@@ -129,6 +131,14 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(PreferencesStore(userDefaults: store).load().blurMaterial, .sidebar)
         store.set("bogus", forKey: PreferencesStore.Key.blurMaterial)
         XCTAssertEqual(PreferencesStore(userDefaults: store).load().blurMaterial, Preferences.defaults.blurMaterial)
+    }
+
+    func testQuitConfirmationReadsStoredValueAndFallsBack() {
+        let store = freshStore()
+        store.set("never", forKey: PreferencesStore.Key.quitConfirmation)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().quitConfirmation, .never)
+        store.set("always", forKey: PreferencesStore.Key.quitConfirmation)
+        XCTAssertEqual(PreferencesStore(userDefaults: store).load().quitConfirmation, .pinnedTabs)
     }
 
     func testNewTabInheritsCwdReadsStoredValue() {

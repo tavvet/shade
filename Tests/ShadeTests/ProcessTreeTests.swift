@@ -65,4 +65,62 @@ final class ProcessTreeTests: XCTestCase {
         XCTAssertNil(indicator)
         XCTAssertTrue(didScan)
     }
+
+    func testShellWaitingForInputRunsNoProgram() {
+        let program = ProcessTree.foregroundProgram(
+            forShell: 10,
+            foregroundProcessGroup: 10,
+            children: { pid in pid == 10 ? [20] : [] },
+            processName: { pid in pid == 10 ? "zsh" : "sleep" },
+            processGroup: { pid in pid }
+        )
+
+        XCTAssertNil(program)
+    }
+
+    func testNamesTheCommandAShellRunsInItsOwnGroup() {
+        let program = ProcessTree.foregroundProgram(
+            forShell: 10,
+            foregroundProcessGroup: 20,
+            children: { pid in pid == 10 ? [20] : [] },
+            processName: { pid in pid == 20 ? "vim" : "zsh" },
+            processGroup: { pid in pid }
+        )
+
+        XCTAssertEqual(program, "vim")
+    }
+
+    func testNamesTheCommandBesideTheForegroundWrapper() {
+        let program = ProcessTree.foregroundProgram(
+            forShell: 10,
+            foregroundProcessGroup: 10,
+            children: { pid in pid == 10 ? [20] : [] },
+            processName: { pid in pid == 10 ? "sh" : "ssh" },
+            processGroup: { _ in 10 }
+        )
+
+        XCTAssertEqual(program, "ssh")
+    }
+
+    func testForegroundGroupWithoutANameStillCountsAsAProgram() {
+        let program = ProcessTree.foregroundProgram(
+            forShell: 10,
+            foregroundProcessGroup: 20,
+            children: { _ in [] },
+            processName: { _ in nil },
+            processGroup: { pid in pid }
+        )
+
+        XCTAssertEqual(program, "process 20")
+    }
+
+    func testMissingForegroundGroupRunsNoProgram() {
+        XCTAssertNil(ProcessTree.foregroundProgram(
+            forShell: 10,
+            foregroundProcessGroup: nil,
+            children: { _ in [20] },
+            processName: { _ in "vim" },
+            processGroup: { _ in 20 }
+        ))
+    }
 }

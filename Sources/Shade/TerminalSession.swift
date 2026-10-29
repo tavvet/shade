@@ -64,6 +64,16 @@ final class TerminalSession {
     var view: LocalProcessTerminalView { process.view }
     var isProcessRunning: Bool { process.isRunning }
 
+    /// The program running in the foreground in place of the tab's shell, such
+    /// as `vim` or `ssh`, or nil while the shell waits for input.
+    var foregroundProgram: String? {
+        guard process.isRunning else { return nil }
+        return ProcessTree.foregroundProgram(
+            forShell: process.shellPid,
+            foregroundProcessGroup: process.foregroundProcessGroup
+        )
+    }
+
     /// What the tab bar shows: an explicit user name, else the shell-provided
     /// title or abbreviated CWD or shell name. The git branch is rendered
     /// separately as a floating badge over the terminal. When we're inside an

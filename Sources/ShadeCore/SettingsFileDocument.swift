@@ -6,14 +6,14 @@ public struct SettingsFileDocument: Codable {
     let preferences: Preferences
 
     /// The version written by `encode`.
-    static let currentVersion = 3
+    static let currentVersion = 4
 
     public static func decode(_ data: Data) throws -> Preferences {
         let decoder = JSONDecoder()
         let header = try decoder.decode(Header.self, from: data)
         let migrated: Data
         switch header.version {
-        case 1, 2:
+        case 1, 2, 3:
             guard var json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   var preferences = json["preferences"] as? [String: Any] else {
                 throw ConfigurationError.invalidPreferences
@@ -23,8 +23,11 @@ public struct SettingsFileDocument: Codable {
             if header.version < 2 {
                 preferences["tabMinimumWidth"] = Double(Preferences.defaults.tabMinimumWidth)
             }
-            preferences["backgroundHex"] = Preferences.defaults.backgroundHex
-            preferences["foregroundHex"] = Preferences.defaults.foregroundHex
+            if header.version < 3 {
+                preferences["backgroundHex"] = Preferences.defaults.backgroundHex
+                preferences["foregroundHex"] = Preferences.defaults.foregroundHex
+            }
+            preferences["quitConfirmation"] = Preferences.defaults.quitConfirmation.rawValue
             json["preferences"] = preferences
             json["version"] = currentVersion
             migrated = try JSONSerialization.data(withJSONObject: json)

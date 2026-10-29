@@ -19,7 +19,8 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
   click targets and a configurable minimum width.
 - **Pinned tabs** — pin a tab (`⌘⇧K` or right-click → Pin Tab) to keep it at
   the left with a pin mark; it can't be closed until unpinned, and its shell
-  restarts in place if it exits.
+  restarts in place if it exits. Quitting Shade asks first while a tab is
+  pinned (Settings → General → Behavior).
 - **Current input source (opt-in)** — a compact `EN` / `RU` / `FI` badge in
   the tab bar follows the keyboard source selected in macOS. It is off by
   default and needs no Accessibility or Input Monitoring permission.
@@ -175,6 +176,16 @@ directory (an SSH tab does not reconnect); a shell that keeps exiting without
 input is not restarted again, and pinning it later starts it once more. Pins
 last until Shade quits.
 
+A tab's pin and close buttons act on the first click only, so a double-click
+on the pin unpins the tab without also closing it, and a double-click on `×`
+closes one tab, not the next one that moves under the pointer.
+
+Quitting Shade (`⌘Q`) asks first while a tab is pinned, listing those tabs and
+the programs running in them. **Settings → General → Behavior → Ask before
+quitting** can also ask while any tab runs a program in place of its shell
+(such as `vim` or `ssh`), or never ask. Logging out, restarting or shutting
+down the Mac never waits for this question.
+
 Set **Settings → Appearance → Interface → Minimum tab width** to keep short
 titles such as `~` easy to click. The default is 120 pt, adjustable from 80 to
 240 pt, and changes apply immediately. Longer titles can use more space; the
@@ -229,7 +240,7 @@ Open Settings from Shade's menu-bar icon. The sidebar groups preferences into
 seven focused pages:
 
 - **General** — panel size and position, focus behavior, new-tab directory,
-  Open at Login and slide animation
+  quit confirmation, Open at Login and slide animation
 - **Connections** — saved SSH profiles and their quick-access order
 - **Appearance** — optional current-input-source badge, monospace font family
   and size, text and background colors, background opacity, link highlight
@@ -327,6 +338,7 @@ defaults write dev.shade.Shade animationDuration 0.12          # 0.0 – 0.5 sec
 defaults write dev.shade.Shade hideOnFocusLoss -bool true      # hide when Shade loses focus
 defaults write dev.shade.Shade newTabInheritsCwd -bool true    # ⌘T opens in the current directory
 defaults write dev.shade.Shade visualBell -bool true           # flash on the terminal bell
+defaults write dev.shade.Shade quitConfirmation pinnedTabs     # never | pinnedTabs | pinnedOrBusyTabs
 defaults write dev.shade.Shade shellEnrichment -bool true      # richer zsh completion inside Shade (zsh only)
 
 # Notifications (command finished while panel hidden; needs OSC 133)
@@ -570,6 +582,7 @@ build/Shade.app`.
 Sources/Shade/
 ├── ShadeApp.swift           @main + AppDelegate lifecycle coordination
 ├── ApplicationMenuController.swift  Main menu + menu-bar status item
+├── ClickEvent.swift         Click-count checks for SwiftUI mouse handlers
 ├── AboutWindow.swift        About window — version, links, donation addresses
 ├── BranchBadge.swift        Floating git branch + status pill (SwiftUI)
 ├── BundleVerification.swift  Non-interactive packaged-resource smoke check
@@ -596,7 +609,8 @@ Sources/Shade/
 ├── PreferencesChangeAnnouncer.swift  Coalesced, post-transaction preference-change notices
 ├── PreferencesStore.swift   UserDefaults keys, validation, loading and persistence
 ├── ProcessCwd.swift         libproc-based CWD lookup for shell processes
-├── ProcessTree.swift        Finds foreground ssh/mosh clients in the shell's process tree
+├── ProcessTree.swift        Finds the foreground program or ssh/mosh client in the shell's process tree
+├── QuitConfirmationAlert.swift  Quit question and logout/shutdown detection
 ├── AppearanceSettingsView.swift  Appearance settings form
 ├── GeneralSettingsView.swift  Window, startup and behavior settings form
 ├── NotificationSettingsView.swift  Command-notification settings form
@@ -643,6 +657,7 @@ Sources/ShadeCore/         UI-free library: no AppKit, SwiftUI or SwiftTerm impo
 ├── Preferences.swift         Settings value model, ranges, zoom steps and RRGGBB colors
 ├── ProcessInvocation.swift   Structured executable and argument boundaries
 ├── PromptMarks.swift         OSC 133 prompt-mark parsing + jump/copy helpers
+├── QuitWarning.swift         Which tabs a quit asks about and how it lists them
 ├── SSHCommandBuilder.swift   Validated OpenSSH invocation construction
 ├── SSHConnectionLaunch.swift SSH profile → generic terminal launch configuration
 ├── SSHConnectionPickerSearch.swift Tokenized saved-connection filtering

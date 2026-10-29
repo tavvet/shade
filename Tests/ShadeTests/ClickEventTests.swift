@@ -3,25 +3,42 @@ import XCTest
 @testable import Shade
 
 @MainActor
-final class ConnectionsSettingsClickEventTests: XCTestCase {
+final class ClickEventTests: XCTestCase {
     func testRecognizesOnlyTheSecondLeftMouseClick() throws {
-        XCTAssertFalse(ConnectionsSettingsClickEvent.isDoubleClick(
+        XCTAssertFalse(ClickEvent.isDoubleClick(
             try mouseEvent(type: .leftMouseUp, clickCount: 1)
         ))
-        XCTAssertTrue(ConnectionsSettingsClickEvent.isDoubleClick(
+        XCTAssertTrue(ClickEvent.isDoubleClick(
             try mouseEvent(type: .leftMouseUp, clickCount: 2)
         ))
-        XCTAssertFalse(ConnectionsSettingsClickEvent.isDoubleClick(
+        XCTAssertFalse(ClickEvent.isDoubleClick(
             try mouseEvent(type: .leftMouseUp, clickCount: 3)
         ))
     }
 
-    func testRejectsMissingAndNonLeftMouseEvents() throws {
-        XCTAssertFalse(ConnectionsSettingsClickEvent.isDoubleClick(nil))
-        XCTAssertFalse(ConnectionsSettingsClickEvent.isDoubleClick(
+    func testRecognizesEveryClickAfterTheFirstAsRepeated() throws {
+        XCTAssertFalse(ClickEvent.isRepeatedClick(
+            try mouseEvent(type: .leftMouseUp, clickCount: 1)
+        ))
+        XCTAssertTrue(ClickEvent.isRepeatedClick(
+            try mouseEvent(type: .leftMouseUp, clickCount: 2)
+        ))
+        XCTAssertTrue(ClickEvent.isRepeatedClick(
+            try mouseEvent(type: .leftMouseDown, clickCount: 3)
+        ))
+        XCTAssertFalse(ClickEvent.isRepeatedClick(nil))
+        XCTAssertFalse(ClickEvent.isRepeatedClick(
             try mouseEvent(type: .rightMouseUp, clickCount: 2)
         ))
-        XCTAssertFalse(ConnectionsSettingsClickEvent.isDoubleClick(try keyEvent()))
+        XCTAssertFalse(ClickEvent.isRepeatedClick(try keyEvent()))
+    }
+
+    func testRejectsMissingAndNonLeftMouseEvents() throws {
+        XCTAssertFalse(ClickEvent.isDoubleClick(nil))
+        XCTAssertFalse(ClickEvent.isDoubleClick(
+            try mouseEvent(type: .rightMouseUp, clickCount: 2)
+        ))
+        XCTAssertFalse(ClickEvent.isDoubleClick(try keyEvent()))
     }
 
     private func mouseEvent(

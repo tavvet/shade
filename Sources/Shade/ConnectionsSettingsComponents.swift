@@ -40,19 +40,9 @@ struct ConnectionsSettingsList: View {
     private func handleClick(on profile: SSHProfile) {
         selectedID = profile.id
         listIsFocused = true
-        if ConnectionsSettingsClickEvent.isDoubleClick(NSApp.currentEvent) {
+        if ClickEvent.isDoubleClick(NSApp.currentEvent) {
             onEdit(profile)
         }
-    }
-}
-
-enum ConnectionsSettingsClickEvent {
-    static func isDoubleClick(_ event: NSEvent?) -> Bool {
-        guard let event,
-              event.type == .leftMouseDown || event.type == .leftMouseUp else {
-            return false
-        }
-        return event.clickCount == 2
     }
 }
 

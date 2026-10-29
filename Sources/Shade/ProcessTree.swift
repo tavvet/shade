@@ -4,6 +4,7 @@ import Foundation
 /// Checks the PTY owner and its process tree for a remote-session helper
 /// (ssh / mosh / etc). When that's the case, the local cwd/git heuristics no
 /// longer reflect what the user sees in the terminal, so the UI should mask them.
+/// Also names the program running in place of the shell, for the quit question.
 enum ProcessTree {
     /// Names that mean "the visible session is happening on another machine."
     static let remoteProcessNames: Set<String> = [
@@ -68,6 +69,48 @@ enum ProcessTree {
                 return name
             }
             queue.append(contentsOf: children(pid))
+        }
+        return nil
+    }
+
+    /// Name of the program the PTY runs in the foreground in place of its shell,
+    /// or nil while the shell itself waits for input.
+    static func foregroundProgram(
+        forShell shellPid: pid_t,
+        foregroundProcessGroup: pid_t?
+    ) -> String? {
+        foregroundProgram(
+            forShell: shellPid,
+            foregroundProcessGroup: foregroundProcessGroup,
+            children: children(of:),
+            processName: processName,
+            processGroup: processGroup
+        )
+    }
+
+    /// Dependency-injected core of `foregroundProgram(forShell:foregroundProcessGroup:)`.
+    static func foregroundProgram(
+        forShell shellPid: pid_t,
+        foregroundProcessGroup: pid_t?,
+        children: (pid_t) -> [pid_t],
+        processName: (pid_t) -> String?,
+        processGroup: (pid_t) -> pid_t?
+    ) -> String? {
+        guard shellPid > 0,
+              let foregroundProcessGroup,
+              foregroundProcessGroup > 0 else { return nil }
+
+        let ownerIsForeground = shellPid == foregroundProcessGroup
+            || processGroup(shellPid) == foregroundProcessGroup
+        guard ownerIsForeground else {
+            // An interactive shell gives each command its own process group,
+            // led by the command's first process.
+            return processName(foregroundProcessGroup) ?? "process \(foregroundProcessGroup)"
+        }
+        // The command-sequence wrapper (/bin/sh, no job control) runs its
+        // command, such as ssh, as a child in the wrapper's own group.
+        for child in children(shellPid) where child > 0 && processGroup(child) == foregroundProcessGroup {
+            if let name = processName(child) { return name }
         }
         return nil
     }
