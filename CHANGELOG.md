@@ -6,6 +6,8 @@ All notable changes to Shade are documented in this file. Format follows
 
 ## [Unreleased]
 
+## [0.1.28] — 2026-10-29
+
 ### Added
 
 - Ask before quitting while a tab is pinned, listing the tabs and the programs
@@ -648,7 +650,8 @@ First public release.
 - Unit tests (`swift test`) for `KeyCodes`, `Preferences`, `GitInfo`,
   `ProcessCwd`, and `TabsObservable.formatLabel`.
 
-[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.27...HEAD
+[Unreleased]: https://github.com/tavvet/shade/compare/v0.1.28...HEAD
+[0.1.28]: https://github.com/tavvet/shade/releases/tag/v0.1.28
 [0.1.27]: https://github.com/tavvet/shade/releases/tag/v0.1.27
 [0.1.26]: https://github.com/tavvet/shade/releases/tag/v0.1.26
 [0.1.25]: https://github.com/tavvet/shade/releases/tag/v0.1.25
