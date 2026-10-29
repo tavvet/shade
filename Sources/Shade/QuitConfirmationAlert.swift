@@ -13,6 +13,9 @@ enum QuitConfirmationAlert {
         let quit = alert.addButton(withTitle: "Quit")
         quit.hasDestructiveAction = true
         alert.addButton(withTitle: "Cancel")
+        // Like the panel, show over a full-screen app on the current Space;
+        // otherwise the modal question can open on another Space, out of sight.
+        alert.window.collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
         // A quit sent by another app arrives while Shade is in the background.
         NSApp.activate(ignoringOtherApps: true)
         return alert.runModal() == .alertFirstButtonReturn
