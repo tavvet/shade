@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// One tab in the horizontal strip, including inline rename and status state.
@@ -42,8 +43,10 @@ struct TabChip: View {
                     .frame(minWidth: minimumWidth)
                     .fixedSize(horizontal: true, vertical: false)
                     .contentShape(Rectangle())
-                    .onTapGesture(count: 2, perform: beginEditing)
-                    .onTapGesture(perform: onClick)
+                    // One single-tap gesture: a separate count-2 gesture makes
+                    // SwiftUI hold every click (and the close button inside)
+                    // for the double-click interval before acting.
+                    .onTapGesture(perform: handleClick)
                     .help("Double-click to rename")
                     .contextMenu {
                         Button("Rename…", action: beginEditing)
@@ -97,6 +100,14 @@ struct TabChip: View {
                 .buttonStyle(.plain)
                 .help("Close tab")
             }
+        }
+    }
+
+    private func handleClick() {
+        if ConnectionsSettingsClickEvent.isDoubleClick(NSApp.currentEvent) {
+            beginEditing()
+        } else {
+            onClick()
         }
     }
 
