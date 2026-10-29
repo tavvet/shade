@@ -14,8 +14,9 @@ let package = Package(
     ],
     targets: [
         // UI-free logic: models, parsers, process/SSH command construction and
-        // settings documents. It must not import AppKit, SwiftUI or SwiftTerm,
-        // so the compiler enforces that boundary.
+        // settings documents. It has no SwiftTerm or KeyboardShortcuts
+        // dependency; ShadeCoreBoundaryTests keeps out AppKit, SwiftUI and
+        // other UI frameworks.
         .target(
             name: "ShadeCore",
             path: "Sources/ShadeCore"

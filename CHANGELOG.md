@@ -23,6 +23,9 @@ All notable changes to Shade are documented in this file. Format follows
   the double-click interval.
 - A double-click on a tab's pin or close button acts once: it no longer unpins
   and then closes the tab, or closes the next tab that moves under the pointer.
+- List pinning (`⌘⇧K`), font size, prompt navigation and output copying in
+  Settings → Shortcuts, and `tabMinimumWidth` in the README's `defaults`
+  examples.
 
 ## [0.1.27] — 2026-10-26
 

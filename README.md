@@ -328,6 +328,7 @@ defaults write dev.shade.Shade foregroundHex "CDD6F4"          # default text co
 defaults write dev.shade.Shade backgroundBlur -bool true       # frosted backdrop (most visible at lower opacity)
 defaults write dev.shade.Shade blurMaterial hud                # hud | underWindow | sidebar | fullScreen
 defaults write dev.shade.Shade showInputSourceIndicator -bool true # live EN / RU / FI badge; default false
+defaults write dev.shade.Shade tabMinimumWidth 120            # 80 – 240 pt
 defaults write dev.shade.Shade cursorShape block               # block | bar | underline
 defaults write dev.shade.Shade cursorBlink -bool false
 
@@ -553,7 +554,7 @@ process group and hides the local-only readouts (the tab title shows `[ssh]`
 unless you've set a name, and the git badge disappears). Tabs opened from a
 saved connection are named after the profile automatically. Local cwd / git
 state can't describe a remote machine. Remote OSC 7 updates are intentionally
-masked as well; pin a custom tab name if you want a host-specific label while
+masked as well; set a custom tab name if you want a host-specific label while
 the remote session is active.
 
 **A saved SSH connection fails or ignores an expected option.** Shade invokes
