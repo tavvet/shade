@@ -1,5 +1,5 @@
 {
-  "originHash" : "58aca9ca256c557361dedfb6eefb2e9f6f34e884b8f19438d8346bec7d08b4ad",
+  "originHash" : "dd567d9c6fbbc70824af05babd1303961d713e66380c5ad7ba62caed8b82795a",
   "pins" : [
     {
       "identity" : "h",
@@ -42,7 +42,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tavvet/SwiftTerm",
       "state" : {
-        "revision" : "67d31e95f7e06fc228da38a36d1d1f6035296abf"
+        "revision" : "b70b3b69c75c9bad189c27ffe073a8148cf9a6e2"
       }
     }
   ],

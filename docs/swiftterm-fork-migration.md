@@ -6,8 +6,8 @@ not yet merged or released. See [the candidate audit](swiftterm-1.99.3-update.md
 ## Current state
 
 This branch pins upstream `v1.99.3`
-(`282c3c3a932b55c129628876b70f37d993af1615`) plus four approved feature patches and a Swift 6.2 compatibility fix,
-ending at `67d31e95f7e06fc228da38a36d1d1f6035296abf`. The fork revision is
+(`282c3c3a932b55c129628876b70f37d993af1615`) plus the approved feature, Swift 6.2 compatibility and trusted-link-cwd patches,
+ending at `b70b3b69c75c9bad189c27ffe073a8148cf9a6e2`. The fork revision is
 published on `shade/update-1.99.3`; `Package.swift` and `Package.resolved` pin
 that same immutable SHA. No release tag has been created for the candidate.
 
@@ -27,6 +27,7 @@ preferences and shortcut routing remain in Shade.
 | Patch | Current owner | Decision |
 |---|---|---|
 | Configurable link-highlight color + cell tint | SwiftTerm fork | **Keep background tint** — upstream `linkUnderlineColor` handles independent underline color; cell-background tint, renderer runs and wrapped link ranges remain private |
+| Trusted local link cwd | Shade + SwiftTerm fork | **Keep checked fallback hook** — no public policy-preserving cwd override supports Shade reveal semantics |
 | Atomic keyboard selection | SwiftTerm fork | **Restore as a value command** — the old public selection service is now internal; mutation must share the parser lock |
 | Local clear preserving input/parser state | SwiftTerm fork | **Move behind a view command** — snapshots cannot mutate rows, and feeding local escapes can interrupt PTY parsing |
 | Parser-time OSC geometry and generation | SwiftTerm fork | **Keep copied context** — asynchronous delivery cannot recover a previous scroll offset, buffer or width generation |

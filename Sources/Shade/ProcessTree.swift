@@ -6,6 +6,72 @@ import Foundation
 /// longer reflect what the user sees in the terminal, so the UI should mask them.
 /// Also names the program running in place of the shell, for the quit question.
 enum ProcessTree {
+    /// Unlike the UI heuristics below, absence of a remote name is not proof
+    /// of locality. Require an identified foreground system shell and a fully
+    /// inspected tree with no foreground children. A wrapper running ssh
+    /// cannot qualify, but positively identified background jobs may remain.
+    static func idleLocalShell(_ pid: pid_t) -> TrustedLinkDirectory.ShellIdentity? {
+        idleLocalShell(pid, metadata: { pid in
+            var info = proc_bsdinfo()
+            let size = Int32(MemoryLayout<proc_bsdinfo>.stride)
+            guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size,
+                  info.pbi_pid == UInt32(pid), info.pbi_status != UInt32(SZOMB),
+                  let path = processPath(pid) else { return nil }
+            return .init(path: path, group: pid_t(info.pbi_pgid),
+                         startedSeconds: info.pbi_start_tvsec,
+                         startedMicroseconds: info.pbi_start_tvusec)
+        }, children: inspectedChildren)
+    }
+
+    /// libproc maps an underlying syscall failure to zero bytes, so errno
+    /// distinguishes an unreadable tree from a successful empty snapshot.
+    static func inspectedChildren(_ pid: pid_t) -> [pid_t]? {
+        inspectedChildren(pid, list: { pid, buffer, capacity in
+            proc_listpids(UInt32(PROC_PPID_ONLY), UInt32(pid), buffer, capacity)
+        })
+    }
+
+    static func inspectedChildren(
+        _ pid: pid_t,
+        list: (pid_t, UnsafeMutableRawPointer, Int32) -> Int32
+    ) -> [pid_t]? {
+        guard pid > 0 else { return nil }
+        var pids = [pid_t](repeating: 0, count: 64)
+        let capacity = Int32(pids.count * MemoryLayout<pid_t>.stride)
+        let (bytes, error) = pids.withUnsafeMutableBytes { buffer in
+            errno = 0
+            let bytes = list(pid, buffer.baseAddress!, capacity)
+            let error = errno
+            return (bytes, error)
+        }
+        // A full buffer cannot establish a complete tree.
+        guard bytes >= 0, !(bytes == 0 && error != 0), bytes < capacity,
+              Int(bytes) % MemoryLayout<pid_t>.stride == 0 else { return nil }
+        return Array(pids.prefix(Int(bytes) / MemoryLayout<pid_t>.stride))
+    }
+
+    static func idleLocalShell(
+        _ pid: pid_t,
+        metadata: (pid_t) -> TrustedLinkDirectory.ShellIdentity?,
+        children: (pid_t) -> [pid_t]?
+    ) -> TrustedLinkDirectory.ShellIdentity? {
+        guard pid > 0, var info = metadata(pid), info.group == pid,
+              ["/bin/sh", "/bin/bash", "/bin/zsh", "/bin/ksh", "/bin/csh", "/bin/tcsh"].contains(info.path),
+              let descendants = children(pid) else { return nil }
+        var queue = descendants
+        var visited: Set<pid_t> = [pid]
+        while let child = queue.popLast() {
+            guard child > 0, visited.insert(child).inserted, visited.count <= 1024,
+                  let childInfo = metadata(child), childInfo.group > 0,
+                  childInfo.group != pid, !childInfo.path.isEmpty,
+                  let grandchildren = children(child) else { return nil }
+            info.backgroundProcesses.append("\(child):\(childInfo.group):\(childInfo.startedSeconds):\(childInfo.startedMicroseconds):\(childInfo.path)")
+            queue.append(contentsOf: grandchildren)
+        }
+        info.backgroundProcesses.sort()
+        return info
+    }
+
     /// Names that mean "the visible session is happening on another machine."
     static let remoteProcessNames: Set<String> = [
         "ssh", "mosh-client", "mosh", "tmate", "et", "eternalterminal",
@@ -131,6 +197,10 @@ enum ProcessTree {
     }
 
     private static func processName(_ pid: pid_t) -> String? {
+        processPath(pid).map { ($0 as NSString).lastPathComponent }
+    }
+
+    private static func processPath(_ pid: pid_t) -> String? {
         var buf = [CChar](repeating: 0, count: Int(MAXPATHLEN))
         let r = proc_pidpath(pid, &buf, UInt32(MAXPATHLEN))
         guard r > 0 else { return nil }
@@ -140,7 +210,7 @@ enum ProcessTree {
         let bytes = buf.prefix(while: { $0 != 0 }).map { UInt8(bitPattern: $0) }
         let path = String(decoding: bytes, as: UTF8.self)
         guard !path.isEmpty else { return nil }
-        return (path as NSString).lastPathComponent
+        return path
     }
 
     private static func processGroup(_ pid: pid_t) -> pid_t? {
