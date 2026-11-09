@@ -7,7 +7,7 @@ not yet merged or released. See [the candidate audit](swiftterm-1.99.3-update.md
 
 This branch pins upstream `v1.99.3`
 (`282c3c3a932b55c129628876b70f37d993af1615`) plus the approved feature, Swift 6.2 compatibility and trusted-link-cwd patches,
-ending at `b70b3b69c75c9bad189c27ffe073a8148cf9a6e2`. The fork revision is
+ending at `af683907f276b17c44f40cad812e7dd4b860fa0d`. The fork revision is
 published on `shade/update-1.99.3`; `Package.swift` and `Package.resolved` pin
 that same immutable SHA. No release tag has been created for the candidate.
 

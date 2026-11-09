@@ -6,7 +6,7 @@ Status: prepared for review and manual acceptance. Not merged or released.
 
 - Upstream `v1.99.3`: `282c3c3a932b55c129628876b70f37d993af1615`.
 - Published fork branch: [shade/update-1.99.3](https://github.com/tavvet/SwiftTerm/tree/shade/update-1.99.3).
-- Immutable Shade pin: `b70b3b69c75c9bad189c27ffe073a8148cf9a6e2`.
+- Immutable Shade pin: `af683907f276b17c44f40cad812e7dd4b860fa0d`.
 - Previous published pin: `850f6469329bada193981efa8a7e6ccd3920792e`.
 
 The owner approved adapting the existing link tint, then separately approved
@@ -22,6 +22,7 @@ The focused commits are:
 | `e4c48d7` | Link tint adapted to the upstream underline API |
 | `67d31e9` | Materialize the Powerline flame-path slice for Swift 6.2 |
 | `b70b3b6` | Trusted local-directory fallback for checked links |
+| `af68390` | Explicit callback sendability for consistent getter linkage |
 
 The adapted link patch retains the 35% cell-background blend, explicit fill flag
 and appearance/native-color/attribute-cache invalidation. The upstream
@@ -72,6 +73,12 @@ The conservative fallback recognizes `/bin/sh`, `/bin/bash`, `/bin/zsh`,
 multiplexers and active foreground commands have no trusted filesystem fallback.
 This does not disable normal web links. Local OSC 7 still takes precedence,
 including the upstream limitation that terminal output cannot itself prove locality.
+
+The provider type explicitly includes `@Sendable` as well as `@MainActor`.
+Without that explicit marker, one compiler/build path emitted a different getter
+symbol than subclass metadata referenced. Clean Xcode/default and native builds
+both link and pass the 64 focused link tests with the explicit declaration.
+This correction does not change callback execution or safety behavior.
 
 No parser bytes or fake OSC 7 are injected. Public view APIs cannot update
 upstream's cwd without parser input; reconstructing a request would discard its
