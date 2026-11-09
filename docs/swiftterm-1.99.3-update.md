@@ -6,11 +6,11 @@ Status: prepared for review and manual acceptance. Not merged or released.
 
 - Upstream `v1.99.3`: `282c3c3a932b55c129628876b70f37d993af1615`.
 - Published fork branch: [shade/update-1.99.3](https://github.com/tavvet/SwiftTerm/tree/shade/update-1.99.3).
-- Immutable Shade pin: `e4c48d78035485cf5cc2d2986243156ac3e47703`.
+- Immutable Shade pin: `67d31e95f7e06fc228da38a36d1d1f6035296abf`.
 - Previous published pin: `850f6469329bada193981efa8a7e6ccd3920792e`.
 
 The owner approved adapting the existing link tint and completing compatibility
-fixes. No additional fork feature is introduced. The four focused commits are:
+fixes. No additional fork feature is introduced. The four feature commits and the separately approved compatibility fix are:
 
 | Commit | Patch |
 | --- | --- |
@@ -18,6 +18,7 @@ fixes. No additional fork feature is introduced. The four focused commits are:
 | `efa16ad` | Local clear without feeding parser bytes, unchanged |
 | `1fa35f6` | Parser-time OSC geometry and generation, unchanged |
 | `e4c48d7` | Link tint adapted to the upstream underline API |
+| `67d31e9` | Materialize the Powerline flame-path slice for Swift 6.2 |
 
 The adapted link patch retains the 35% cell-background blend, explicit fill flag
 and appearance/native-color/attribute-cache invalidation. The upstream
@@ -30,6 +31,15 @@ the Metal plain-row optimization.
 The public underline API removes the need for a separate fork underline
 renderer override. Background tint still requires access to private renderer
 runs, so the remaining fork patch cannot be replaced with a view overlay.
+
+## Swift 6.2 compiler compatibility
+
+The first PR build on Xcode 26.3 / Swift 6.2.4 rejected the unmodified upstream
+Powerline flame-path array concatenation. The owner separately approved
+materializing `flameLowerPath.dropFirst()` with `Array(...)`. The segment order
+and rendering geometry are unchanged. This cannot be fixed through a Shade
+view API because compilation fails inside the dependency. Focused Powerline
+checks (16 XCTest and 3 Swift Testing tests) pass locally; CI verifies Swift 6.2.
 
 ## Shade compatibility fixes
 

@@ -5,10 +5,10 @@ let package = Package(
     name: "Shade",
     platforms: [.macOS(.v13)],
     dependencies: [
-        // Four focused Shade patches on upstream v1.99.3. Published candidate
+        // Four Shade feature patches plus a Swift 6.2 compatibility fix. Candidate
         // branch: shade/update-1.99.3. Pin the immutable revision; see
         // docs/swiftterm-1.99.3-update.md for validation and manual checks.
-        .package(url: "https://github.com/tavvet/SwiftTerm", revision: "e4c48d78035485cf5cc2d2986243156ac3e47703"),
+        .package(url: "https://github.com/tavvet/SwiftTerm", revision: "67d31e95f7e06fc228da38a36d1d1f6035296abf"),
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.4.0"),
     ],
     targets: [
