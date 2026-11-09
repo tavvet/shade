@@ -51,7 +51,7 @@ let sources = modules.map { module in
 // A changed implementation or product path changes compiler arguments too, so
 // SwiftPM cannot reuse objects compiled with an older overlay.
 let generator = try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[0]))
-let fingerprint = SHA256.hash(data: generator + Data(([products.path] + sources).joined().utf8))
+let fingerprint = SHA256.hash(data: generator + Data(([CommandLine.arguments[1]] + sources).joined().utf8))
     .map { String(format: "%02x", $0) }.joined()
 let directory = output.appendingPathComponent(fingerprint)
 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -66,9 +66,11 @@ var roots: [[String: String]] = []
 for (module, source) in zip(modules, sources) {
     let replacement = directory.appendingPathComponent("\(module).swift")
     try writeIfChanged(Data(source.utf8), to: replacement)
+    // Preserve the compiler's exact spelling: Foundation can normalize
+    // /private/tmp to /tmp, but VFS overlay names must match compiler inputs.
     roots.append([
         "type": "file",
-        "name": generatedAccessor(for: module).path,
+        "name": CommandLine.arguments[1] + "/\(module).build/DerivedSources/resource_bundle_accessor.swift",
         "external-contents": replacement.path,
     ])
 }

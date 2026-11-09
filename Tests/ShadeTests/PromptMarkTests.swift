@@ -280,7 +280,7 @@ final class PromptMarkTests: XCTestCase {
 
         // Two linefeeds → cursor on row 2 (0-indexed). Then OSC 133 ; A BEL.
         let bytes = Array("hi\r\nthere\r\n\u{1B}]133;A\u{07}".utf8)
-        view.dataReceived(slice: bytes[...])
+        view.feed(byteArray: bytes[...])
         waitForCondition { seenPayloads.count == 1 }
 
         XCTAssertEqual(seenPayloads, ["A"])
@@ -288,7 +288,7 @@ final class PromptMarkTests: XCTestCase {
 
         // Now emit OSC 133 ; D ; 0 — different payload, same row.
         let oscDone: [UInt8] = [0x1B, 0x5D] + Array("133;D;0".utf8) + [0x07]
-        view.dataReceived(slice: oscDone[...])
+        view.feed(byteArray: oscDone[...])
         waitForCondition { seenPayloads.count == 2 }
         XCTAssertEqual(seenPayloads, ["A", "D;0"])
         XCTAssertEqual(seenRows.last, 2)

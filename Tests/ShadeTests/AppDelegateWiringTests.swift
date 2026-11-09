@@ -101,7 +101,7 @@ final class AppDelegateWiringTests: XCTestCase {
         defer { stop(session) }
         let view = try XCTUnwrap(session.view as? ActivityTerminalView)
         let stream = Array("\u{1B}]133;C\u{07}copied output\r\n\u{1B}]133;D;0\u{07}".utf8)
-        view.dataReceived(slice: stream[...])
+        view.feed(byteArray: stream[...])
         waitForCondition { session.promptMarks.count == 2 }
         let oKey = try XCTUnwrap(KeyCodes.asciiLetterForKeyCode.first { $0.value == "o" }?.key)
         let event = try XCTUnwrap(NSEvent.keyEvent(

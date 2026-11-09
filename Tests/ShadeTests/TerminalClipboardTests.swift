@@ -88,7 +88,7 @@ final class TerminalClipboardTests: XCTestCase {
         stream += "\u{1B}]133;A\u{07}$ "
         let bytes = Array(stream.utf8)
 
-        view.dataReceived(slice: bytes[...])
+        view.feed(byteArray: bytes[...])
         waitForCondition { session.promptMarks.filter { $0.kind == .promptStart }.count == 82 }
 
         XCTAssertTrue(session.copyLastCommandOutput(to: pasteboard))

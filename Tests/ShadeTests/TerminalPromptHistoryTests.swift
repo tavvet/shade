@@ -223,7 +223,7 @@ final class TerminalPromptHistoryTests: XCTestCase {
                 + "\u{1B}[?1049hfull screen"
         ).utf8)
 
-        view.dataReceived(slice: bytes[...])
+        view.feed(byteArray: bytes[...])
         waitForCondition { history.marks.count == 2 }
 
         XCTAssertTrue(view.terminalInputStateSnapshot()!.isAlternateBuffer)
@@ -240,7 +240,7 @@ final class TerminalPromptHistoryTests: XCTestCase {
         view.setFrameSize(NSSize(width: 640, height: 480))
         let columns = view.terminalDimensions.cols
         let mark = Array("\u{1B}]133;A\u{07}".utf8)
-        view.dataReceived(slice: mark[...])
+        view.feed(byteArray: mark[...])
         waitForCondition { session.promptMarks.count == 1 }
         XCTAssertEqual(session.promptMarks.count, 1)
 
@@ -253,7 +253,7 @@ final class TerminalPromptHistoryTests: XCTestCase {
 
         XCTAssertEqual(view.terminalDimensions.cols, columns)
         XCTAssertTrue(session.promptMarks.isEmpty)
-        view.dataReceived(slice: mark[...])
+        view.feed(byteArray: mark[...])
         waitForCondition { session.promptMarks.count == 1 }
         XCTAssertEqual(session.promptMarks.count, 1)
     }

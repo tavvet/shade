@@ -82,6 +82,13 @@ final class TerminalProcessController: NSObject {
         super.init()
 
         view.processDelegate = self
+        view.linkFallbackDirectoryProvider = { [weak self] in
+            guard let self else { return nil }
+            return TrustedLinkDirectory.read(state: {
+                .init(running: self.isRunning && !self.view.process.windingDown,
+                      pid: self.shellPid, foregroundGroup: self.foregroundProcessGroup)
+            })
+        }
         view.terminalDelegate = delegateProxy
         delegateProxy.onOpenLink = { [weak self] link in
             MainActor.assumeIsolated { self?.onOpenLink?(link) }
