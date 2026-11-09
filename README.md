@@ -80,27 +80,9 @@ Native Swift / SwiftUI. Status-bar app (no Dock icon). MIT licensed.
 
 ## Install
 
-### Download .dmg
-
-Prebuilt releases are distributed through GitHub Releases as a DMG. Grab
-`Shade.dmg` from the
-[latest GitHub release](https://github.com/tavvet/shade/releases/latest),
-open it, drag `Shade.app` into your `Applications` folder.
-
-**First launch needs one extra step** because published builds are ad-hoc
-signed and not notarized. macOS Gatekeeper will refuse a normal double-click
-with *"Apple could not verify Shade is free of malware…"* —
-**right-click `Shade.app` → Open → Open** once, and macOS will
-remember the decision for that installed copy. (Alternative: `xattr -d com.apple.quarantine
-/Applications/Shade.app` from any terminal.) Notarized builds will follow
-in a later release and remove this step.
-
-Once Shade is running you'll see its icon in the menu bar. Press
-`F12` (the default toggle hotkey — rebindable in Settings) and the
-drop-down terminal slides in from the top of the screen.
-
-To start on login: open `Settings…` from the menu-bar icon and flip
-**Open at Login**.
+Shade currently needs to be built manually from source. There is no public
+prebuilt release or DMG to download while distribution signing and notarization
+remain unresolved. Follow the build instructions below to create a local app.
 
 ### Build from source
 
@@ -133,6 +115,12 @@ cp -R build/Shade.app /Applications/
 open /Applications/Shade.app
 # if "Open at Login" was on, toggle it off and on so the new path is registered
 ```
+
+Once Shade is running you'll see its icon in the menu bar. Press
+`F12` (the default toggle hotkey, rebindable in Settings) to show the terminal.
+
+To start on login: open `Settings…` from the menu-bar icon and enable
+**Open at Login**.
 
 ---
 
@@ -515,11 +503,6 @@ across these operations.
 ---
 
 ## Troubleshooting
-
-**"Apple could not verify Shade is free of malware…"** Pre-notarization
-builds are ad-hoc signed. Right-click `Shade.app` → **Open** → **Open** —
-macOS will remember the decision for future launches. Or, in a terminal:
-`xattr -d com.apple.quarantine /Applications/Shade.app`.
 
 **`F12` does nothing.** macOS may be intercepting it as a media key. Either
 press `Fn+F12`, flip *System Settings → Keyboard → Use F1, F2, etc. keys as
