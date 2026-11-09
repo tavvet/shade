@@ -8,7 +8,7 @@ let package = Package(
         // Shade feature patches, trusted link cwd and Swift 6.2 compatibility. Candidate
         // branch: shade/update-1.99.3. Pin the immutable revision; see
         // docs/swiftterm-1.99.3-update.md for validation and manual checks.
-        .package(url: "https://github.com/tavvet/SwiftTerm", revision: "af683907f276b17c44f40cad812e7dd4b860fa0d"),
+        .package(url: "https://github.com/tavvet/SwiftTerm", revision: "1e0a29a3579917b029e02a0e07ace99674b9cd63"),
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.4.0"),
     ],
     targets: [
